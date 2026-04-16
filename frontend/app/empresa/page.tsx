@@ -26,6 +26,45 @@ const kpis = [
   { label: "Indice reputacion", value: "4.8", detail: "muy alto" },
 ];
 
+const productCatalog = [
+  {
+    name: "Laptop Gamer Titan X15",
+    category: "Computacion",
+    price: "$4.899.000",
+    stock: "12 unidades",
+  },
+  {
+    name: "Monitor Curvo UltraView 32\"",
+    category: "Perifericos",
+    price: "$1.299.000",
+    stock: "8 unidades",
+  },
+  {
+    name: "Mouse Pro Wireless M9",
+    category: "Accesorios",
+    price: "$249.000",
+    stock: "35 unidades",
+  },
+  {
+    name: "Teclado Mecanico RGB K87",
+    category: "Accesorios",
+    price: "$319.000",
+    stock: "20 unidades",
+  },
+  {
+    name: "Kit Camaras SmartSecure",
+    category: "Seguridad",
+    price: "$1.950.000",
+    stock: "6 unidades",
+  },
+  {
+    name: "Servicio de Mantenimiento Premium",
+    category: "Servicio tecnico",
+    price: "$180.000",
+    stock: "Disponible",
+  },
+];
+
 export default function EmpresaPage() {
   return (
     <div className="flex-1 pb-12">
@@ -53,6 +92,9 @@ export default function EmpresaPage() {
             <a className="tech-button tech-button-primary" href="#metricas">
               Ver metricas
             </a>
+            <a className="tech-button tech-button-secondary" href="#catalogo">
+              Ver catalogo
+            </a>
             <a className="tech-button tech-button-secondary" href="#modulos">
               Ver modulos
             </a>
@@ -76,6 +118,22 @@ export default function EmpresaPage() {
               <article key={module.title} className="rounded-2xl border border-cyan-100/15 p-4">
                 <h3 className="text-lg font-semibold">{module.title}</h3>
                 <p className="mt-2 text-sm text-cyan-100/80 md:text-base">{module.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="tech-card" id="catalogo">
+          <h2 className="text-2xl font-semibold text-cyan-50">Catalogo de productos</h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {productCatalog.map((product) => (
+              <article key={product.name} className="rounded-2xl border border-cyan-100/15 p-4">
+                <p className="tech-mono text-xs text-cyan-200/75">{product.category}</p>
+                <h3 className="mt-2 text-lg font-semibold text-cyan-50">{product.name}</h3>
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <span className="text-cyan-200/90">{product.price}</span>
+                  <span className="text-cyan-300">{product.stock}</span>
+                </div>
               </article>
             ))}
           </div>

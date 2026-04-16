@@ -52,9 +52,7 @@ export default function AuthView({
         router.push("/cliente");
         return;
       }
-      setFeedback(
-        `Login preparado para ${accountType}. En el siguiente paso conectamos API y JWT.`,
-      );
+      router.push("/empresa");
       return;
     }
 
@@ -115,7 +113,7 @@ export default function AuthView({
               )}
             </div>
 
-            <form className="mt-6 auth-row" onSubmit={onSubmit}>
+            <form className="mt-6 auth-row" onSubmit={onSubmit} noValidate={mode === "login"}>
               {mode === "register" && (
                 <div className="auth-row two">
                   <div>
