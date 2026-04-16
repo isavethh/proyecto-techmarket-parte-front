@@ -230,6 +230,40 @@ a {
   color: #031021;
 }
 
+.auth-action-block {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.auth-action-group {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.auth-action {
+  border-radius: 14px;
+  border: 1px solid rgba(89, 227, 255, 0.22);
+  background: rgba(6, 26, 48, 0.85);
+  color: #c9e4ff;
+  font-weight: 600;
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.auth-action:hover {
+  transform: translateY(-1px);
+  border-color: rgba(89, 227, 255, 0.5);
+}
+
+.auth-action.active {
+  border-color: transparent;
+  background: linear-gradient(130deg, rgba(39, 176, 255, 0.92), rgba(89, 227, 255, 0.92));
+  color: #031021;
+  box-shadow: 0 12px 30px rgba(9, 110, 204, 0.35);
+}
+
 .auth-helper {
   color: #94bfdf;
   font-size: 0.86rem;
@@ -426,6 +460,10 @@ a {
   }
 
   .auth-card-group {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .auth-action-group {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

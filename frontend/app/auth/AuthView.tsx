@@ -12,7 +12,10 @@ type AuthViewProps = {
   initialType: AccountType;
 };
 
-export default function AuthView({ initialMode, initialType }: AuthViewProps) {
+export default function AuthView({
+  initialMode,
+  initialType,
+}: AuthViewProps) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [accountType, setAccountType] = useState<AccountType>(initialType);
   const [enterpriseType, setEnterpriseType] =
@@ -83,26 +86,6 @@ export default function AuthView({ initialMode, initialType }: AuthViewProps) {
             <p className="auth-subtitle">{subtitle}</p>
 
             <div className="mt-6 flex flex-col gap-4">
-              <div>
-                <p className="auth-label">Modo</p>
-                <div className="auth-switch">
-                  <button
-                    type="button"
-                    className={mode === "login" ? "active" : undefined}
-                    onClick={() => setMode("login")}
-                  >
-                    Login
-                  </button>
-                  <button
-                    type="button"
-                    className={mode === "register" ? "active" : undefined}
-                    onClick={() => setMode("register")}
-                  >
-                    Registro
-                  </button>
-                </div>
-              </div>
-
               {mode === "register" && accountType === "empresa" && (
                 <div>
                   <p className="auth-label">Subtipo de empresa</p>
@@ -124,7 +107,6 @@ export default function AuthView({ initialMode, initialType }: AuthViewProps) {
                   </div>
                 </div>
               )}
-
             </div>
 
             <form className="mt-6 auth-row" onSubmit={onSubmit}>

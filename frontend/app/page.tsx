@@ -24,19 +24,25 @@ export default function Home() {
           <p className="mt-3 max-w-2xl text-sm text-cyan-100/80 md:text-base">
             Busqueda inteligente de productos tecnologicos
           </p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Link
-              className="tech-button tech-button-primary"
-              href="/auth?mode=register&type=cliente"
-            >
-              Crear cuenta cliente
-            </Link>
-            <Link
-              className="tech-button tech-button-secondary"
-              href="/auth?mode=register&type=empresa"
-            >
-              Crear cuenta empresa
-            </Link>
+          <div className="mt-7 grid gap-3 md:max-w-xl">
+            <p className="text-sm text-cyan-100/80">Tienes una cuenta?</p>
+            <div className="flex flex-wrap gap-3">
+              <Link className="tech-button tech-button-primary" href="/auth?mode=login&type=cliente">
+                Ingresar como cliente
+              </Link>
+              <Link className="tech-button tech-button-secondary" href="/auth?mode=login&type=empresa">
+                Ingresar como empresa
+              </Link>
+            </div>
+            <p className="mt-2 text-sm text-cyan-100/80">No tienes una cuenta?</p>
+            <div className="flex flex-wrap gap-3">
+              <Link className="tech-button tech-button-primary" href="/auth?mode=register&type=cliente">
+                Crear cuenta cliente
+              </Link>
+              <Link className="tech-button tech-button-secondary" href="/auth?mode=register&type=empresa">
+                Crear cuenta empresa
+              </Link>
+            </div>
           </div>
         </section>
       </main>
