@@ -1,0 +1,25 @@
+{
+  "name": "techmarketof",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isavethh/proyecto-techmarket-parte-front.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/isavethh/proyecto-techmarket-parte-front/issues"
+  },
+  "homepage": "https://github.com/isavethh/proyecto-techmarket-parte-front#readme",
+  "dependencies": {
+    "pdf-parse": "^2.4.5",
+    "pdf-parse-debugging-disabled": "^1.1.1"
+  }
+}
