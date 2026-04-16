@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 
 type Mode = "login" | "register";
@@ -16,6 +17,7 @@ export default function AuthView({
   initialMode,
   initialType,
 }: AuthViewProps) {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [accountType, setAccountType] = useState<AccountType>(initialType);
   const [enterpriseType, setEnterpriseType] =
@@ -46,6 +48,10 @@ export default function AuthView({
     event.preventDefault();
 
     if (mode === "login") {
+      if (accountType === "cliente") {
+        router.push("/cliente");
+        return;
+      }
       setFeedback(
         `Login preparado para ${accountType}. En el siguiente paso conectamos API y JWT.`,
       );
@@ -166,7 +172,7 @@ export default function AuthView({
                   name="email"
                   type="email"
                   placeholder="correo@empresa.com"
-                  required
+                  required={mode === "register"}
                 />
               </div>
 
@@ -180,7 +186,7 @@ export default function AuthView({
                   name="password"
                   type="password"
                   placeholder="********"
-                  required
+                  required={mode === "register"}
                 />
               </div>
 
@@ -220,44 +226,6 @@ export default function AuthView({
             {feedback && <p className="auth-message mt-4">{feedback}</p>}
           </article>
 
-          <aside className="auth-panel auth-panel-side">
-            <div className="auth-hero">
-              <p className="tech-mono text-xs text-cyan-300/80">BIENVENIDO</p>
-              <h2 className="mt-2 text-2xl font-semibold text-cyan-50">
-                Acceso inteligente para un ecosistema confiable
-              </h2>
-              <p className="mt-3 text-sm text-cyan-100/80">
-                Un unico lugar para clientes, tiendas y servicios tecnicos con
-                identidad verificada.
-              </p>
-              <div className="mt-5 grid gap-3">
-                <div className="auth-stat">
-                  <span>Verificacion rapida</span>
-                  <strong>En minutos</strong>
-                </div>
-                <div className="auth-stat">
-                  <span>Perfiles visibles</span>
-                  <strong>Mayor confianza</strong>
-                </div>
-                <div className="auth-stat">
-                  <span>Contacto directo</span>
-                  <strong>Sin intermediarios</strong>
-                </div>
-              </div>
-            </div>
-
-            <div className="auth-panel-sub mt-5">
-              <p className="auth-helper">Necesitas ayuda?</p>
-              <div className="mt-3 grid gap-2 text-sm text-cyan-100/80">
-                <span>Soporte en vivo para empresas</span>
-                <span>Guia rapida para clientes</span>
-                <span>Buenas practicas de seguridad</span>
-              </div>
-              <button className="tech-button tech-button-secondary mt-4" type="button">
-                Hablar con soporte
-              </button>
-            </div>
-          </aside>
         </section>
       </main>
     </div>
