@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 
 type MainFilter = "Productos disponibles" | "Servicios" | "Ofertas y promociones" | "Publicaciones de interacción";
 type InteractionFilter = "Encuestas" | "Publicaciones" | "Lista de usuarios que interactúan";
@@ -86,6 +86,14 @@ type InteractionNotification = {
   userName: string;
   productName: string;
   userId: string;
+};
+
+type PublicationFormData = {
+  title: string;
+  targetFilter: MainFilter;
+  description: string;
+  price: string;
+  image: string;
 };
 
 function LikeIcon() {
@@ -299,6 +307,32 @@ export default function PublicacionesPage() {
   const [selectedSurveyOption, setSelectedSurveyOption] = useState<Record<string, string>>({});
   const [showInteractionNotice, setShowInteractionNotice] = useState(false);
   const [highlightedUserId, setHighlightedUserId] = useState<string | null>(null);
+  const [productItems, setProductItems] = useState<ProductCard[]>(products);
+  const [serviceItems, setServiceItems] = useState<ServiceCard[]>(services);
+  const [offerItems, setOfferItems] = useState<OfferCard[]>(offers);
+  const [postItems, setPostItems] = useState<PostCard[]>(posts);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [publishMessage, setPublishMessage] = useState("");
+  const [uploadedImagePreview, setUploadedImagePreview] = useState("");
+  const [uploadedImageName, setUploadedImageName] = useState("");
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [formData, setFormData] = useState<PublicationFormData>({
+    title: "",
+    targetFilter: "Productos disponibles",
+    description: "",
+    price: "",
+    image: "",
+  });
+  const isServicesView = activeFilter === "Servicios";
+  const createButtonLabel = isServicesView
+    ? showCreateForm
+      ? "Cerrar formulario de servicio"
+      : "Agregar servicio"
+    : showCreateForm
+      ? "Cerrar formulario"
+      : "Agregar publicacion";
+  const createFormTitle = isServicesView ? "Nuevo servicio" : "Nueva publicacion";
+  const submitButtonLabel = isServicesView ? "Publicar servicio" : "Publicar";
 
   const handleMainFilterChange = (filter: MainFilter) => {
     setActiveFilter(filter);
@@ -315,6 +349,120 @@ export default function PublicacionesPage() {
     setActiveInteractionFilter("Lista de usuarios que interactúan");
     setHighlightedUserId(latestInteractionNotification.userId);
     setShowInteractionNotice(false);
+  };
+
+  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      setUploadedImagePreview("");
+      setUploadedImageName("");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setPublishMessage("Selecciona un archivo de imagen valido.");
+      setUploadedImagePreview("");
+      setUploadedImageName("");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      setUploadedImagePreview(result);
+      setUploadedImageName(file.name);
+      setPublishMessage("");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCreatePublicationSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const title = formData.title.trim();
+    const description = formData.description.trim();
+    const price = formData.price.trim();
+    const image = uploadedImagePreview || formData.image.trim() || "/productos/laptop-pro-14.jpg";
+
+    if (!title || !description) {
+      setPublishMessage("Completa titulo y descripcion para publicar.");
+      return;
+    }
+
+    const newId = `pub-${Date.now()}`;
+
+    if (formData.targetFilter === "Productos disponibles") {
+      setProductItems((current) => [
+        {
+          id: newId,
+          name: title,
+          description,
+          price: price || "Consultar",
+          status: "Disponible",
+          image,
+        },
+        ...current,
+      ]);
+      setActiveFilter("Productos disponibles");
+    }
+
+    if (formData.targetFilter === "Servicios") {
+      setServiceItems((current) => [
+        {
+          id: newId,
+          name: title,
+          description,
+          price: price || "Consultar",
+          image,
+        },
+        ...current,
+      ]);
+      setActiveFilter("Servicios");
+    }
+
+    if (formData.targetFilter === "Ofertas y promociones") {
+      setOfferItems((current) => [
+        {
+          id: newId,
+          title,
+          description,
+          currentPrice: price || "Consultar",
+          label: "Oferta",
+          image,
+        },
+        ...current,
+      ]);
+      setActiveFilter("Ofertas y promociones");
+    }
+
+    if (formData.targetFilter === "Publicaciones de interacción") {
+      setPostItems((current) => [
+        {
+          id: newId,
+          title,
+          message: description,
+          date: "Hoy",
+          image,
+        },
+        ...current,
+      ]);
+      setActiveFilter("Publicaciones de interacción");
+      setActiveInteractionFilter("Publicaciones");
+    }
+
+    setFormData({
+      title: "",
+      targetFilter: formData.targetFilter,
+      description: "",
+      price: "",
+      image: "",
+    });
+    setUploadedImagePreview("");
+    setUploadedImageName("");
+    setFileInputKey((current) => current + 1);
+    setPublishMessage("Publicacion agregada correctamente.");
+    setShowCreateForm(false);
   };
 
   return (
@@ -364,26 +512,152 @@ export default function PublicacionesPage() {
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                {mainFilters.map((filter) => (
-                  <button
-                    key={filter}
-                    type="button"
-                    onClick={() => handleMainFilterChange(filter)}
-                    className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                      activeFilter === filter
-                        ? "border-cyan-300/50 bg-cyan-300/20 text-white"
-                        : "border-cyan-100/10 bg-white/5 text-cyan-100/80 hover:bg-cyan-100/10"
-                    }`}
-                  >
-                    {filter}
-                  </button>
-                ))}
+              <div className="mt-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className="flex flex-wrap gap-3">
+                  {mainFilters.map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => handleMainFilterChange(filter)}
+                      className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                        activeFilter === filter
+                          ? "border-cyan-300/50 bg-cyan-300/20 text-white"
+                          : "border-cyan-100/10 bg-white/5 text-cyan-100/80 hover:bg-cyan-100/10"
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateForm((current) => !current);
+                    setPublishMessage("");
+                    setUploadedImagePreview("");
+                    setUploadedImageName("");
+                    setFormData((current) => ({ ...current, targetFilter: activeFilter }));
+                  }}
+                  className="self-start rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30 xl:self-auto"
+                >
+                  {createButtonLabel}
+                </button>
               </div>
+
+              {showCreateForm ? (
+                <form
+                  onSubmit={handleCreatePublicationSubmit}
+                  className="mt-6 rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5"
+                >
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">{createFormTitle}</p>
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <label className="space-y-2 text-sm text-cyan-100/85">
+                      <span>Titulo</span>
+                      <input
+                        value={formData.title}
+                        onChange={(event) => setFormData((current) => ({ ...current, title: event.target.value }))}
+                        placeholder="Ej: Laptop Pro 14 reacondicionada"
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                      />
+                    </label>
+
+                    {isServicesView ? (
+                      <div className="space-y-2 text-sm text-cyan-100/85">
+                        <span>Seccion</span>
+                        <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50">
+                          Servicios
+                        </div>
+                      </div>
+                    ) : (
+                      <label className="space-y-2 text-sm text-cyan-100/85">
+                        <span>Seccion</span>
+                        <select
+                          value={formData.targetFilter}
+                          onChange={(event) =>
+                            setFormData((current) => ({ ...current, targetFilter: event.target.value as MainFilter }))
+                          }
+                          className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                        >
+                          {mainFilters.map((filter) => (
+                            <option key={filter} value={filter}>
+                              {filter}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+
+                    <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                      <span>Descripcion</span>
+                      <textarea
+                        value={formData.description}
+                        onChange={(event) => setFormData((current) => ({ ...current, description: event.target.value }))}
+                        placeholder="Describe la publicacion para tus clientes"
+                        rows={4}
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                      />
+                    </label>
+
+                    <label className="space-y-2 text-sm text-cyan-100/85">
+                      <span>Precio (opcional)</span>
+                      <input
+                        value={formData.price}
+                        onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
+                        placeholder="Ej: $1.500.000"
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                      />
+                    </label>
+
+                    <label className="space-y-2 text-sm text-cyan-100/85">
+                      <span>Subir imagen desde tu PC (opcional)</span>
+                      <input
+                        key={fileInputKey}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageFileChange}
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300/20 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                      />
+                      {uploadedImageName ? <p className="text-xs text-cyan-100/70">Archivo: {uploadedImageName}</p> : null}
+                    </label>
+
+                    <label className="space-y-2 text-sm text-cyan-100/85">
+                      <span>URL de imagen (opcional)</span>
+                      <input
+                        value={formData.image}
+                        onChange={(event) => setFormData((current) => ({ ...current, image: event.target.value }))}
+                        placeholder="/productos/laptop-pro-14.jpg"
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                      />
+                    </label>
+                  </div>
+
+                  {uploadedImagePreview ? (
+                    <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-slate-950/40 p-3">
+                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Vista previa</p>
+                      <img
+                        src={uploadedImagePreview}
+                        alt="Vista previa de imagen seleccionada"
+                        className="mt-3 h-40 w-full rounded-2xl object-cover"
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <button
+                      type="submit"
+                      className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                    >
+                      {submitButtonLabel}
+                    </button>
+                    {publishMessage ? <p className="text-sm text-cyan-100/80">{publishMessage}</p> : null}
+                  </div>
+                </form>
+              ) : null}
 
               {activeFilter === "Productos disponibles" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {products.map((product) => (
+                  {productItems.map((product) => (
                     <article key={product.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35">
                       <img src={product.image} alt={product.name} className="h-44 w-full object-cover" loading="lazy" />
                       <div className="space-y-4 p-5">
@@ -420,7 +694,7 @@ export default function PublicacionesPage() {
 
               {activeFilter === "Servicios" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {services.map((service) => (
+                  {serviceItems.map((service) => (
                     <article key={service.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35">
                       {service.image ? <img src={service.image} alt={service.name} className="h-40 w-full object-cover" loading="lazy" /> : null}
                       <div className="space-y-4 p-5">
@@ -451,7 +725,7 @@ export default function PublicacionesPage() {
 
               {activeFilter === "Ofertas y promociones" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {offers.map((offer) => (
+                  {offerItems.map((offer) => (
                     <article key={offer.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35">
                       <img src={offer.image} alt={offer.title} className="h-44 w-full object-cover" loading="lazy" />
                       <div className="space-y-4 p-5">
@@ -511,21 +785,33 @@ export default function PublicacionesPage() {
                     </button>
                   ) : null}
 
-                  <div className="flex flex-wrap gap-3">
-                    {interactionFilters.map((filter) => (
+                  <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                    <div className="flex flex-wrap gap-3">
+                      {interactionFilters.map((filter) => (
+                        <button
+                          key={filter}
+                          type="button"
+                          onClick={() => setActiveInteractionFilter(filter)}
+                          className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                            activeInteractionFilter === filter
+                              ? "border-cyan-300/50 bg-cyan-300/20 text-white"
+                              : "border-cyan-100/10 bg-white/5 text-cyan-100/80 hover:bg-cyan-100/10"
+                          }`}
+                        >
+                          {filter}
+                        </button>
+                      ))}
+                    </div>
+
+                    {activeInteractionFilter === "Encuestas" ? (
                       <button
-                        key={filter}
                         type="button"
-                        onClick={() => setActiveInteractionFilter(filter)}
-                        className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                          activeInteractionFilter === filter
-                            ? "border-cyan-300/50 bg-cyan-300/20 text-white"
-                            : "border-cyan-100/10 bg-white/5 text-cyan-100/80 hover:bg-cyan-100/10"
-                        }`}
+                        onClick={() => setActiveInteractionFilter("Encuestas")}
+                        className="self-start rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30 xl:self-auto"
                       >
-                        {filter}
+                        Agregar encuesta
                       </button>
-                    ))}
+                    ) : null}
                   </div>
 
                   <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -583,7 +869,7 @@ export default function PublicacionesPage() {
                       ))}
 
                     {activeInteractionFilter === "Publicaciones" &&
-                      posts.map((post) => (
+                      postItems.map((post) => (
                         <article key={post.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-white/5">
                           {post.image ? <img src={post.image} alt={post.title} className="h-44 w-full object-cover" loading="lazy" /> : null}
                           <div className="space-y-4 p-5">

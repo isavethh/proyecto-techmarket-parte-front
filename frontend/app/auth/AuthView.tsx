@@ -23,6 +23,8 @@ export default function AuthView({
   const [enterpriseType, setEnterpriseType] =
     useState<EnterpriseType>("tienda");
   const [feedback, setFeedback] = useState<string>("");
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
   const title = useMemo(() => {
     if (mode === "login") {
@@ -48,11 +50,23 @@ export default function AuthView({
     event.preventDefault();
 
     if (mode === "login") {
+      const username = loginUsername.trim();
+      const password = loginPassword.trim();
+
       if (accountType === "cliente") {
+        document.cookie = "techmarket_role=; Max-Age=0; path=/; SameSite=Lax";
         router.push("/cliente");
         return;
       }
-      router.push("/empresa");
+
+      if (username === "admin" && password === "admin123") {
+        document.cookie = "techmarket_role=empresa_admin; path=/; SameSite=Lax";
+        router.push("/empresa");
+        return;
+      }
+
+      document.cookie = "techmarket_role=; Max-Age=0; path=/; SameSite=Lax";
+      setFeedback("Credenciales invalidas. Usuario: admin, contrasena: admin123.");
       return;
     }
 
@@ -162,15 +176,19 @@ export default function AuthView({
 
               <div>
                 <label className="auth-label" htmlFor="email">
-                  Correo
+                  {mode === "login" ? "Usuario" : "Correo"}
                 </label>
                 <input
                   className="auth-input"
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="correo@empresa.com"
-                  required={mode === "register"}
+                  id={mode === "login" ? "username" : "email"}
+                  name={mode === "login" ? "username" : "email"}
+                  type={mode === "login" ? "text" : "email"}
+                  value={mode === "login" ? loginUsername : undefined}
+                  onChange={
+                    mode === "login" ? (event) => setLoginUsername(event.target.value) : undefined
+                  }
+                  placeholder={mode === "login" ? "admin" : "correo@empresa.com"}
+                  required
                 />
               </div>
 
@@ -183,8 +201,12 @@ export default function AuthView({
                   id="password"
                   name="password"
                   type="password"
+                  value={mode === "login" ? loginPassword : undefined}
+                  onChange={
+                    mode === "login" ? (event) => setLoginPassword(event.target.value) : undefined
+                  }
                   placeholder="********"
-                  required={mode === "register"}
+                  required
                 />
               </div>
 
