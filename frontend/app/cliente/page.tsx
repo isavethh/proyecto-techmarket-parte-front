@@ -2,9 +2,28 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
+import {
+  CommunityFeedPost,
+  mergeCommunityFeedPosts,
+  readCommunityFeedPosts,
+} from "../lib/communityFeed";
 
 type SearchMode = "normal" | "ia";
-type SidebarView = "busqueda" | "favoritos" | "guardados" | "mensajeria" | "seguimiento";
+type TopView = "feed" | "marketplace" | "seguimiento";
+
+type MiniCard = {
+  name: string;
+  imageClass: string;
+};
+
+type SuggestedAccount = {
+  id: string;
+  name: string;
+  role: string;
+  city: string;
+  followers: string;
+  avatar: string;
+};
 
 type ChatMessage = {
   id: string;
@@ -25,7 +44,19 @@ type ChatThread = {
   messages: ChatMessage[];
 };
 
-const favorites = [
+type FollowingPost = {
+  id: string;
+  author: string;
+  kind: "empresa" | "usuario";
+  followedSince: string;
+  title: string;
+  body: string;
+  tag: string;
+  image?: string;
+  createdAt: string;
+};
+
+const favorites: MiniCard[] = [
   {
     name: "Laptop Zen 13",
     imageClass: "from-cyan-300/40 via-blue-500/30 to-slate-900/60",
@@ -40,7 +71,7 @@ const favorites = [
   },
 ];
 
-const savedItems = [
+const savedItems: MiniCard[] = [
   {
     name: "Kit limpieza PC",
     imageClass: "from-cyan-200/35 via-slate-500/30 to-slate-900/60",
@@ -55,7 +86,7 @@ const savedItems = [
   },
 ];
 
-const feedItems = [
+const baseFeedItems: CommunityFeedPost[] = [
   {
     id: "post-1",
     author: "TechFix Lab",
@@ -65,7 +96,8 @@ const feedItems = [
     body: "Servicio a domicilio con limpieza interna y optimizacion de rendimiento.",
     tag: "Nuevo servicio",
     location: "Bogota",
-    imageClass: "from-cyan-300/40 via-blue-500/30 to-slate-900/60",
+    image: "/productos/laptop-pro-14.jpg",
+    createdAt: "2026-04-17T10:00:00.000Z",
   },
   {
     id: "post-2",
@@ -76,7 +108,8 @@ const feedItems = [
     body: "Stock limitado. Ideal para jornadas largas y setup profesional.",
     tag: "Promocion",
     location: "Medellin",
-    imageClass: "from-emerald-300/35 via-cyan-400/30 to-slate-900/60",
+    image: "/productos/teclado-tkl.jpg",
+    createdAt: "2026-04-17T07:30:00.000Z",
   },
   {
     id: "post-3",
@@ -87,61 +120,8 @@ const feedItems = [
     body: "Mejora la temperatura y evita apagados inesperados.",
     tag: "Recomendado",
     location: "Cali",
-    imageClass: "from-violet-300/35 via-sky-500/30 to-slate-900/60",
-  },
-];
-
-const followedFeedItems = [
-  {
-    id: "follow-1",
-    author: "TechFix Lab",
-    role: "Servicio tecnico",
-    time: "Hace 1 hora",
-    title: "Plan de mantenimiento mensual",
-    body: "Seguimiento preventivo con visitas programadas y reportes.",
-    tag: "Seguimiento",
-    location: "Bogota",
-    imageClass: "from-cyan-300/40 via-blue-500/30 to-slate-900/60",
-  },
-  {
-    id: "follow-2",
-    author: "Zona Gamer Store",
-    role: "Tienda",
-    time: "Hace 4 horas",
-    title: "Nuevas laptops ultralivianas",
-    body: "Modelos 2026 con bateria extendida y envio inmediato.",
-    tag: "Novedad",
-    location: "Medellin",
-    imageClass: "from-emerald-300/35 via-cyan-400/30 to-slate-900/60",
-  },
-];
-
-const searchHistory = [
-  {
-    term: "servicio tecnico",
-    context: "Busqueda reciente",
-  },
-  {
-    term: "laptop",
-    context: "Busqueda reciente",
-  },
-];
-
-const normalResults = [
-  {
-    title: "Laptop Pro 14",
-    category: "Equipos",
-    info: "Entrega 24-48h · 4.8",
-  },
-  {
-    title: "Teclado mecanico TKL",
-    category: "Accesorios",
-    info: "Entrega 24h · 4.7",
-  },
-  {
-    title: "Servicio tecnico express",
-    category: "Servicios",
-    info: "Disponible hoy · 4.9",
+    image: "/productos/kit-limpieza-pc.jpg",
+    createdAt: "2026-04-16T17:30:00.000Z",
   },
 ];
 
@@ -168,6 +148,42 @@ const aiSuggestions = [
     imageClass: "from-violet-300/35 via-sky-500/30 to-slate-900/60",
   },
 ];
+
+const suggestedAccounts: SuggestedAccount[] = [
+  {
+    id: "acc-1",
+    name: "TecnoCentro Andino",
+    role: "Tienda de equipos",
+    city: "Bogota",
+    followers: "8.2k",
+    avatar: "TA",
+  },
+  {
+    id: "acc-2",
+    name: "FixCloud Soporte",
+    role: "Servicio tecnico",
+    city: "Cali",
+    followers: "3.6k",
+    avatar: "FC",
+  },
+  {
+    id: "acc-3",
+    name: "RedLink Pro",
+    role: "Instalaciones y redes",
+    city: "Medellin",
+    followers: "1.9k",
+    avatar: "RL",
+  },
+];
+
+const quickActions = [
+  { label: "Buscar servicios", href: "/cliente/servicios/servicio-tecnico-laptop-domicilio" },
+  { label: "Ver favoritos", href: "#favoritos" },
+  { label: "Ver guardados", href: "#guardados" },
+  { label: "Explorar empresas", href: "/empresa/perfil" },
+];
+
+const stories = ["TecnoCentro", "FixCloud", "RedLink", "Zona Gamer", "ElectroCare", "BuildStation"];
 
 const clientChatThreads: ChatThread[] = [
   {
@@ -203,13 +219,96 @@ const clientChatThreads: ChatThread[] = [
   },
 ];
 
+const followingPosts: FollowingPost[] = [
+  {
+    id: "follow-1",
+    author: "TechFix Lab",
+    kind: "empresa",
+    followedSince: "Sigues esta cuenta desde hace 3 meses",
+    title: "Promo especial para mantenimiento preventivo",
+    body: "Esta semana tenemos descuento por combo de limpieza + pasta termica.",
+    tag: "Promocion",
+    image: "/productos/kit-limpieza-pc.jpg",
+    createdAt: "2026-04-17T09:00:00.000Z",
+  },
+  {
+    id: "follow-2",
+    author: "Zona Gamer Store",
+    kind: "empresa",
+    followedSince: "Sigues esta cuenta desde hace 1 mes",
+    title: "Nuevo stock de laptops para trabajo y gaming",
+    body: "Llegaron modelos con SSD 1TB y 16GB RAM. Entrega inmediata.",
+    tag: "Producto",
+    image: "/productos/laptop-pro-14.jpg",
+    createdAt: "2026-04-17T07:10:00.000Z",
+  },
+  {
+    id: "follow-user-1",
+    author: "Andres Cliente",
+    kind: "usuario",
+    followedSince: "Sigues este perfil desde hace 2 semanas",
+    title: "alguien sabe que deberia comprarme? A o B",
+    body: "Estoy entre una laptop ultraligera (A) y un setup de escritorio (B). Que recomiendan para trabajar y jugar?",
+    tag: "Consulta",
+    createdAt: "2026-04-17T11:30:00.000Z",
+  },
+];
+
+const formatRelativeTime = (isoDate: string): string => {
+  const parsed = Date.parse(isoDate);
+
+  if (Number.isNaN(parsed)) {
+    return "Reciente";
+  }
+
+  const deltaMs = Date.now() - parsed;
+  const deltaMinutes = Math.max(1, Math.floor(deltaMs / 60000));
+
+  if (deltaMinutes < 60) {
+    return `Hace ${deltaMinutes} min`;
+  }
+
+  const deltaHours = Math.floor(deltaMinutes / 60);
+  if (deltaHours < 24) {
+    return `Hace ${deltaHours} h`;
+  }
+
+  const deltaDays = Math.floor(deltaHours / 24);
+  return `Hace ${deltaDays} d`;
+};
+
+const isMarketplaceSaleItem = (item: CommunityFeedPost): boolean => {
+  const normalizedTag = item.tag.toLowerCase();
+  const normalizedText = `${item.title} ${item.body}`.toLowerCase();
+
+  if (normalizedTag.includes("interaccion") || normalizedTag.includes("publicacion")) {
+    return false;
+  }
+
+  return (
+    normalizedTag.includes("producto") ||
+    normalizedTag.includes("servicio") ||
+    normalizedTag.includes("oferta") ||
+    normalizedTag.includes("promoc") ||
+    normalizedTag.includes("venta") ||
+    normalizedText.includes("servicio") ||
+    normalizedText.includes("producto") ||
+    normalizedText.includes("descuento") ||
+    normalizedText.includes("precio") ||
+    normalizedText.includes("stock") ||
+    normalizedText.includes("combo") ||
+    normalizedText.includes("pack")
+  );
+};
+
 export default function ClientePage() {
+  const [topView, setTopView] = useState<TopView>("feed");
   const [searchMode, setSearchMode] = useState<SearchMode>("normal");
   const [query, setQuery] = useState<string>("");
   const [aiQuery, setAiQuery] = useState<string>("");
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [aiResults, setAiResults] = useState<typeof aiSuggestions>([]);
-  const [sidebarView, setSidebarView] = useState<SidebarView>("busqueda");
+  const [companyFeedPosts] = useState<CommunityFeedPost[]>(() => readCommunityFeedPosts());
   const [activeChatId, setActiveChatId] = useState(clientChatThreads[0].id);
   const [draftMessage, setDraftMessage] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(true);
@@ -221,6 +320,55 @@ export default function ClientePage() {
     if (!aiResults.length) return "";
     return `Entendi tu necesidad: ${aiQuery.trim() || "consulta tecnica"}.`;
   }, [aiQuery, aiResults.length]);
+
+  const fullFeed = useMemo(
+    () => mergeCommunityFeedPosts([...baseFeedItems, ...companyFeedPosts]),
+    [companyFeedPosts],
+  );
+
+  const filteredFeed = useMemo(() => {
+    const cleanQuery = query.trim().toLowerCase();
+
+    if (!cleanQuery) {
+      return fullFeed;
+    }
+
+    return fullFeed.filter((item) => {
+      const bucket = `${item.author} ${item.title} ${item.body} ${item.tag} ${item.location}`.toLowerCase();
+      return bucket.includes(cleanQuery);
+    });
+  }, [fullFeed, query]);
+
+  const marketplaceItems = useMemo(
+    () => fullFeed.filter((item) => isMarketplaceSaleItem(item)),
+    [fullFeed],
+  );
+
+  const filteredMarketplaceItems = useMemo(() => {
+    const cleanQuery = query.trim().toLowerCase();
+
+    if (!cleanQuery) {
+      return marketplaceItems;
+    }
+
+    return marketplaceItems.filter((item) => {
+      const bucket = `${item.author} ${item.title} ${item.body} ${item.tag} ${item.location}`.toLowerCase();
+      return bucket.includes(cleanQuery);
+    });
+  }, [marketplaceItems, query]);
+
+  const filteredFollowingPosts = useMemo(() => {
+    const cleanQuery = query.trim().toLowerCase();
+
+    if (!cleanQuery) {
+      return followingPosts;
+    }
+
+    return followingPosts.filter((item) => {
+      const bucket = `${item.author} ${item.title} ${item.body} ${item.tag}`.toLowerCase();
+      return bucket.includes(cleanQuery);
+    });
+  }, [query]);
 
   const handleAiSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -238,435 +386,455 @@ export default function ClientePage() {
   };
 
   return (
-    <div className="flex-1 pb-12">
-      <header className="tech-top-nav">
-        <div className="flex items-center justify-between px-6 py-4">
+    <div className="flex-1 pb-10">
+      <header className="tech-top-nav sticky top-0 z-30">
+        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
           <Link href="/" className="font-semibold text-cyan-100/90">
             TechMarket
           </Link>
+          <div className="hidden flex-1 max-w-xl md:block">
+            <form onSubmit={handleNormalSearch}>
+              <input
+                className="auth-input"
+                placeholder="Buscar en TechMarket..."
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </form>
+          </div>
           <span className="tech-chip">Cliente activo</span>
         </div>
       </header>
 
-      <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_1fr]">
-        <aside className="tech-card h-fit">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-cyan-50">Mi espacio</p>
-            <span className="tech-chip">Sidebar</span>
-          </div>
-          <div className="mt-5 grid gap-2">
-            <button
-              type="button"
-              className={`auth-action ${sidebarView === "busqueda" ? "active" : ""}`}
-              onClick={() => setSidebarView("busqueda")}
-            >
-              Busca lo que necesitas
-            </button>
-            <button
-              type="button"
-              className={`auth-action ${sidebarView === "mensajeria" ? "active" : ""}`}
-              onClick={() => setSidebarView("mensajeria")}
-            >
-              Mensajeria
-            </button>
-            <button
-              type="button"
-              className={`auth-action ${sidebarView === "seguimiento" ? "active" : ""}`}
-              onClick={() => setSidebarView("seguimiento")}
-            >
-              Seguimiento
-            </button>
-            <button
-              type="button"
-              className={`auth-action ${sidebarView === "favoritos" ? "active" : ""}`}
-              onClick={() => setSidebarView("favoritos")}
-            >
-              Favoritos
-            </button>
-            <button
-              type="button"
-              className={`auth-action ${sidebarView === "guardados" ? "active" : ""}`}
-              onClick={() => setSidebarView("guardados")}
-            >
-              Guardados
-            </button>
-          </div>
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[260px_minmax(0,1fr)_300px] lg:px-6">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+          <section className="tech-card">
+            <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
+            <p className="mt-2 text-xs text-cyan-100/75">Acciones rapidas para moverte por la comunidad.</p>
+            <div className="mt-4 grid gap-2">
+              {quickActions.map((action) => (
+                <Link
+                  key={action.label}
+                  href={action.href}
+                  className="auth-action"
+                >
+                  {action.label}
+                </Link>
+              ))}
+            </div>
+          </section>
 
+          <section id="favoritos" className="tech-card">
+            <p className="text-sm font-semibold text-cyan-50">Favoritos</p>
+            <div className="mt-3 grid gap-3">
+              {favorites.map((item) => (
+                <div key={item.name} className="rounded-2xl border border-cyan-100/15 p-3">
+                  <div
+                    className={`h-16 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${item.imageClass}`}
+                  />
+                  <p className="mt-2 text-xs text-cyan-100/85">{item.name}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section id="guardados" className="tech-card">
+            <p className="text-sm font-semibold text-cyan-50">Guardados</p>
+            <div className="mt-3 grid gap-3">
+              {savedItems.map((item) => (
+                <div key={item.name} className="rounded-2xl border border-cyan-100/15 p-3">
+                  <div
+                    className={`h-16 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${item.imageClass}`}
+                  />
+                  <p className="mt-2 text-xs text-cyan-100/85">{item.name}</p>
+                </div>
+              ))}
+            </div>
+          </section>
         </aside>
 
-        <section className="space-y-6">
-          {sidebarView === "busqueda" && (
-            <>
-              <div className="tech-hero p-6 md:p-8">
-                <p className="tech-mono text-xs text-cyan-200/75">ROL_ACTIVO=CLIENTE</p>
-                <h1 className="mt-2 text-3xl font-bold text-cyan-50 md:text-4xl">
-                  Busqueda inteligente para tu proxima compra o servicio.
-                </h1>
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-cyan-100/80 md:text-base">
-                  Elige el tipo de busqueda que necesitas: normal para catalogos o
-                  IA para recomendaciones semanticas.
-                </p>
+        <section className="space-y-4">
+          <section className="tech-card">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD CLIENTE</p>
+                <h1 className="mt-2 text-xl font-semibold text-cyan-50 md:text-2xl">Feed y Marketplace</h1>
               </div>
+              <div className="auth-switch">
+                <button
+                  type="button"
+                  className={topView === "feed" ? "active" : ""}
+                  onClick={() => setTopView("feed")}
+                >
+                  Feed
+                </button>
+                <button
+                  type="button"
+                  className={topView === "marketplace" ? "active" : ""}
+                  onClick={() => setTopView("marketplace")}
+                >
+                  Marketplace
+                </button>
+                <button
+                  type="button"
+                  className={topView === "seguimiento" ? "active" : ""}
+                  onClick={() => setTopView("seguimiento")}
+                >
+                  Seguimiento
+                </button>
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-cyan-100/75">
+              Marketplace muestra ventas y Seguimiento muestra publicaciones de cuentas que sigues.
+            </p>
+          </section>
 
-              <div className="tech-card">
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    className={`tech-button ${
-                      searchMode === "normal" ? "tech-button-primary" : "tech-button-secondary"
-                    }`}
-                    onClick={() => setSearchMode("normal")}
-                  >
-                    Busqueda normal
-                  </button>
-                  <button
-                    type="button"
-                    className={`tech-button ${
-                      searchMode === "ia" ? "tech-button-primary" : "tech-button-secondary"
-                    }`}
-                    onClick={() => setSearchMode("ia")}
-                  >
-                    Busqueda con IA
+          {topView === "feed" && (
+            <>
+          <section className="tech-card overflow-hidden">
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {stories.map((story) => (
+                <button
+                  key={story}
+                  type="button"
+                  className="flex min-w-[95px] shrink-0 flex-col items-center gap-2 rounded-2xl border border-cyan-100/15 bg-slate-950/30 px-3 py-3 text-center text-xs text-cyan-100/85"
+                >
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full border border-cyan-200/40 bg-gradient-to-br from-cyan-300 to-blue-600 font-bold text-slate-950">
+                    {story.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span>{story}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="tech-card">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className={`tech-button ${
+                  searchMode === "normal" ? "tech-button-primary" : "tech-button-secondary"
+                }`}
+                onClick={() => setSearchMode("normal")}
+              >
+                Busqueda normal
+              </button>
+              <button
+                type="button"
+                className={`tech-button ${
+                  searchMode === "ia" ? "tech-button-primary" : "tech-button-secondary"
+                }`}
+                onClick={() => setSearchMode("ia")}
+              >
+                Busqueda con IA
+              </button>
+            </div>
+
+            {searchMode === "normal" && (
+              <form className="mt-4 space-y-3" onSubmit={handleNormalSearch}>
+                <input
+                  className="auth-input"
+                  placeholder="Busca productos, tiendas o servicios..."
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+                <button type="submit" className="tech-button tech-button-primary">
+                  Buscar en el feed
+                </button>
+              </form>
+            )}
+
+            {searchMode === "ia" && (
+              <form className="mt-4 space-y-4" onSubmit={handleAiSearch}>
+                <div className="flex flex-col gap-3 md:flex-row">
+                  <input
+                    className="auth-input"
+                    placeholder="Ej: mi laptop funciona mal y se recalienta"
+                    value={aiQuery}
+                    onChange={(event) => setAiQuery(event.target.value)}
+                  />
+                  <button type="submit" className="tech-button tech-button-primary">
+                    Buscar con IA
                   </button>
                 </div>
 
-                {searchMode === "normal" && (
-                  <form className="mt-5 space-y-4" onSubmit={handleNormalSearch}>
-                    <div className="flex flex-col gap-3 md:flex-row">
-                      <input
-                        className="auth-input"
-                        placeholder="Busca productos, tiendas o servicios..."
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                      />
-                      <button type="submit" className="tech-button tech-button-primary">
-                        Buscar
-                      </button>
-                    </div>
-                    <div className="rounded-2xl border border-cyan-100/15 bg-white/5 p-4">
-                      <p className="tech-mono text-xs text-cyan-200/70">Historial reciente</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {searchHistory.map((item) => (
-                          <button
-                            key={item.term}
-                            type="button"
-                            className="rounded-full border border-cyan-100/15 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100/90"
-                          >
-                            {item.term}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </form>
-                )}
+                {aiSummary && <p className="text-sm text-cyan-100/80">{aiSummary}</p>}
 
-                {searchMode === "ia" && (
-                  <form className="mt-5 space-y-4" onSubmit={handleAiSearch}>
-                    <div className="flex flex-col gap-3 md:flex-row">
-                      <input
-                        className="auth-input"
-                        placeholder="Ej: mi laptop funciona mal y se recalienta"
-                        value={aiQuery}
-                        onChange={(event) => setAiQuery(event.target.value)}
-                      />
-                      <button type="submit" className="tech-button tech-button-primary">
-                        Buscar con IA
-                      </button>
-                    </div>
-                    <div className="rounded-2xl border border-cyan-100/15 bg-white/5 p-4">
-                      <p className="tech-mono text-xs text-cyan-200/70">Historial reciente</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {searchHistory.map((item) => (
-                          <button
-                            key={item.term}
-                            type="button"
-                            className="rounded-full border border-cyan-100/15 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100/90"
-                          >
-                            {item.term}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {aiSummary && (
-                      <p className="text-sm text-cyan-100/80">{aiSummary}</p>
-                    )}
-                    <div className="grid gap-3 md:grid-cols-3">
-                      {aiResults.map((result) => (
-                        <article
-                          key={result.title}
-                          className="rounded-2xl border border-cyan-100/15 p-4"
-                        >
-                          <div
-                            className={`h-28 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${result.imageClass}`}
-                          />
-                          <p className="mt-4 tech-mono text-xs text-cyan-200/75">
-                            Servicio tecnico
-                          </p>
-                          <h3 className="mt-2 text-lg font-semibold text-cyan-50">
-                            {result.title}
-                          </h3>
-                          <p className="mt-3 text-sm text-cyan-100/80">{result.match}</p>
-                          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                            <span className="text-sm text-cyan-200/85">
-                              Reputacion {result.rating}
-                            </span>
-                            <Link
-                              className="tech-button tech-button-secondary"
-                              href={`/cliente/servicios/${result.slug}`}
-                            >
-                              Ver resenas
-                            </Link>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </form>
-                )}
-              </div>
-
-              <div className="tech-card">
-                <h2 className="text-2xl font-semibold text-cyan-50">Feed</h2>
-                <p className="mt-3 text-sm text-cyan-100/80">
-                  Novedades y actividad relevante para ti.
-                </p>
-                <div className="mt-4 space-y-4">
-                  {feedItems.map((item) => (
-                    <article
-                      key={item.id}
-                      className="rounded-2xl border border-cyan-100/15 bg-background-soft/40 p-4"
-                    >
+                <div className="grid gap-3 md:grid-cols-3">
+                  {aiResults.map((result) => (
+                    <article key={result.title} className="rounded-2xl border border-cyan-100/15 p-4">
                       <div
-                        className={`h-36 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${item.imageClass}`}
+                        className={`h-24 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${result.imageClass}`}
                       />
-                      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-cyan-50">{item.author}</p>
-                          <p className="text-xs text-cyan-200/70">
-                            {item.role} · {item.location}
-                          </p>
-                        </div>
-                        <span className="rounded-full border border-cyan-100/20 px-3 py-1 text-xs text-cyan-100/80">
-                          {item.tag}
-                        </span>
-                      </div>
-                      <h3 className="mt-3 text-lg font-semibold text-cyan-50">
-                        {item.title}
-                      </h3>
-                      <p className="mt-2 text-sm text-cyan-100/80">{item.body}</p>
-                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-cyan-200/70">
-                        <span>{item.time}</span>
-                        <button type="button" className="auth-link">
-                          Ver publicacion
-                        </button>
+                      <p className="mt-3 text-xs text-cyan-200/75">Servicio tecnico</p>
+                      <h3 className="mt-2 text-base font-semibold text-cyan-50">{result.title}</h3>
+                      <p className="mt-2 text-sm text-cyan-100/80">{result.match}</p>
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <span className="text-xs text-cyan-200/85">Reputacion {result.rating}</span>
+                        <Link
+                          className="tech-button tech-button-secondary"
+                          href={`/cliente/servicios/${result.slug}`}
+                        >
+                          Ver resenas
+                        </Link>
                       </div>
                     </article>
                   ))}
                 </div>
-              </div>
+              </form>
+            )}
+          </section>
 
+          <section className="space-y-4">
+            {filteredFeed.length === 0 && (
+              <div className="tech-card">
+                <p className="text-sm text-cyan-100/80">No encontramos publicaciones para esa busqueda.</p>
+              </div>
+            )}
+
+            {filteredFeed.map((item) => (
+              <article
+                key={item.id}
+                className="rounded-3xl border border-cyan-100/15 bg-[linear-gradient(165deg,rgba(16,41,72,0.92),rgba(7,24,44,0.96))] p-4 shadow-xl shadow-slate-950/25"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                      {item.author.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-cyan-50">{item.author}</p>
+                      <p className="text-xs text-cyan-200/70">
+                        {item.role} · {item.location} · {formatRelativeTime(item.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="rounded-full border border-cyan-100/20 bg-cyan-100/10 px-3 py-1 text-xs text-cyan-100/85">
+                    {item.tag}
+                  </span>
+                </div>
+
+                <h2 className="mt-4 text-lg font-semibold text-cyan-50">{item.title}</h2>
+                <p className="mt-2 text-sm leading-7 text-cyan-100/85">{item.body}</p>
+
+                {item.image ? (
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-cyan-100/10">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="h-64 w-full object-cover md:h-80"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : null}
+
+                <div className="mt-4 border-t border-cyan-100/10 pt-3 text-xs text-cyan-200/75">
+                  {item.time || formatRelativeTime(item.createdAt)}
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                  <button type="button" className="rounded-xl border border-cyan-100/10 bg-cyan-300/10 px-3 py-2 text-cyan-100/90">
+                    Me gusta
+                  </button>
+                  <button type="button" className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-cyan-100/90">
+                    Comentar
+                  </button>
+                  <button type="button" className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-cyan-100/90">
+                    Compartir
+                  </button>
+                </div>
+              </article>
+            ))}
+          </section>
             </>
           )}
 
-          {sidebarView === "mensajeria" && (
-            <section className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/30">
-              <div className="p-6 md:p-8">
-                <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-                  <aside className="rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="tech-mono text-xs text-cyan-200/75">MENSAJERIA</p>
-                        <h2 className="mt-2 text-2xl font-bold text-white">Chats activos</h2>
-                      </div>
-                      <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
-                        {clientChatThreads.length}
-                      </span>
-                    </div>
-
-                    <div className="mt-5 space-y-3">
-                      {clientChatThreads.map((chat) => {
-                        const isActive = chat.id === activeChatId;
-
-                        return (
-                          <button
-                            key={chat.id}
-                            type="button"
-                            onClick={() => setActiveChatId(chat.id)}
-                            className={`w-full rounded-3xl border p-4 text-left transition ${
-                              isActive
-                                ? "border-cyan-300/50 bg-cyan-300/12"
-                                : "border-cyan-100/10 bg-white/5 hover:bg-cyan-100/8"
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                                {chat.avatar}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-3">
-                                  <p className="font-semibold text-white">{chat.company}</p>
-                                  <span className="text-xs text-cyan-100/60">{chat.time}</span>
-                                </div>
-                                <p className="text-xs text-cyan-100/70">{chat.trigger}</p>
-                                <p className="mt-1 truncate text-sm text-cyan-100/80">{chat.lastMessage}</p>
-                              </div>
-                            </div>
-                            {chat.unread ? (
-                              <div className="mt-3 flex justify-end">
-                                <span className="rounded-full bg-cyan-300 px-2.5 py-1 text-xs font-semibold text-slate-950">
-                                  {chat.unread}
-                                </span>
-                              </div>
-                            ) : null}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </aside>
-
-                  <section className="flex min-h-[520px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-4 md:p-5">
-                    <div className="flex items-center justify-between border-b border-cyan-100/10 pb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                          {activeChat.avatar}
-                        </div>
-                        <div>
-                          <p className="text-lg font-semibold text-white">{activeChat.company}</p>
-                          <p className="text-sm text-cyan-100/70">{activeChat.name}</p>
-                        </div>
-                      </div>
-                      <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
-                        En linea
-                      </span>
-                    </div>
-
-                    <div className="mt-4 flex-1 space-y-3 overflow-y-auto rounded-3xl bg-slate-950/30 p-4 md:p-5">
-                      {activeChat.messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${message.author === "cliente" ? "justify-end" : "justify-start"}`}
-                        >
-                          <div
-                            className={`max-w-[78%] rounded-3xl px-4 py-3 text-sm leading-6 ${
-                              message.author === "cliente"
-                                ? "bg-cyan-300/15 text-cyan-50"
-                                : "bg-white/5 text-cyan-100/90"
-                            }`}
-                          >
-                            <p>{message.text}</p>
-                            <p className="mt-2 text-right text-xs text-cyan-100/55">{message.time}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 shrink-0 rounded-3xl border border-cyan-100/10 bg-white/5 p-4">
-                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Responder</p>
-                      <div className="mt-3 flex flex-col gap-3 md:flex-row">
-                        <input
-                          value={draftMessage}
-                          onChange={(event) => setDraftMessage(event.target.value)}
-                          placeholder="Escribe un mensaje..."
-                          className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                        />
-                        <button className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-5 py-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
-                          Enviar
-                        </button>
-                      </div>
-                    </div>
-                  </section>
+          {topView === "marketplace" && (
+            <section className="space-y-4">
+              <section className="tech-card">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="tech-mono text-xs text-cyan-200/75">MARKETPLACE</p>
+                    <h2 className="mt-2 text-xl font-semibold text-cyan-50 md:text-2xl">Solo ventas de empresas</h2>
+                  </div>
+                  <p className="text-xs text-cyan-100/70">
+                    {filteredMarketplaceItems.length} resultados de venta activos
+                  </p>
                 </div>
-              </div>
+              </section>
+
+              {filteredMarketplaceItems.length === 0 && (
+                <section className="tech-card">
+                  <p className="text-sm text-cyan-100/80">
+                    No hay ventas que coincidan con tu busqueda. Prueba con otro termino.
+                  </p>
+                </section>
+              )}
+
+              {filteredMarketplaceItems.length > 0 && (
+                <section className="grid gap-4 md:grid-cols-2">
+                  {filteredMarketplaceItems.map((item) => (
+                    <article
+                      key={`market-${item.id}`}
+                      className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(155deg,rgba(17,45,80,0.95),rgba(7,24,44,0.96))] shadow-xl shadow-slate-950/25"
+                    >
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="h-48 w-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : null}
+                      <div className="p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-cyan-50">{item.author}</p>
+                          <span className="rounded-full border border-cyan-100/20 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100/90">
+                            {item.tag}
+                          </span>
+                        </div>
+                        <h3 className="mt-3 text-lg font-semibold text-white">{item.title}</h3>
+                        <p className="mt-2 text-sm text-cyan-100/80">{item.body}</p>
+                        <p className="mt-3 text-xs text-cyan-200/75">
+                          {item.location} · {formatRelativeTime(item.createdAt)}
+                        </p>
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            className="rounded-xl border border-cyan-100/10 bg-cyan-300/15 px-3 py-2 text-sm font-semibold text-cyan-50"
+                          >
+                            Ver detalle
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-sm font-semibold text-cyan-100/90"
+                          >
+                            Contactar
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </section>
+              )}
             </section>
           )}
 
-          {sidebarView === "seguimiento" && (
-            <div className="tech-card">
-              <h2 className="text-2xl font-semibold text-cyan-50">Seguimiento</h2>
-              <p className="mt-3 text-sm text-cyan-100/80">
-                Publicaciones de empresas y servicios tecnicos que sigues.
-              </p>
-              <div className="mt-4 space-y-4">
-                {followedFeedItems.map((item) => (
-                  <article
-                    key={item.id}
-                    className="rounded-2xl border border-cyan-100/15 bg-background-soft/40 p-4"
-                  >
-                    <div
-                      className={`h-36 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${item.imageClass}`}
-                    />
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-cyan-50">{item.author}</p>
-                        <p className="text-xs text-cyan-200/70">
-                          {item.role} · {item.location}
-                        </p>
-                      </div>
-                      <span className="rounded-full border border-cyan-100/20 px-3 py-1 text-xs text-cyan-100/80">
-                        {item.tag}
-                      </span>
+          {topView === "seguimiento" && (
+            <section className="space-y-4">
+              <section className="tech-card">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="tech-mono text-xs text-cyan-200/75">SEGUIMIENTO</p>
+                    <h2 className="mt-2 text-xl font-semibold text-cyan-50 md:text-2xl">
+                      Publicaciones de cuentas que sigues
+                    </h2>
+                  </div>
+                  <p className="text-xs text-cyan-100/70">
+                    {filteredFollowingPosts.length} publicaciones en seguimiento
+                  </p>
+                </div>
+              </section>
+
+              {filteredFollowingPosts.length === 0 && (
+                <section className="tech-card">
+                  <p className="text-sm text-cyan-100/80">
+                    No encontramos publicaciones de seguimiento con ese termino.
+                  </p>
+                </section>
+              )}
+
+              {filteredFollowingPosts.map((post) => (
+                <article
+                  key={post.id}
+                  className="rounded-3xl border border-cyan-100/15 bg-[linear-gradient(165deg,rgba(16,41,72,0.92),rgba(7,24,44,0.96))] p-4 shadow-xl shadow-slate-950/25"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-cyan-50">{post.author}</p>
+                      <p className="text-xs text-cyan-200/70">
+                        {post.kind === "empresa" ? "Cuenta empresa" : "Usuario"} · {post.followedSince}
+                      </p>
                     </div>
-                    <h3 className="mt-3 text-lg font-semibold text-cyan-50">{item.title}</h3>
-                    <p className="mt-2 text-sm text-cyan-100/80">{item.body}</p>
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-cyan-200/70">
-                      <span>{item.time}</span>
-                      <button type="button" className="auth-link">
-                        Ver publicacion
+                    <span className="rounded-full border border-cyan-100/20 bg-cyan-100/10 px-3 py-1 text-xs text-cyan-100/85">
+                      {post.tag}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-4 text-lg font-semibold text-cyan-50">{post.title}</h3>
+                  <p className="mt-2 text-sm leading-7 text-cyan-100/85">{post.body}</p>
+
+                  {post.image ? (
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-cyan-100/10">
+                      <img
+                        src={post.image}
+                        alt={post.title}
+                        className="h-56 w-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className="mt-4 flex items-center justify-between border-t border-cyan-100/10 pt-3 text-xs text-cyan-200/75">
+                    <span>{formatRelativeTime(post.createdAt)}</span>
+                    <div className="flex gap-2">
+                      <button type="button" className="rounded-xl border border-cyan-100/10 bg-cyan-300/10 px-3 py-2 text-cyan-100/90">
+                        Me interesa
+                      </button>
+                      <button type="button" className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-cyan-100/90">
+                        Comentar
                       </button>
                     </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {sidebarView === "favoritos" && (
-            <div className="tech-card">
-              <h2 className="text-2xl font-semibold text-cyan-50">Tus favoritos</h2>
-              <p className="mt-3 text-sm text-cyan-100/80">
-                Accede rapido a productos y servicios que marcaste.
-              </p>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {favorites.map((item) => (
-                  <div key={item.name} className="rounded-2xl border border-cyan-100/15 p-4">
-                    <div
-                      className={`h-24 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${item.imageClass}`}
-                    />
-                    <p className="mt-3 text-sm text-cyan-100/85">{item.name}</p>
                   </div>
-                ))}
-              </div>
-            </div>
+                </article>
+              ))}
+            </section>
           )}
-
-          {sidebarView === "guardados" && (
-            <div className="tech-card">
-              <h2 className="text-2xl font-semibold text-cyan-50">Guardados</h2>
-              <p className="mt-3 text-sm text-cyan-100/80">
-                Listado de productos o servicios que guardaste para despues.
-              </p>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {savedItems.map((item) => (
-                  <div key={item.name} className="rounded-2xl border border-cyan-100/15 p-4">
-                    <div
-                      className={`h-24 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${item.imageClass}`}
-                    />
-                    <p className="mt-3 text-sm text-cyan-100/85">{item.name}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
         </section>
+
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+          <section className="tech-card">
+            <p className="text-sm font-semibold text-cyan-50">Cuentas recomendadas</p>
+            <p className="mt-2 text-xs text-cyan-100/75">Empresas y especialistas con buena reputacion en la comunidad.</p>
+            <div className="mt-4 space-y-3">
+              {suggestedAccounts.map((account) => (
+                <article key={account.id} className="rounded-2xl border border-cyan-100/15 bg-slate-950/35 p-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                      {account.avatar}
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-cyan-50">{account.name}</p>
+                      <p className="text-xs text-cyan-200/75">{account.role}</p>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-cyan-100/70">
+                    {account.city} · {account.followers} seguidores
+                  </p>
+                  <button type="button" className="mt-3 w-full rounded-xl border border-cyan-200/20 bg-cyan-400/15 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
+                    Seguir
+                  </button>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="tech-card">
+            <p className="text-sm font-semibold text-cyan-50">Actividad del ecosistema</p>
+            <ul className="mt-3 space-y-2 text-xs text-cyan-100/80">
+              <li>Nuevas publicaciones de empresas cada dia.</li>
+              <li>Mayor interaccion en soporte remoto y diagnostico.</li>
+              <li>Embajadores activos recomendando negocios locales.</li>
+            </ul>
+          </section>
+        </aside>
       </main>
 
       {isThinking && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 backdrop-blur">
           <div className="rounded-3xl border border-cyan-100/20 bg-background-soft/90 px-8 py-6 text-center">
             <p className="tech-mono text-xs text-cyan-200/80">IA ANALIZANDO</p>
-            <p className="mt-3 text-lg font-semibold text-cyan-50">
-              Busqueda semantica en progreso...
-            </p>
+            <p className="mt-3 text-lg font-semibold text-cyan-50">Busqueda semantica en progreso...</p>
             <p className="mt-2 text-sm text-cyan-100/80">Estamos buscando servicios tecnicos.</p>
           </div>
         </div>
@@ -694,10 +862,34 @@ export default function ClientePage() {
               </button>
             </div>
 
+            <div className="border-b border-cyan-100/10 px-3 py-2">
+              <div className="flex gap-2 overflow-x-auto">
+                {clientChatThreads.map((chat) => {
+                  const isActive = chat.id === activeChatId;
+
+                  return (
+                    <button
+                      key={chat.id}
+                      type="button"
+                      onClick={() => setActiveChatId(chat.id)}
+                      className={`rounded-full border px-3 py-1 text-xs ${
+                        isActive
+                          ? "border-cyan-300/60 bg-cyan-300/15 text-cyan-50"
+                          : "border-cyan-100/15 bg-white/5 text-cyan-100/80"
+                      }`}
+                    >
+                      {chat.company}
+                      {chat.unread ? ` · ${chat.unread}` : ""}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="max-h-[280px] space-y-3 overflow-y-auto px-4 py-3">
               {activeChat.messages.map((message) => (
                 <div
-                  key={message.id}
+                  key={`${activeChat.id}-${message.id}`}
                   className={`flex ${message.author === "cliente" ? "justify-end" : "justify-start"}`}
                 >
                   <div
@@ -722,7 +914,10 @@ export default function ClientePage() {
                   placeholder="Escribe un mensaje..."
                   className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-3 py-2 text-xs text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                 />
-                <button className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
+                <button
+                  type="button"
+                  className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                >
                   Enviar
                 </button>
               </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { CommunityFeedPost, upsertCommunityFeedPosts } from "../../lib/communityFeed";
 
 type MainFilter = "Productos disponibles" | "Servicios" | "Ofertas y promociones" | "Publicaciones de interacción";
 type InteractionFilter = "Encuestas" | "Publicaciones" | "Lista de usuarios que interactúan";
@@ -31,6 +32,26 @@ const company = {
   name: "TecnoCentro Andino",
   logo: "TC",
 };
+
+const buildCommunityFeedPost = (
+  id: string,
+  title: string,
+  message: string,
+  image: string | undefined,
+  tag: string,
+  createdAt: string,
+): CommunityFeedPost => ({
+  id,
+  author: company.name,
+  role: "Empresa verificada",
+  time: "Reciente",
+  title,
+  body: message,
+  tag,
+  location: "Comunidad TechMarket",
+  image,
+  createdAt,
+});
 
 type ProductCard = {
   id: string;
@@ -334,6 +355,21 @@ export default function PublicacionesPage() {
   const createFormTitle = isServicesView ? "Nuevo servicio" : "Nueva publicacion";
   const submitButtonLabel = isServicesView ? "Publicar servicio" : "Publicar";
 
+  useEffect(() => {
+    const seededPosts = posts.map((post, index) =>
+      buildCommunityFeedPost(
+        `seed-company-${post.id}`,
+        post.title,
+        post.message,
+        post.image,
+        "Publicacion",
+        new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString(),
+      ),
+    );
+
+    upsertCommunityFeedPosts(seededPosts);
+  }, []);
+
   const handleMainFilterChange = (filter: MainFilter) => {
     setActiveFilter(filter);
 
@@ -391,6 +427,7 @@ export default function PublicacionesPage() {
     }
 
     const newId = `pub-${Date.now()}`;
+    let communityTag = "Publicacion";
 
     if (formData.targetFilter === "Productos disponibles") {
       setProductItems((current) => [
@@ -405,6 +442,7 @@ export default function PublicacionesPage() {
         ...current,
       ]);
       setActiveFilter("Productos disponibles");
+      communityTag = "Producto";
     }
 
     if (formData.targetFilter === "Servicios") {
@@ -419,6 +457,7 @@ export default function PublicacionesPage() {
         ...current,
       ]);
       setActiveFilter("Servicios");
+      communityTag = "Servicio";
     }
 
     if (formData.targetFilter === "Ofertas y promociones") {
@@ -434,6 +473,7 @@ export default function PublicacionesPage() {
         ...current,
       ]);
       setActiveFilter("Ofertas y promociones");
+      communityTag = "Oferta";
     }
 
     if (formData.targetFilter === "Publicaciones de interacción") {
@@ -449,7 +489,12 @@ export default function PublicacionesPage() {
       ]);
       setActiveFilter("Publicaciones de interacción");
       setActiveInteractionFilter("Publicaciones");
+      communityTag = "Interaccion";
     }
+
+    upsertCommunityFeedPosts([
+      buildCommunityFeedPost(newId, title, description, image, communityTag, new Date().toISOString()),
+    ]);
 
     setFormData({
       title: "",
