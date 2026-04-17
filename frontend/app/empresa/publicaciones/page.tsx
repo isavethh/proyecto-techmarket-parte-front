@@ -9,8 +9,6 @@ type InteractionFilter = "Encuestas" | "Publicaciones" | "Lista de usuarios que 
 const companyModules = [
   { title: "Perfil y tienda", href: "/empresa/perfil" },
   { title: "Publicaciones", href: "/empresa/publicaciones" },
-  { title: "Promociones", href: "/empresa/promociones" },
-  { title: "Catalogo", href: "/empresa/catalogo" },
   { title: "Chat", href: "/empresa/chat" },
   { title: "Consultor IA", href: "/empresa/ia" },
   { title: "Analiticas", href: "/empresa/analiticas" },
@@ -293,7 +291,7 @@ export default function PublicacionesPage() {
               <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
                 <div>
                   <p className="tech-mono text-xs text-cyan-200/75">PUBLICACIONES DE LA EMPRESA</p>
-                  <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Contenido comercial organizado por tipo</h1>
+                  <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Publicaciones de la empresa</h1>
                   <p className="mt-4 max-w-2xl text-sm leading-7 text-cyan-100/80 md:text-base">
                     La empresa publica productos, servicios, ofertas, promociones y contenido de interacción en una sola
                     vista filtrable, con cards visibles y acción directa para chat.
@@ -303,9 +301,7 @@ export default function PublicacionesPage() {
                 <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-5">
                   <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Contenido visible</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">{activeFilter}</h2>
-                  <p className="mt-3 text-sm leading-7 text-cyan-100/80">
-                    Productos primero, luego servicios, ofertas y finalmente interacción con la comunidad.
-                  </p>
+                  
                 </div>
               </div>
 
