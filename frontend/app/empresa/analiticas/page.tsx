@@ -190,7 +190,7 @@ export default function AnaliticasPage() {
               <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
                   <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Visitas totales</p>
-                  <p className="mt-3 text-3xl font-bold text-white">{totalVisits.toLocaleString("es-CO")}</p>
+                  <p className="mt-3 text-3xl font-bold text-white">{totalVisits.toLocaleString("es-BO")}</p>
                   <p className="mt-2 text-sm text-cyan-100/75">Publicaciones activas</p>
                 </article>
 
@@ -224,7 +224,7 @@ export default function AnaliticasPage() {
                         <div key={item.id}>
                           <div className="flex items-center justify-between gap-3 text-sm">
                             <p className="font-semibold text-cyan-50">{item.title}</p>
-                            <p className="text-cyan-100/75">{item.visits.toLocaleString("es-CO")} visitas</p>
+                            <p className="text-cyan-100/75">{item.visits.toLocaleString("es-BO")} visitas</p>
                           </div>
                           <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-900/80">
                             <div className="h-full rounded-full bg-cyan-300" style={{ width: `${width}%` }} />

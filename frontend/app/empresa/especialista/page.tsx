@@ -43,8 +43,8 @@ const specialistProfile = {
   name: "Alejandro Torres",
   avatar: "AT",
   specialization: "Redes, laptops y soporte tecnico",
-  location: "Cali, Valle del Cauca",
-  bio: "Especialista en diagnostico, reparacion e instalacion para hogares y pequenas empresas. Enfoque en soluciones claras, tiempos reales y acompanamiento posterior al servicio.",
+  location: "Santa Cruz de la Sierra, Bolivia",
+  bio: "Especialista en diagnostico, reparacion e instalacion para hogares y pequenas empresas en Santa Cruz. Enfoque en soluciones claras, tiempos reales y acompanamiento posterior al servicio.",
 };
 
 const initialPortfolio: PortfolioItem[] = [
@@ -82,7 +82,7 @@ const specialistServices: SpecialistService[] = [
     id: "s-1",
     name: "Reparacion de laptops",
     description: "Diagnostico detallado, cambio de componentes y pruebas de funcionamiento final.",
-    price: "$120.000",
+    price: "Bs 120.000",
     type: "Reparacion",
     technicianName: "Alejandro Torres",
     image: "/productos/laptop-pro-14.jpg",
@@ -101,7 +101,7 @@ const specialistServices: SpecialistService[] = [
     id: "s-3",
     name: "Mantenimiento preventivo",
     description: "Limpieza, control de temperatura y recomendaciones para prevenir fallas frecuentes.",
-    price: "$95.000",
+    price: "Bs 95.000",
     type: "Mantenimiento",
     technicianName: "Alejandro Torres",
     image: "/productos/kit-limpieza-pc.jpg",
@@ -110,7 +110,7 @@ const specialistServices: SpecialistService[] = [
     id: "s-4",
     name: "Soporte tecnico remoto",
     description: "Asistencia por chat o videollamada para resolver errores de configuracion y software.",
-    price: "$60.000",
+    price: "Bs 60.000",
     type: "Soporte",
     technicianName: "Alejandro Torres",
     featured: true,
@@ -603,7 +603,7 @@ export default function EspecialistaPage() {
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Modalidad</p>
                 <p className="mt-2 text-sm font-semibold text-cyan-50">Presencial, remoto y a domicilio</p>
-                <p className="mt-1 text-xs text-cyan-100/70">Cobertura principal: Cali y alrededores</p>
+                <p className="mt-1 text-xs text-cyan-100/70">Cobertura principal: Santa Cruz de la Sierra y alrededores</p>
               </article>
             </div>
 
