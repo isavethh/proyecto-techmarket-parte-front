@@ -12,6 +12,10 @@ export type CommunityFeedPost = {
 };
 
 const COMMUNITY_FEED_STORAGE_KEY = "techmarket.community.feed";
+const EMPTY_COMMUNITY_FEED: CommunityFeedPost[] = [];
+
+let cachedRawFeed: string | null | undefined;
+let cachedFeedPosts: CommunityFeedPost[] = EMPTY_COMMUNITY_FEED;
 
 const isString = (value: unknown): value is string => typeof value === "string";
 
@@ -38,25 +42,36 @@ const isCommunityFeedPost = (value: unknown): value is CommunityFeedPost => {
 
 export const readCommunityFeedPosts = (): CommunityFeedPost[] => {
   if (typeof window === "undefined") {
-    return [];
+    return EMPTY_COMMUNITY_FEED;
   }
 
   const stored = window.localStorage.getItem(COMMUNITY_FEED_STORAGE_KEY);
 
+  if (stored === cachedRawFeed) {
+    return cachedFeedPosts;
+  }
+
+  cachedRawFeed = stored;
+
   if (!stored) {
-    return [];
+    cachedFeedPosts = EMPTY_COMMUNITY_FEED;
+    return cachedFeedPosts;
   }
 
   try {
     const parsed = JSON.parse(stored);
 
     if (!Array.isArray(parsed)) {
-      return [];
+      cachedFeedPosts = EMPTY_COMMUNITY_FEED;
+      return cachedFeedPosts;
     }
 
-    return parsed.filter(isCommunityFeedPost);
+    const filteredPosts = parsed.filter(isCommunityFeedPost);
+    cachedFeedPosts = filteredPosts.length ? filteredPosts : EMPTY_COMMUNITY_FEED;
+    return cachedFeedPosts;
   } catch {
-    return [];
+    cachedFeedPosts = EMPTY_COMMUNITY_FEED;
+    return cachedFeedPosts;
   }
 };
 
@@ -65,7 +80,10 @@ export const writeCommunityFeedPosts = (posts: CommunityFeedPost[]): void => {
     return;
   }
 
-  window.localStorage.setItem(COMMUNITY_FEED_STORAGE_KEY, JSON.stringify(posts));
+  const serialized = JSON.stringify(posts);
+  window.localStorage.setItem(COMMUNITY_FEED_STORAGE_KEY, serialized);
+  cachedRawFeed = serialized;
+  cachedFeedPosts = posts.length ? posts : EMPTY_COMMUNITY_FEED;
 };
 
 export const mergeCommunityFeedPosts = (posts: CommunityFeedPost[]): CommunityFeedPost[] => {

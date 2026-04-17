@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 import {
   CommunityFeedPost,
   mergeCommunityFeedPosts,
@@ -44,6 +44,13 @@ type ChatThread = {
   messages: ChatMessage[];
 };
 
+type PostComment = {
+  id: string;
+  author: string;
+  text: string;
+  time: string;
+};
+
 type FollowingPost = {
   id: string;
   author: string;
@@ -54,6 +61,12 @@ type FollowingPost = {
   tag: string;
   image?: string;
   createdAt: string;
+  comments?: Array<{
+    id: string;
+    author: string;
+    text: string;
+    time: string;
+  }>;
 };
 
 const favorites: MiniCard[] = [
@@ -178,12 +191,46 @@ const suggestedAccounts: SuggestedAccount[] = [
 
 const quickActions = [
   { label: "Buscar servicios", href: "/cliente/servicios/servicio-tecnico-laptop-domicilio" },
+  { label: "Versus de productos", href: "/cliente/versus" },
   { label: "Ver favoritos", href: "#favoritos" },
   { label: "Ver guardados", href: "#guardados" },
   { label: "Explorar empresas", href: "/empresa/perfil" },
 ];
 
 const stories = ["TecnoCentro", "FixCloud", "RedLink", "Zona Gamer", "ElectroCare", "BuildStation"];
+
+const feedCommentsByPostId: Record<string, PostComment[]> = {
+  "post-1": [
+    {
+      id: "post-1-comment-1",
+      author: "Marco T.",
+      text: "Me sirvio este servicio, dejaron mi laptop mucho mas rapida.",
+      time: "Hace 21 min",
+    },
+    {
+      id: "post-1-comment-2",
+      author: "Paola R.",
+      text: "Atienden fines de semana? necesito mantenimiento urgente.",
+      time: "Hace 9 min",
+    },
+  ],
+  "post-2": [
+    {
+      id: "post-2-comment-1",
+      author: "Diego V.",
+      text: "El descuento sigue activo? quiero dos unidades para oficina.",
+      time: "Hace 17 min",
+    },
+  ],
+  "seed-company-post-1": [
+    {
+      id: "seed-company-post-1-comment-1",
+      author: "Lina C.",
+      text: "Buena info, gracias por publicar detalles de rendimiento.",
+      time: "Hace 34 min",
+    },
+  ],
+};
 
 const clientChatThreads: ChatThread[] = [
   {
@@ -219,6 +266,26 @@ const clientChatThreads: ChatThread[] = [
   },
 ];
 
+const emptyFeedSnapshot: CommunityFeedPost[] = [];
+
+const subscribeCommunityFeed = (onStoreChange: () => void) => {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === "techmarket.community.feed") {
+      onStoreChange();
+    }
+  };
+
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+  };
+};
+
 const followingPosts: FollowingPost[] = [
   {
     id: "follow-1",
@@ -230,6 +297,20 @@ const followingPosts: FollowingPost[] = [
     tag: "Promocion",
     image: "/productos/kit-limpieza-pc.jpg",
     createdAt: "2026-04-17T09:00:00.000Z",
+    comments: [
+      {
+        id: "follow-1-comment-1",
+        author: "Nadia P.",
+        text: "Aproveche esta promo la semana pasada y el servicio fue rapido.",
+        time: "Hace 28 min",
+      },
+      {
+        id: "follow-1-comment-2",
+        author: "Rafael G.",
+        text: "Confirman si la oferta tambien aplica para equipos de escritorio?",
+        time: "Hace 12 min",
+      },
+    ],
   },
   {
     id: "follow-2",
@@ -241,40 +322,68 @@ const followingPosts: FollowingPost[] = [
     tag: "Producto",
     image: "/productos/laptop-pro-14.jpg",
     createdAt: "2026-04-17T07:10:00.000Z",
+    comments: [
+      {
+        id: "follow-2-comment-1",
+        author: "Diana K.",
+        text: "Me interesa la de 16 GB RAM, tienen envio para Cochabamba?",
+        time: "Hace 35 min",
+      },
+      {
+        id: "follow-2-comment-2",
+        author: "Jorge M.",
+        text: "El modelo con 1TB esta muy bueno para trabajo pesado.",
+        time: "Hace 7 min",
+      },
+    ],
   },
   {
     id: "follow-user-1",
     author: "Andres Cliente",
     kind: "usuario",
     followedSince: "Sigues este perfil desde hace 2 semanas",
-    title: "alguien sabe que deberia comprarme? A o B",
-    body: "Estoy entre una laptop ultraligera (A) y un setup de escritorio (B). Que recomiendan para trabajar y jugar?",
+    title: "alguien sabe que deberia comprarme, una laptop ultraligera o un setup de escritorio?",
+    body: "Estoy entre una laptop ultraligera y un setup de escritorio. Que recomiendan para trabajar y jugar?",
     tag: "Consulta",
     createdAt: "2026-04-17T11:30:00.000Z",
+    comments: [
+      {
+        id: "comment-1",
+        author: "Carla M.",
+        text: "Si te mueves mucho, laptop ultraligera. Si trabajas siempre en casa, setup de escritorio.",
+        time: "Hace 19 min",
+      },
+      {
+        id: "comment-2",
+        author: "Luis Tech",
+        text: "Para trabajar y jugar, te conviene setup de escritorio por rendimiento/precio.",
+        time: "Hace 11 min",
+      },
+      {
+        id: "comment-3",
+        author: "Mariana R.",
+        text: "Yo iria por laptop si priorizas portabilidad; agrega monitor externo y quedas bien para ambos casos.",
+        time: "Hace 4 min",
+      },
+    ],
   },
 ];
 
-const formatRelativeTime = (isoDate: string): string => {
+const formatPublishedAt = (isoDate: string): string => {
   const parsed = Date.parse(isoDate);
 
   if (Number.isNaN(parsed)) {
     return "Reciente";
   }
 
-  const deltaMs = Date.now() - parsed;
-  const deltaMinutes = Math.max(1, Math.floor(deltaMs / 60000));
+  const date = new Date(parsed);
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const year = date.getUTCFullYear();
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
 
-  if (deltaMinutes < 60) {
-    return `Hace ${deltaMinutes} min`;
-  }
-
-  const deltaHours = Math.floor(deltaMinutes / 60);
-  if (deltaHours < 24) {
-    return `Hace ${deltaHours} h`;
-  }
-
-  const deltaDays = Math.floor(deltaHours / 24);
-  return `Hace ${deltaDays} d`;
+  return `${day}/${month}/${year} ${hours}:${minutes} UTC`;
 };
 
 const isMarketplaceSaleItem = (item: CommunityFeedPost): boolean => {
@@ -308,7 +417,11 @@ export default function ClientePage() {
   const [aiQuery, setAiQuery] = useState<string>("");
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [aiResults, setAiResults] = useState<typeof aiSuggestions>([]);
-  const [companyFeedPosts] = useState<CommunityFeedPost[]>(() => readCommunityFeedPosts());
+  const companyFeedPosts = useSyncExternalStore(
+    subscribeCommunityFeed,
+    readCommunityFeedPosts,
+    () => emptyFeedSnapshot,
+  );
   const [activeChatId, setActiveChatId] = useState(clientChatThreads[0].id);
   const [draftMessage, setDraftMessage] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(true);
@@ -605,7 +718,7 @@ export default function ClientePage() {
                     <div>
                       <p className="text-sm font-semibold text-cyan-50">{item.author}</p>
                       <p className="text-xs text-cyan-200/70">
-                        {item.role} · {item.location} · {formatRelativeTime(item.createdAt)}
+                        {item.role} · {item.location} · {formatPublishedAt(item.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -629,7 +742,7 @@ export default function ClientePage() {
                 ) : null}
 
                 <div className="mt-4 border-t border-cyan-100/10 pt-3 text-xs text-cyan-200/75">
-                  {item.time || formatRelativeTime(item.createdAt)}
+                  {item.time || formatPublishedAt(item.createdAt)}
                 </div>
 
                 <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
@@ -643,6 +756,21 @@ export default function ClientePage() {
                     Compartir
                   </button>
                 </div>
+
+                {feedCommentsByPostId[item.id] && feedCommentsByPostId[item.id].length > 0 ? (
+                  <div className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
+                    <p className="text-xs font-semibold text-cyan-200/80">Comentarios</p>
+                    {feedCommentsByPostId[item.id].map((comment) => (
+                      <div key={comment.id} className="rounded-xl border border-cyan-100/10 bg-white/5 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-semibold text-cyan-50">{comment.author}</p>
+                          <p className="text-[10px] text-cyan-200/65">{comment.time}</p>
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-cyan-100/85">{comment.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </article>
             ))}
           </section>
@@ -696,7 +824,7 @@ export default function ClientePage() {
                         <h3 className="mt-3 text-lg font-semibold text-white">{item.title}</h3>
                         <p className="mt-2 text-sm text-cyan-100/80">{item.body}</p>
                         <p className="mt-3 text-xs text-cyan-200/75">
-                          {item.location} · {formatRelativeTime(item.createdAt)}
+                          {item.location} · {formatPublishedAt(item.createdAt)}
                         </p>
                         <div className="mt-4 grid grid-cols-2 gap-2">
                           <button
@@ -776,7 +904,7 @@ export default function ClientePage() {
                   ) : null}
 
                   <div className="mt-4 flex items-center justify-between border-t border-cyan-100/10 pt-3 text-xs text-cyan-200/75">
-                    <span>{formatRelativeTime(post.createdAt)}</span>
+                    <span>{formatPublishedAt(post.createdAt)}</span>
                     <div className="flex gap-2">
                       <button type="button" className="rounded-xl border border-cyan-100/10 bg-cyan-300/10 px-3 py-2 text-cyan-100/90">
                         Me interesa
@@ -786,6 +914,21 @@ export default function ClientePage() {
                       </button>
                     </div>
                   </div>
+
+                  {post.comments && post.comments.length > 0 ? (
+                    <div className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
+                      <p className="text-xs font-semibold text-cyan-200/80">Comentarios</p>
+                      {post.comments.map((comment) => (
+                        <div key={comment.id} className="rounded-xl border border-cyan-100/10 bg-white/5 p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-semibold text-cyan-50">{comment.author}</p>
+                            <p className="text-[10px] text-cyan-200/65">{comment.time}</p>
+                          </div>
+                          <p className="mt-2 text-xs leading-5 text-cyan-100/85">{comment.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </article>
               ))}
             </section>
