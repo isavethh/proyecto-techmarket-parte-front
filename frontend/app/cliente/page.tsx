@@ -4,7 +4,26 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 
 type SearchMode = "normal" | "ia";
-type SidebarView = "busqueda" | "favoritos" | "guardados";
+type SidebarView = "busqueda" | "favoritos" | "guardados" | "mensajeria" | "seguimiento";
+
+type ChatMessage = {
+  id: string;
+  author: "empresa" | "cliente";
+  text: string;
+  time: string;
+};
+
+type ChatThread = {
+  id: string;
+  name: string;
+  company: string;
+  trigger: string;
+  lastMessage: string;
+  time: string;
+  unread?: number;
+  avatar: string;
+  messages: ChatMessage[];
+};
 
 const favorites = [
   {
@@ -72,6 +91,42 @@ const feedItems = [
   },
 ];
 
+const followedFeedItems = [
+  {
+    id: "follow-1",
+    author: "TechFix Lab",
+    role: "Servicio tecnico",
+    time: "Hace 1 hora",
+    title: "Plan de mantenimiento mensual",
+    body: "Seguimiento preventivo con visitas programadas y reportes.",
+    tag: "Seguimiento",
+    location: "Bogota",
+    imageClass: "from-cyan-300/40 via-blue-500/30 to-slate-900/60",
+  },
+  {
+    id: "follow-2",
+    author: "Zona Gamer Store",
+    role: "Tienda",
+    time: "Hace 4 horas",
+    title: "Nuevas laptops ultralivianas",
+    body: "Modelos 2026 con bateria extendida y envio inmediato.",
+    tag: "Novedad",
+    location: "Medellin",
+    imageClass: "from-emerald-300/35 via-cyan-400/30 to-slate-900/60",
+  },
+];
+
+const searchHistory = [
+  {
+    term: "servicio tecnico",
+    context: "Busqueda reciente",
+  },
+  {
+    term: "laptop",
+    context: "Busqueda reciente",
+  },
+];
+
 const normalResults = [
   {
     title: "Laptop Pro 14",
@@ -114,6 +169,40 @@ const aiSuggestions = [
   },
 ];
 
+const clientChatThreads: ChatThread[] = [
+  {
+    id: "chat-1",
+    name: "Sergio Ramirez",
+    company: "TechFix Lab",
+    trigger: "Buscaste servicio tecnico",
+    lastMessage: "Vi tu busqueda y puedo ayudarte hoy mismo.",
+    time: "Ahora",
+    unread: 1,
+    avatar: "TR",
+    messages: [
+      { id: "m1", author: "empresa", text: "Hola, vi que buscaste servicio tecnico.", time: "10:20" },
+      { id: "m2", author: "empresa", text: "Puedo atenderte hoy mismo en tu zona.", time: "10:21" },
+      { id: "m3", author: "cliente", text: "Perfecto, necesito diagnostico para mi laptop.", time: "10:22" },
+    ],
+  },
+  {
+    id: "chat-2",
+    name: "Laura V.",
+    company: "Zona Gamer Store",
+    trigger: "Buscaste laptop",
+    lastMessage: "Tengo modelos disponibles con entrega inmediata.",
+    time: "Hace 8 min",
+    unread: 2,
+    avatar: "ZG",
+    messages: [
+      { id: "m1", author: "empresa", text: "Hola, vimos que buscaste una laptop.", time: "09:55" },
+      { id: "m2", author: "empresa", text: "Tenemos opciones para estudio y gaming.", time: "09:56" },
+      { id: "m3", author: "cliente", text: "Me interesa una laptop ligera para trabajo.", time: "09:58" },
+      { id: "m4", author: "empresa", text: "Te comparto 2 opciones con entrega inmediata.", time: "10:00" },
+    ],
+  },
+];
+
 export default function ClientePage() {
   const [searchMode, setSearchMode] = useState<SearchMode>("normal");
   const [query, setQuery] = useState<string>("");
@@ -121,6 +210,12 @@ export default function ClientePage() {
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [aiResults, setAiResults] = useState<typeof aiSuggestions>([]);
   const [sidebarView, setSidebarView] = useState<SidebarView>("busqueda");
+  const [activeChatId, setActiveChatId] = useState(clientChatThreads[0].id);
+  const [draftMessage, setDraftMessage] = useState("");
+  const [isChatOpen, setIsChatOpen] = useState(true);
+
+  const activeChat =
+    clientChatThreads.find((chat) => chat.id === activeChatId) ?? clientChatThreads[0];
 
   const aiSummary = useMemo(() => {
     if (!aiResults.length) return "";
@@ -166,6 +261,20 @@ export default function ClientePage() {
               onClick={() => setSidebarView("busqueda")}
             >
               Busca lo que necesitas
+            </button>
+            <button
+              type="button"
+              className={`auth-action ${sidebarView === "mensajeria" ? "active" : ""}`}
+              onClick={() => setSidebarView("mensajeria")}
+            >
+              Mensajeria
+            </button>
+            <button
+              type="button"
+              className={`auth-action ${sidebarView === "seguimiento" ? "active" : ""}`}
+              onClick={() => setSidebarView("seguimiento")}
+            >
+              Seguimiento
             </button>
             <button
               type="button"
@@ -234,6 +343,20 @@ export default function ClientePage() {
                         Buscar
                       </button>
                     </div>
+                    <div className="rounded-2xl border border-cyan-100/15 bg-white/5 p-4">
+                      <p className="tech-mono text-xs text-cyan-200/70">Historial reciente</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {searchHistory.map((item) => (
+                          <button
+                            key={item.term}
+                            type="button"
+                            className="rounded-full border border-cyan-100/15 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100/90"
+                          >
+                            {item.term}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </form>
                 )}
 
@@ -249,6 +372,20 @@ export default function ClientePage() {
                       <button type="submit" className="tech-button tech-button-primary">
                         Buscar con IA
                       </button>
+                    </div>
+                    <div className="rounded-2xl border border-cyan-100/15 bg-white/5 p-4">
+                      <p className="tech-mono text-xs text-cyan-200/70">Historial reciente</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {searchHistory.map((item) => (
+                          <button
+                            key={item.term}
+                            type="button"
+                            className="rounded-full border border-cyan-100/15 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100/90"
+                          >
+                            {item.term}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     {aiSummary && (
                       <p className="text-sm text-cyan-100/80">{aiSummary}</p>
@@ -326,7 +463,160 @@ export default function ClientePage() {
                   ))}
                 </div>
               </div>
+
             </>
+          )}
+
+          {sidebarView === "mensajeria" && (
+            <section className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/30">
+              <div className="p-6 md:p-8">
+                <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+                  <aside className="rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="tech-mono text-xs text-cyan-200/75">MENSAJERIA</p>
+                        <h2 className="mt-2 text-2xl font-bold text-white">Chats activos</h2>
+                      </div>
+                      <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
+                        {clientChatThreads.length}
+                      </span>
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                      {clientChatThreads.map((chat) => {
+                        const isActive = chat.id === activeChatId;
+
+                        return (
+                          <button
+                            key={chat.id}
+                            type="button"
+                            onClick={() => setActiveChatId(chat.id)}
+                            className={`w-full rounded-3xl border p-4 text-left transition ${
+                              isActive
+                                ? "border-cyan-300/50 bg-cyan-300/12"
+                                : "border-cyan-100/10 bg-white/5 hover:bg-cyan-100/8"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                                {chat.avatar}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="font-semibold text-white">{chat.company}</p>
+                                  <span className="text-xs text-cyan-100/60">{chat.time}</span>
+                                </div>
+                                <p className="text-xs text-cyan-100/70">{chat.trigger}</p>
+                                <p className="mt-1 truncate text-sm text-cyan-100/80">{chat.lastMessage}</p>
+                              </div>
+                            </div>
+                            {chat.unread ? (
+                              <div className="mt-3 flex justify-end">
+                                <span className="rounded-full bg-cyan-300 px-2.5 py-1 text-xs font-semibold text-slate-950">
+                                  {chat.unread}
+                                </span>
+                              </div>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </aside>
+
+                  <section className="flex min-h-[520px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-4 md:p-5">
+                    <div className="flex items-center justify-between border-b border-cyan-100/10 pb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                          {activeChat.avatar}
+                        </div>
+                        <div>
+                          <p className="text-lg font-semibold text-white">{activeChat.company}</p>
+                          <p className="text-sm text-cyan-100/70">{activeChat.name}</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
+                        En linea
+                      </span>
+                    </div>
+
+                    <div className="mt-4 flex-1 space-y-3 overflow-y-auto rounded-3xl bg-slate-950/30 p-4 md:p-5">
+                      {activeChat.messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex ${message.author === "cliente" ? "justify-end" : "justify-start"}`}
+                        >
+                          <div
+                            className={`max-w-[78%] rounded-3xl px-4 py-3 text-sm leading-6 ${
+                              message.author === "cliente"
+                                ? "bg-cyan-300/15 text-cyan-50"
+                                : "bg-white/5 text-cyan-100/90"
+                            }`}
+                          >
+                            <p>{message.text}</p>
+                            <p className="mt-2 text-right text-xs text-cyan-100/55">{message.time}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 shrink-0 rounded-3xl border border-cyan-100/10 bg-white/5 p-4">
+                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Responder</p>
+                      <div className="mt-3 flex flex-col gap-3 md:flex-row">
+                        <input
+                          value={draftMessage}
+                          onChange={(event) => setDraftMessage(event.target.value)}
+                          placeholder="Escribe un mensaje..."
+                          className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                        />
+                        <button className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-5 py-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
+                          Enviar
+                        </button>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {sidebarView === "seguimiento" && (
+            <div className="tech-card">
+              <h2 className="text-2xl font-semibold text-cyan-50">Seguimiento</h2>
+              <p className="mt-3 text-sm text-cyan-100/80">
+                Publicaciones de empresas y servicios tecnicos que sigues.
+              </p>
+              <div className="mt-4 space-y-4">
+                {followedFeedItems.map((item) => (
+                  <article
+                    key={item.id}
+                    className="rounded-2xl border border-cyan-100/15 bg-background-soft/40 p-4"
+                  >
+                    <div
+                      className={`h-36 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${item.imageClass}`}
+                    />
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-cyan-50">{item.author}</p>
+                        <p className="text-xs text-cyan-200/70">
+                          {item.role} · {item.location}
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-cyan-100/20 px-3 py-1 text-xs text-cyan-100/80">
+                        {item.tag}
+                      </span>
+                    </div>
+                    <h3 className="mt-3 text-lg font-semibold text-cyan-50">{item.title}</h3>
+                    <p className="mt-2 text-sm text-cyan-100/80">{item.body}</p>
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-cyan-200/70">
+                      <span>{item.time}</span>
+                      <button type="button" className="auth-link">
+                        Ver publicacion
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
           )}
 
           {sidebarView === "favoritos" && (
@@ -381,6 +671,73 @@ export default function ClientePage() {
           </div>
         </div>
       )}
+
+      <div className="fixed bottom-6 right-6 z-50 w-[320px]">
+        {isChatOpen ? (
+          <div className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/40">
+            <div className="flex items-center justify-between border-b border-cyan-100/10 px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                  {activeChat.avatar}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">{activeChat.company}</p>
+                  <p className="text-xs text-cyan-100/70">{activeChat.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsChatOpen(false)}
+                className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-[10px] font-semibold text-cyan-100/80"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="max-h-[280px] space-y-3 overflow-y-auto px-4 py-3">
+              {activeChat.messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.author === "cliente" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[82%] rounded-2xl px-3 py-2 text-xs leading-5 ${
+                      message.author === "cliente"
+                        ? "bg-cyan-300/15 text-cyan-50"
+                        : "bg-white/5 text-cyan-100/90"
+                    }`}
+                  >
+                    <p>{message.text}</p>
+                    <p className="mt-2 text-right text-[10px] text-cyan-100/55">{message.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-cyan-100/10 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <input
+                  value={draftMessage}
+                  onChange={(event) => setDraftMessage(event.target.value)}
+                  placeholder="Escribe un mensaje..."
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-3 py-2 text-xs text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+                <button className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
+                  Enviar
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsChatOpen(true)}
+            className="w-full rounded-full border border-cyan-100/15 bg-[linear-gradient(135deg,_rgba(14,116,144,0.9),_rgba(8,47,73,0.96))] px-4 py-3 text-xs font-semibold text-cyan-50 shadow-lg shadow-slate-950/40"
+          >
+            Chat activo · {activeChat.company}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
