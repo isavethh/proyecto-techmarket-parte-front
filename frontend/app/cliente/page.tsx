@@ -7,6 +7,7 @@ import {
   mergeCommunityFeedPosts,
   readCommunityFeedPosts,
 } from "../lib/communityFeed";
+import { clientCompanyProfiles } from "../lib/clientCompanyProfiles";
 
 type SearchMode = "normal" | "ia";
 type TopView = "feed" | "marketplace" | "seguimiento";
@@ -18,10 +19,12 @@ type MiniCard = {
 
 type SuggestedAccount = {
   id: string;
+  slug: string;
   name: string;
   role: string;
   city: string;
   followers: string;
+  rating: string;
   avatar: string;
 };
 
@@ -165,32 +168,41 @@ const aiSuggestions = [
 const suggestedAccounts: SuggestedAccount[] = [
   {
     id: "acc-1",
+    slug: "tecnocentro-andino",
     name: "TecnoCentro Andino",
     role: "Tienda de equipos",
     city: "La Paz",
     followers: "8.2k",
+    rating: "4.8",
     avatar: "TA",
   },
   {
     id: "acc-2",
+    slug: "fixcloud-soporte",
     name: "FixCloud Soporte",
     role: "Servicio tecnico",
     city: "Santa Cruz",
     followers: "3.6k",
+    rating: "4.7",
     avatar: "FC",
   },
   {
     id: "acc-3",
+    slug: "redlink-pro",
     name: "RedLink Pro",
     role: "Instalaciones y redes",
     city: "Cochabamba",
     followers: "1.9k",
+    rating: "4.6",
     avatar: "RL",
   },
 ];
 
 const quickActions = [
+  { label: "Buscar servicios", href: "/cliente/servicios" },
   { label: "Versus de productos", href: "/cliente/versus" },
+  { label: "Explorar empresas", href: "/cliente/empresas" },
+  { label: "Actividad reciente", href: "#feed" },
 ];
 
 const stories = ["TecnoCentro", "FixCloud", "RedLink", "Zona Gamer", "ElectroCare", "BuildStation"];
@@ -518,18 +530,36 @@ export default function ClientePage() {
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[260px_minmax(0,1fr)_300px] lg:px-6">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
           <section className="tech-card">
-            <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
-            <p className="mt-2 text-xs text-cyan-100/75">Acciones rapidas para moverte por la comunidad.</p>
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                CM
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
+                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
+              </div>
+            </div>
             <div className="mt-4 grid gap-2">
               {quickActions.map((action) => (
-                <Link
-                  key={action.label}
-                  href={action.href}
-                  className="auth-action"
-                >
+                <Link key={action.label} href={action.href} className="auth-action">
                   {action.label}
                 </Link>
               ))}
+            </div>
+          </section>
+
+          <section className="tech-card">
+            <p className="text-sm font-semibold text-cyan-50">Perfil destacado</p>
+            <div className="mt-3 rounded-2xl border border-cyan-100/15 bg-slate-950/30 p-4">
+              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Recomendado para ti</p>
+              <h3 className="mt-2 text-lg font-semibold text-cyan-50">{clientCompanyProfiles[0].name}</h3>
+              <p className="mt-1 text-sm text-cyan-100/75">{clientCompanyProfiles[0].tagline}</p>
+              <Link
+                href={`/cliente/empresa/${clientCompanyProfiles[0].slug}`}
+                className="mt-4 inline-flex rounded-xl border border-cyan-100/10 bg-cyan-300/10 px-3 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/15"
+              >
+                Ver perfil
+              </Link>
             </div>
           </section>
 
@@ -543,6 +573,34 @@ export default function ClientePage() {
                   />
                   <p className="mt-2 text-xs text-cyan-100/85">{item.name}</p>
                 </div>
+              ))}
+            </div>
+          </section>
+
+          <section id="empresas" className="tech-card">
+            <p className="text-sm font-semibold text-cyan-50">Empresas destacadas</p>
+            <div className="mt-3 space-y-3">
+              {clientCompanyProfiles.map((profile) => (
+                <Link
+                  key={profile.slug}
+                  href={`/cliente/empresa/${profile.slug}`}
+                  className="block rounded-2xl border border-cyan-100/15 bg-slate-950/35 p-3 transition hover:bg-slate-950/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                      {profile.logo}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-cyan-50">{profile.name}</p>
+                      <p className="truncate text-xs text-cyan-200/70">{profile.city} · {profile.category}</p>
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-cyan-100/75">{profile.tagline}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-xs text-cyan-200/70">
+                    <span>Valoracion {profile.rating.toFixed(1)}</span>
+                    <span>{profile.reviewCount} opiniones</span>
+                  </div>
+                </Link>
               ))}
             </div>
           </section>
@@ -563,7 +621,7 @@ export default function ClientePage() {
         </aside>
 
         <section className="space-y-4">
-          <section className="tech-card">
+          <section id="feed" className="tech-card">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD CLIENTE</p>
@@ -774,7 +832,7 @@ export default function ClientePage() {
           )}
 
           {topView === "marketplace" && (
-            <section className="space-y-4">
+            <section id="marketplace" className="space-y-4">
               <section className="tech-card">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
@@ -845,7 +903,7 @@ export default function ClientePage() {
           )}
 
           {topView === "seguimiento" && (
-            <section className="space-y-4">
+            <section id="seguimiento" className="space-y-4">
               <section className="tech-card">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
@@ -948,11 +1006,19 @@ export default function ClientePage() {
                     </div>
                   </div>
                   <p className="mt-2 text-xs text-cyan-100/70">
-                    {account.city} · {account.followers} seguidores
+                    {account.city} · {account.followers} seguidores · {account.rating}
                   </p>
-                  <button type="button" className="mt-3 w-full rounded-xl border border-cyan-200/20 bg-cyan-400/15 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
-                    Seguir
-                  </button>
+                  <div className="mt-3 flex gap-2">
+                    <Link
+                      href={`/cliente/empresa/${account.slug}`}
+                      className="flex-1 rounded-xl border border-cyan-200/20 bg-cyan-400/15 px-3 py-2 text-center text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                    >
+                      Ver perfil
+                    </Link>
+                    <button type="button" className="rounded-xl border border-cyan-200/20 bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-100/90">
+                      Seguir
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
