@@ -81,6 +81,30 @@ type UserCard = {
   activity: string;
 };
 
+function LikeIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+      <path d="M12.1 21.35 10.55 19.94C5.14 15.06 2 12.24 2 8.78 2 5.96 4.24 3.75 7.06 3.75c1.57 0 3.08.73 4.04 1.88.96-1.15 2.47-1.88 4.04-1.88 2.82 0 5.06 2.21 5.06 5.03 0 3.46-3.14 6.28-8.55 11.16l-.55.52Z" />
+    </svg>
+  );
+}
+
+function CommentIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+      <path d="M4 4.75h16A1.75 1.75 0 0 1 21.75 6.5v9A1.75 1.75 0 0 1 20 17.25H9.58l-4.41 3.38a.75.75 0 0 1-1.17-.6v-2.78A1.75 1.75 0 0 1 2.25 15.5v-9A1.75 1.75 0 0 1 4 4.75Zm0 1.5a.25.25 0 0 0-.25.25v9c0 .14.11.25.25.25h.5v3.13l4.09-3.13H20a.25.25 0 0 0 .25-.25v-9a.25.25 0 0 0-.25-.25H4Z" />
+    </svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+      <path d="M3.4 20.45 20.8 12 3.4 3.55a.75.75 0 0 0-1.05.88l1.97 6.02L15 12l-10.68 1.55-1.97 6.02a.75.75 0 0 0 1.05.88Zm3.68-7.2L18.2 12 7.08 10.75l-.93-2.84L18.2 12 6.15 16.09l.93-2.84Z" />
+    </svg>
+  );
+}
+
 const products: ProductCard[] = [
   {
     id: "prod-1",
@@ -257,6 +281,7 @@ const users: UserCard[] = [
 export default function PublicacionesPage() {
   const [activeFilter, setActiveFilter] = useState<MainFilter>("Productos disponibles");
   const [activeInteractionFilter, setActiveInteractionFilter] = useState<InteractionFilter>("Encuestas");
+  const [selectedSurveyOption, setSelectedSurveyOption] = useState<Record<string, string>>({});
 
   return (
     <div className="flex-1 pb-8">
@@ -351,9 +376,7 @@ export default function PublicacionesPage() {
                             <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Precio</p>
                             <p className="mt-1 text-lg font-bold text-white">{product.price ?? "Consultar"}</p>
                           </div>
-                          <button className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
-                            Contactar por chat
-                          </button>
+                         
                         </div>
                       </div>
                     </article>
@@ -470,12 +493,41 @@ export default function PublicacionesPage() {
                             </div>
                           </div>
                           <h3 className="mt-4 text-xl font-bold text-white">{survey.question}</h3>
-                          <div className="mt-4 space-y-2">
-                            {survey.options.map((option) => (
-                              <div key={option} className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-4 py-3 text-sm text-cyan-100/85">
-                                {option}
-                              </div>
-                            ))}
+                          <div className="mt-4 space-y-3">
+                            {survey.options.map((option, index) => {
+                              const selectedOption = selectedSurveyOption[survey.id];
+                              const hasSelection = Boolean(selectedOption);
+                              const isSelected = selectedOption === option;
+                              const percentage = hasSelection
+                                ? isSelected
+                                  ? 60
+                                  : index === 1
+                                    ? 30
+                                    : 10
+                                : [32, 28, 24, 16][index] ?? 10;
+
+                              return (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  onClick={() => setSelectedSurveyOption((current) => ({ ...current, [survey.id]: option }))}
+                                  className="w-full text-left"
+                                >
+                                  <div className={`rounded-2xl border px-4 py-3 transition ${isSelected ? "border-cyan-300/50 bg-cyan-300/15" : "border-cyan-100/10 bg-slate-950/30"}`}>
+                                    <div className="flex items-center justify-between gap-4 text-sm">
+                                      <span className="text-cyan-100/90">{option}</span>
+                                      <span className="font-semibold text-white">{percentage}%</span>
+                                    </div>
+                                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-900/80">
+                                      <div
+                                        className={`h-full rounded-full ${isSelected ? "bg-cyan-300" : "bg-cyan-500/60"}`}
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
                           <p className="mt-4 text-sm text-cyan-100/75">{survey.votes} participaciones</p>
                         </article>
@@ -497,6 +549,23 @@ export default function PublicacionesPage() {
                             </div>
                             <h3 className="text-xl font-bold text-white">{post.title}</h3>
                             <p className="text-sm leading-7 text-cyan-100/80">{post.message}</p>
+                            <div className="flex flex-wrap gap-3 pt-2">
+                              <button className="inline-flex items-center gap-2 rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
+                                Contactar por chat
+                              </button>
+                              <button className="inline-flex items-center gap-2 rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
+                                <LikeIcon />
+                                Like
+                              </button>
+                              <button className="inline-flex items-center gap-2 rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10">
+                                <CommentIcon />
+                                Comentar
+                              </button>
+                              <button className="inline-flex items-center gap-2 rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10">
+                                <SendIcon />
+                                Enviar
+                              </button>
+                            </div>
                           </div>
                         </article>
                       ))}
@@ -512,6 +581,11 @@ export default function PublicacionesPage() {
                               <p className="font-semibold text-white">{user.name}</p>
                               <p className="text-sm text-cyan-100/75">{user.activity}</p>
                             </div>
+                          </div>
+                          <div className="mt-5">
+                            <button className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
+                              Chatear
+                            </button>
                           </div>
                         </article>
                       ))}
