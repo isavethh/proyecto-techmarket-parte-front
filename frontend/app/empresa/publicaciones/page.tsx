@@ -583,9 +583,12 @@ export default function PublicacionesPage() {
                             </div>
                           </div>
                           <div className="mt-5">
-                            <button className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
+                            <Link
+                              href="/empresa/chat"
+                              className="inline-flex rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                            >
                               Chatear
-                            </button>
+                            </Link>
                           </div>
                         </article>
                       ))}
