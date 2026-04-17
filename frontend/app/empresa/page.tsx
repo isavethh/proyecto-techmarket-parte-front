@@ -3,10 +3,6 @@ import Link from "next/link";
 const companyModules = [
   { title: "Perfil y tienda", href: "/empresa/perfil" },
   { title: "Publicaciones", href: "/empresa/publicaciones" },
-  { title: "Publicaciones de interaccion", href: "/empresa/interaccion" },
-  { title: "Productos disponibles", href: "/empresa/productos" },
-  { title: "Servicios", href: "/empresa/servicios" },
-  { title: "Ofertas", href: "/empresa/ofertas" },
   { title: "Promociones", href: "/empresa/promociones" },
   { title: "Catalogo", href: "/empresa/catalogo" },
   { title: "Chat", href: "/empresa/chat" },

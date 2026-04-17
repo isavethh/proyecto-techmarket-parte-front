@@ -1,21 +1,15 @@
 import Link from "next/link";
 
 const companyModules = [
-  { title: "Perfil y tienda", href: "/empresa/perfil" },
+  { title: "Perfil", href: "/empresa/perfil" },
   { title: "Publicaciones", href: "/empresa/publicaciones" },
-  { title: "Publicaciones de interaccion", href: "/empresa/interaccion" },
-  { title: "Productos disponibles", href: "/empresa/productos" },
-  { title: "Servicios", href: "/empresa/servicios" },
-  { title: "Ofertas", href: "/empresa/ofertas" },
-  { title: "Promociones", href: "/empresa/promociones" },
-  { title: "Catalogo", href: "/empresa/catalogo" },
   { title: "Chat", href: "/empresa/chat" },
   { title: "Consultor IA", href: "/empresa/ia" },
   { title: "Analiticas", href: "/empresa/analiticas" },
 ];
 
 const businessData = {
-  name: "TecnoCentro Andino",
+  name: "TechMarket",
   logo: "TC",
   slogan: "Soluciones confiables en tecnologia para hogar y empresa.",
   specialization: "Laptops, redes y reparacion tecnica",
@@ -193,10 +187,9 @@ export default function Perfil() {
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Informacion general</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Descripcion del negocio</h2>
                   <p className="mt-4 text-sm leading-7 text-cyan-100/80">
-                    TecnoCentro Andino es una empresa especializada en soporte tecnico, mantenimiento y
-                    solucion de incidencias para equipos de computo y redes. Su enfoque esta en brindar
-                    informacion clara, atencion confiable y un servicio profesional orientado a hogares,
-                    comercios y equipos de trabajo que necesitan asistencia tecnica seria.
+                    plataforma inteligente, social y comercial especializada en Electrónica y Computación,
+                    que conecta empresas, técnicos, usuarios y embajadores para generar confianza, visibilidad, ventas y
+                    crecimiento sostenible dentro de un ecosistema digital escalable.
                   </p>
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
