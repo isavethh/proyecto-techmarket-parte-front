@@ -24,13 +24,13 @@ export default function ServiciosIndexPage() {
           </section>
 
           <section className="tech-card space-y-2">
-            <Link href="/cliente" className="auth-action">
+            <Link href="/cliente" className="auth-action block w-full">
               Volver al feed
             </Link>
-            <Link href="/cliente/versus" className="auth-action">
+            <Link href="/cliente/versus" className="auth-action block w-full">
               Comparar productos
             </Link>
-            <Link href="#servicios-activos" className="auth-action">
+            <Link href="#servicios-activos" className="auth-action block w-full">
               Ver servicios activos
             </Link>
           </section>
