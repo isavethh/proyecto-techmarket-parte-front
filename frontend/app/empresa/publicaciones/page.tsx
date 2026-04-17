@@ -81,6 +81,13 @@ type UserCard = {
   activity: string;
 };
 
+type InteractionNotification = {
+  id: string;
+  userName: string;
+  productName: string;
+  userId: string;
+};
+
 function LikeIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 fill-current">
@@ -272,16 +279,43 @@ const posts: PostCard[] = [
 ];
 
 const users: UserCard[] = [
+  { id: "user-5", name: "Alejandro", avatar: "AL", activity: "Busco Laptop Pro 14 hace 2 min" },
   { id: "user-1", name: "Carlos M.", avatar: "CM", activity: "Dio like a un producto hace 1 hora" },
   { id: "user-2", name: "Laura P.", avatar: "LP", activity: "Participo en una encuesta hace 3 horas" },
   { id: "user-3", name: "Sofia R.", avatar: "SR", activity: "Comento una publicacion informativa" },
   { id: "user-4", name: "Andres T.", avatar: "AT", activity: "Reacciono a una promocion activa" },
 ];
 
+const latestInteractionNotification: InteractionNotification = {
+  id: "notif-alejandro-1",
+  userName: "Alejandro",
+  productName: "Laptop Pro 14",
+  userId: "user-5",
+};
+
 export default function PublicacionesPage() {
   const [activeFilter, setActiveFilter] = useState<MainFilter>("Productos disponibles");
   const [activeInteractionFilter, setActiveInteractionFilter] = useState<InteractionFilter>("Encuestas");
   const [selectedSurveyOption, setSelectedSurveyOption] = useState<Record<string, string>>({});
+  const [showInteractionNotice, setShowInteractionNotice] = useState(false);
+  const [highlightedUserId, setHighlightedUserId] = useState<string | null>(null);
+
+  const handleMainFilterChange = (filter: MainFilter) => {
+    setActiveFilter(filter);
+
+    if (filter === "Publicaciones de interacción") {
+      setShowInteractionNotice(true);
+      return;
+    }
+
+    setHighlightedUserId(null);
+  };
+
+  const handleInteractionNotificationClick = () => {
+    setActiveInteractionFilter("Lista de usuarios que interactúan");
+    setHighlightedUserId(latestInteractionNotification.userId);
+    setShowInteractionNotice(false);
+  };
 
   return (
     <div className="flex-1 pb-8">
@@ -335,7 +369,7 @@ export default function PublicacionesPage() {
                   <button
                     key={filter}
                     type="button"
-                    onClick={() => setActiveFilter(filter)}
+                    onClick={() => handleMainFilterChange(filter)}
                     className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
                       activeFilter === filter
                         ? "border-cyan-300/50 bg-cyan-300/20 text-white"
@@ -462,6 +496,21 @@ export default function PublicacionesPage() {
 
               {activeFilter === "Publicaciones de interacción" && (
                 <div className="mt-8 rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+                  {showInteractionNotice ? (
+                    <button
+                      type="button"
+                      onClick={handleInteractionNotificationClick}
+                      className="mb-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-emerald-300/35 bg-emerald-400/10 px-4 py-3 text-left transition hover:bg-emerald-300/15"
+                    >
+                      <span className="text-sm font-semibold text-emerald-100">
+                        {latestInteractionNotification.userName} busco {latestInteractionNotification.productName}
+                      </span>
+                      <span className="rounded-full border border-emerald-300/35 px-3 py-1 text-xs font-semibold text-emerald-100">
+                        Ver usuario
+                      </span>
+                    </button>
+                  ) : null}
+
                   <div className="flex flex-wrap gap-3">
                     {interactionFilters.map((filter) => (
                       <button
@@ -572,7 +621,14 @@ export default function PublicacionesPage() {
 
                     {activeInteractionFilter === "Lista de usuarios que interactúan" &&
                       users.map((user) => (
-                        <article key={user.id} className="rounded-3xl border border-cyan-100/10 bg-white/5 p-5">
+                        <article
+                          key={user.id}
+                          className={`rounded-3xl border p-5 ${
+                            highlightedUserId === user.id
+                              ? "border-emerald-300/40 bg-emerald-400/10"
+                              : "border-cyan-100/10 bg-white/5"
+                          }`}
+                        >
                           <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
                               {user.avatar}

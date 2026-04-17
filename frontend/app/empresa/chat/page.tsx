@@ -31,6 +31,20 @@ const companyModules = [
 
 const chatThreads: ChatThread[] = [
   {
+    id: "chat-5",
+    name: "Alejandro",
+    product: "Laptop Pro 14",
+    lastMessage: "Busque la Laptop Pro 14 y quiero mas informacion.",
+    time: "Ahora",
+    unread: 1,
+    avatar: "AL",
+    messages: [
+      { id: "m1", author: "cliente", text: "Hola, busque la Laptop Pro 14 en sus publicaciones.", time: "11:02" },
+      { id: "m2", author: "empresa", text: "Hola Alejandro, claro. Te comparto caracteristicas y disponibilidad.", time: "11:04" },
+      { id: "m3", author: "cliente", text: "Busque la Laptop Pro 14 y quiero mas informacion.", time: "11:05" },
+    ],
+  },
+  {
     id: "chat-1",
     name: "Carlos M.",
     product: "Laptop Pro 14",
@@ -174,7 +188,7 @@ export default function ChatPage() {
                   </div>
                 </aside>
 
-                <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-4 md:p-5">
+                <section className="flex h-[calc(100vh-170px)] min-h-[620px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-4 md:p-5">
                   <div className="flex items-center justify-between border-b border-cyan-100/10 pb-4">
                     <div className="flex items-center gap-4">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
@@ -188,7 +202,7 @@ export default function ChatPage() {
                     <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">En linea</span>
                   </div>
 
-                  <div className="mt-4 space-y-3 rounded-3xl bg-slate-950/30 p-4 md:p-5">
+                  <div className="mt-4 flex-1 space-y-3 overflow-y-auto rounded-3xl bg-slate-950/30 p-4 md:p-5">
                     {activeChat.messages.map((message) => (
                       <div key={message.id} className={`flex ${message.author === "empresa" ? "justify-end" : "justify-start"}`}>
                         <div
@@ -205,7 +219,7 @@ export default function ChatPage() {
                     ))}
                   </div>
 
-                  <div className="mt-4 rounded-3xl border border-cyan-100/10 bg-white/5 p-4">
+                  <div className="mt-4 shrink-0 rounded-3xl border border-cyan-100/10 bg-white/5 p-4">
                     <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Responder</p>
                     <div className="mt-3 flex flex-col gap-3 md:flex-row">
                       <input
