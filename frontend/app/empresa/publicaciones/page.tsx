@@ -126,6 +126,30 @@ type TextPublicationCard = {
   image: string;
 };
 
+type ProductEditForm = {
+  name: string;
+  description: string;
+  price: string;
+  status: string;
+  image: string;
+};
+
+type ServiceEditForm = {
+  name: string;
+  description: string;
+  price: string;
+  image: string;
+};
+
+type OfferEditForm = {
+  title: string;
+  description: string;
+  currentPrice: string;
+  previousPrice: string;
+  label: string;
+  image: string;
+};
+
 function LikeIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 fill-current">
@@ -366,6 +390,36 @@ export default function PublicacionesPage() {
   const [offerItems, setOfferItems] = useState<OfferCard[]>(offers);
   const [postItems, setPostItems] = useState<PostCard[]>(posts);
   const [textPostItems, setTextPostItems] = useState<TextPublicationCard[]>(textPosts);
+  const [showProductEditModal, setShowProductEditModal] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [productEditMessage, setProductEditMessage] = useState("");
+  const [productEditForm, setProductEditForm] = useState<ProductEditForm>({
+    name: "",
+    description: "",
+    price: "",
+    status: "Disponible",
+    image: "",
+  });
+  const [showServiceEditModal, setShowServiceEditModal] = useState(false);
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+  const [serviceEditMessage, setServiceEditMessage] = useState("");
+  const [serviceEditForm, setServiceEditForm] = useState<ServiceEditForm>({
+    name: "",
+    description: "",
+    price: "",
+    image: "",
+  });
+  const [showOfferEditModal, setShowOfferEditModal] = useState(false);
+  const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
+  const [offerEditMessage, setOfferEditMessage] = useState("");
+  const [offerEditForm, setOfferEditForm] = useState<OfferEditForm>({
+    title: "",
+    description: "",
+    currentPrice: "",
+    previousPrice: "",
+    label: "Oferta",
+    image: "",
+  });
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [publishMessage, setPublishMessage] = useState("");
   const [uploadedImagePreview, setUploadedImagePreview] = useState("");
@@ -424,6 +478,150 @@ export default function PublicacionesPage() {
     setActiveInteractionFilter("Lista de usuarios que interactúan");
     setHighlightedUserId(latestInteractionNotification.userId);
     setShowInteractionNotice(false);
+  };
+
+  const openProductEditModal = (product: ProductCard) => {
+    setEditingProductId(product.id);
+    setProductEditForm({
+      name: product.name,
+      description: product.description,
+      price: product.price ?? "",
+      status: product.status,
+      image: product.image,
+    });
+    setProductEditMessage("");
+    setShowProductEditModal(true);
+  };
+
+  const handleProductEditSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!editingProductId) {
+      return;
+    }
+
+    const trimmedName = productEditForm.name.trim();
+    const trimmedDescription = productEditForm.description.trim();
+
+    if (!trimmedName || !trimmedDescription) {
+      setProductEditMessage("Completa nombre y descripcion del producto.");
+      return;
+    }
+
+    setProductItems((current) =>
+      current.map((item) =>
+        item.id === editingProductId
+          ? {
+              ...item,
+              name: trimmedName,
+              description: trimmedDescription,
+              price: productEditForm.price.trim() || "Consultar",
+              status: productEditForm.status.trim() || "Disponible",
+              image: productEditForm.image.trim() || item.image,
+            }
+          : item,
+      ),
+    );
+
+    setShowProductEditModal(false);
+    setEditingProductId(null);
+    setProductEditMessage("");
+  };
+
+  const openServiceEditModal = (service: ServiceCard) => {
+    setEditingServiceId(service.id);
+    setServiceEditForm({
+      name: service.name,
+      description: service.description,
+      price: service.price,
+      image: service.image ?? "",
+    });
+    setServiceEditMessage("");
+    setShowServiceEditModal(true);
+  };
+
+  const handleServiceEditSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!editingServiceId) {
+      return;
+    }
+
+    const trimmedName = serviceEditForm.name.trim();
+    const trimmedDescription = serviceEditForm.description.trim();
+
+    if (!trimmedName || !trimmedDescription) {
+      setServiceEditMessage("Completa nombre y descripcion del servicio.");
+      return;
+    }
+
+    setServiceItems((current) =>
+      current.map((item) =>
+        item.id === editingServiceId
+          ? {
+              ...item,
+              name: trimmedName,
+              description: trimmedDescription,
+              price: serviceEditForm.price.trim() || "Consultar",
+              image: serviceEditForm.image.trim() || item.image,
+            }
+          : item,
+      ),
+    );
+
+    setShowServiceEditModal(false);
+    setEditingServiceId(null);
+    setServiceEditMessage("");
+  };
+
+  const openOfferEditModal = (offer: OfferCard) => {
+    setEditingOfferId(offer.id);
+    setOfferEditForm({
+      title: offer.title,
+      description: offer.description,
+      currentPrice: offer.currentPrice,
+      previousPrice: offer.previousPrice ?? "",
+      label: offer.label,
+      image: offer.image,
+    });
+    setOfferEditMessage("");
+    setShowOfferEditModal(true);
+  };
+
+  const handleOfferEditSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!editingOfferId) {
+      return;
+    }
+
+    const trimmedTitle = offerEditForm.title.trim();
+    const trimmedDescription = offerEditForm.description.trim();
+
+    if (!trimmedTitle || !trimmedDescription) {
+      setOfferEditMessage("Completa titulo y descripcion de la oferta.");
+      return;
+    }
+
+    setOfferItems((current) =>
+      current.map((item) =>
+        item.id === editingOfferId
+          ? {
+              ...item,
+              title: trimmedTitle,
+              description: trimmedDescription,
+              currentPrice: offerEditForm.currentPrice.trim() || "Consultar",
+              previousPrice: offerEditForm.previousPrice.trim() || undefined,
+              label: offerEditForm.label.trim() || "Oferta",
+              image: offerEditForm.image.trim() || item.image,
+            }
+          : item,
+      ),
+    );
+
+    setShowOfferEditModal(false);
+    setEditingOfferId(null);
+    setOfferEditMessage("");
   };
 
   const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -800,7 +998,13 @@ export default function PublicacionesPage() {
                             <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Precio</p>
                             <p className="mt-1 text-lg font-bold text-white">{product.price ?? "Consultar"}</p>
                           </div>
-                         
+                          <button
+                            type="button"
+                            onClick={() => openProductEditModal(product)}
+                            className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                          >
+                            Editar
+                          </button>
                         </div>
                       </div>
                     </article>
@@ -829,8 +1033,12 @@ export default function PublicacionesPage() {
                           <p className="text-sm text-cyan-100/75">
                             <span className="font-semibold text-white">Precio:</span> {service.price}
                           </p>
-                          <button className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
-                            Contactar por chat
+                          <button
+                            type="button"
+                            onClick={() => openServiceEditModal(service)}
+                            className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                          >
+                            Editar
                           </button>
                         </div>
                       </div>
@@ -875,8 +1083,12 @@ export default function PublicacionesPage() {
                             </div>
                           ) : null}
                         </div>
-                        <button className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
-                          Contactar por chat
+                        <button
+                          type="button"
+                          onClick={() => openOfferEditModal(offer)}
+                          className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                        >
+                          Editar
                         </button>
                       </div>
                     </article>
@@ -1097,6 +1309,305 @@ export default function PublicacionesPage() {
           </section>
         </section>
       </main>
+
+      {showProductEditModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
+          <form
+            onSubmit={handleProductEditSubmit}
+            className="w-full max-w-2xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Producto</p>
+                <h2 className="mt-2 text-2xl font-bold text-white">Editar producto</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProductEditModal(false);
+                  setEditingProductId(null);
+                  setProductEditMessage("");
+                }}
+                className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                <span>Nombre</span>
+                <input
+                  value={productEditForm.name}
+                  onChange={(event) => setProductEditForm((current) => ({ ...current, name: event.target.value }))}
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                <span>Descripcion</span>
+                <textarea
+                  value={productEditForm.description}
+                  onChange={(event) => setProductEditForm((current) => ({ ...current, description: event.target.value }))}
+                  rows={4}
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85">
+                <span>Precio</span>
+                <input
+                  value={productEditForm.price}
+                  onChange={(event) => setProductEditForm((current) => ({ ...current, price: event.target.value }))}
+                  placeholder="Ej: Bs 1.500.000"
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85">
+                <span>Estado</span>
+                <input
+                  value={productEditForm.status}
+                  onChange={(event) => setProductEditForm((current) => ({ ...current, status: event.target.value }))}
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                <span>URL de imagen</span>
+                <input
+                  value={productEditForm.image}
+                  onChange={(event) => setProductEditForm((current) => ({ ...current, image: event.target.value }))}
+                  placeholder="/productos/laptop-pro-14.jpg"
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+            </div>
+
+            {productEditMessage ? <p className="mt-4 text-sm text-amber-200">{productEditMessage}</p> : null}
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="submit"
+                className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+              >
+                Guardar cambios
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProductEditModal(false);
+                  setEditingProductId(null);
+                  setProductEditMessage("");
+                }}
+                className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      {showServiceEditModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
+          <form
+            onSubmit={handleServiceEditSubmit}
+            className="w-full max-w-2xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Servicio</p>
+                <h2 className="mt-2 text-2xl font-bold text-white">Editar servicio</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowServiceEditModal(false);
+                  setEditingServiceId(null);
+                  setServiceEditMessage("");
+                }}
+                className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                <span>Nombre</span>
+                <input
+                  value={serviceEditForm.name}
+                  onChange={(event) => setServiceEditForm((current) => ({ ...current, name: event.target.value }))}
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                <span>Descripcion</span>
+                <textarea
+                  value={serviceEditForm.description}
+                  onChange={(event) => setServiceEditForm((current) => ({ ...current, description: event.target.value }))}
+                  rows={4}
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85">
+                <span>Precio</span>
+                <input
+                  value={serviceEditForm.price}
+                  onChange={(event) => setServiceEditForm((current) => ({ ...current, price: event.target.value }))}
+                  placeholder="Ej: Bs 120.000"
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85">
+                <span>URL de imagen</span>
+                <input
+                  value={serviceEditForm.image}
+                  onChange={(event) => setServiceEditForm((current) => ({ ...current, image: event.target.value }))}
+                  placeholder="/productos/monitor-ultrawide-34.jpg"
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+            </div>
+
+            {serviceEditMessage ? <p className="mt-4 text-sm text-amber-200">{serviceEditMessage}</p> : null}
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="submit"
+                className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+              >
+                Guardar cambios
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowServiceEditModal(false);
+                  setEditingServiceId(null);
+                  setServiceEditMessage("");
+                }}
+                className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      {showOfferEditModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
+          <form
+            onSubmit={handleOfferEditSubmit}
+            className="w-full max-w-2xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Oferta</p>
+                <h2 className="mt-2 text-2xl font-bold text-white">Editar oferta o promocion</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOfferEditModal(false);
+                  setEditingOfferId(null);
+                  setOfferEditMessage("");
+                }}
+                className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                <span>Titulo</span>
+                <input
+                  value={offerEditForm.title}
+                  onChange={(event) => setOfferEditForm((current) => ({ ...current, title: event.target.value }))}
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                <span>Descripcion</span>
+                <textarea
+                  value={offerEditForm.description}
+                  onChange={(event) => setOfferEditForm((current) => ({ ...current, description: event.target.value }))}
+                  rows={4}
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85">
+                <span>Precio actual</span>
+                <input
+                  value={offerEditForm.currentPrice}
+                  onChange={(event) => setOfferEditForm((current) => ({ ...current, currentPrice: event.target.value }))}
+                  placeholder="Ej: Bs 95.000"
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85">
+                <span>Precio anterior (opcional)</span>
+                <input
+                  value={offerEditForm.previousPrice}
+                  onChange={(event) => setOfferEditForm((current) => ({ ...current, previousPrice: event.target.value }))}
+                  placeholder="Ej: Bs 140.000"
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85">
+                <span>Etiqueta</span>
+                <input
+                  value={offerEditForm.label}
+                  onChange={(event) => setOfferEditForm((current) => ({ ...current, label: event.target.value }))}
+                  placeholder="Oferta"
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm text-cyan-100/85">
+                <span>URL de imagen</span>
+                <input
+                  value={offerEditForm.image}
+                  onChange={(event) => setOfferEditForm((current) => ({ ...current, image: event.target.value }))}
+                  placeholder="/productos/laptop-pro-14.jpg"
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+            </div>
+
+            {offerEditMessage ? <p className="mt-4 text-sm text-amber-200">{offerEditMessage}</p> : null}
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="submit"
+                className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+              >
+                Guardar cambios
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOfferEditModal(false);
+                  setEditingOfferId(null);
+                  setOfferEditMessage("");
+                }}
+                className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </div>
   );
 }
