@@ -60,13 +60,21 @@ export default function AuthView({
       }
 
       if (username === "admin" && password === "admin123") {
-        document.cookie = "techmarket_role=empresa_admin; path=/; SameSite=Lax";
+        document.cookie = "techmarket_role=empresa_tienda; path=/; SameSite=Lax";
         router.push("/empresa");
         return;
       }
 
+      if (username === "admin1" && password === "admin1") {
+        document.cookie = "techmarket_role=empresa_tecnico; path=/; SameSite=Lax";
+        router.push("/empresa/especialista");
+        return;
+      }
+
       document.cookie = "techmarket_role=; Max-Age=0; path=/; SameSite=Lax";
-      setFeedback("Credenciales invalidas. Usuario: admin, contrasena: admin123.");
+      setFeedback(
+        "Credenciales invalidas. Tienda: admin/admin123. Tecnico: admin1/admin1.",
+      );
       return;
     }
 
@@ -176,18 +184,24 @@ export default function AuthView({
 
               <div>
                 <label className="auth-label" htmlFor="email">
-                  {mode === "login" ? "Usuario" : "Correo"}
+                  {mode === "login" && accountType === "empresa" ? "Usuario" : "Correo"}
                 </label>
                 <input
                   className="auth-input"
-                  id={mode === "login" ? "username" : "email"}
-                  name={mode === "login" ? "username" : "email"}
-                  type={mode === "login" ? "text" : "email"}
-                  value={mode === "login" ? loginUsername : undefined}
+                  id={mode === "login" && accountType === "empresa" ? "username" : "email"}
+                  name={mode === "login" && accountType === "empresa" ? "username" : "email"}
+                  type={mode === "login" && accountType === "empresa" ? "text" : "email"}
+                  value={mode === "login" && accountType === "empresa" ? loginUsername : undefined}
                   onChange={
-                    mode === "login" ? (event) => setLoginUsername(event.target.value) : undefined
+                    mode === "login" && accountType === "empresa"
+                      ? (event) => setLoginUsername(event.target.value)
+                      : undefined
                   }
-                  placeholder={mode === "login" ? "admin" : "correo@empresa.com"}
+                  placeholder={
+                    mode === "login" && accountType === "empresa"
+                      ? "admin o admin1"
+                      : "correo@empresa.com"
+                  }
                   required
                 />
               </div>
