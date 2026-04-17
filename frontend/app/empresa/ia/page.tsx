@@ -137,14 +137,14 @@ export default function ConsultorIAPage() {
                 </div>
 
                 <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Objetivo</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Tip rapido</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Orientacion comercial accionable</h2>
                   <p className="mt-3 text-sm leading-7 text-cyan-100/80">{lastAssistantTip}</p>
                 </div>
               </div>
 
-              <div className="mt-8 grid gap-4 lg:grid-cols-2">
-                <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4">
+              <div className="mt-8">
+                <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4 md:p-5">
                   <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Sugerencias iniciales</p>
                   <div className="mt-4 flex flex-wrap gap-3">
                     {quickQuestions.map((question) => (
@@ -152,7 +152,7 @@ export default function ConsultorIAPage() {
                         key={question}
                         type="button"
                         onClick={() => setInput(question)}
-                        className="rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10"
+                        className="w-full rounded-full border border-cyan-100/10 bg-white/5 px-6 py-3 text-left text-sm font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10 sm:w-auto sm:min-w-[320px]"
                       >
                         {question}
                       </button>
@@ -160,13 +160,7 @@ export default function ConsultorIAPage() {
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4">
-                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Tip rapido</p>
-                  <p className="mt-4 text-sm leading-7 text-cyan-100/80">
-                    Usa preguntas concretas sobre productos, publicaciones, promociones y servicios. Mientras mas claro
-                    sea tu objetivo, mas practica sera la recomendacion.
-                  </p>
-                </div>
+                
               </div>
 
               <div className="mt-8 space-y-4 rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
