@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { clientCompanyProfiles } from "../../lib/clientCompanyProfiles";
+import { ClientTopbarControls } from "../../components/ClientExperienceShell";
 
 export default function ClienteEmpresasPage() {
   return (
@@ -9,7 +10,7 @@ export default function ClienteEmpresasPage() {
           <Link href="/cliente" className="font-semibold text-cyan-100/90">
             TechMarket
           </Link>
-          <span className="tech-chip">Cliente · Empresas</span>
+          <ClientTopbarControls sectionLabel="Empresas" />
         </div>
       </header>
 

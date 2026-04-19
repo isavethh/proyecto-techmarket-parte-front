@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getServicePublication, servicePublications } from "../../../lib/servicePublications";
+import { ClientTopbarControls } from "../../../components/ClientExperienceShell";
 
 type Review = {
   user: string;
@@ -47,9 +48,12 @@ export default async function ServicioPage({
           <Link href="/" className="font-semibold text-cyan-100/90">
             TechMarket
           </Link>
-          <Link href="/cliente" className="text-sm text-cyan-200/80">
-            Volver a cliente
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/cliente" className="text-sm text-cyan-200/80">
+              Volver a cliente
+            </Link>
+            <ClientTopbarControls sectionLabel="Detalle de servicio" />
+          </div>
         </div>
       </header>
 

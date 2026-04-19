@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ClientTopbarControls } from "../../components/ClientExperienceShell";
 
 type ProductSpec = {
   id: string;
@@ -169,7 +170,7 @@ export default function ClienteVersusPage() {
           <Link href="/cliente" className="font-semibold text-cyan-100/90">
             TechMarket
           </Link>
-          <span className="tech-chip">Cliente · Versus</span>
+          <ClientTopbarControls sectionLabel="Versus" />
         </div>
       </header>
 

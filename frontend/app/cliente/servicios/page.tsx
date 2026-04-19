@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { servicePublications } from "../../lib/servicePublications";
+import { ClientTopbarControls } from "../../components/ClientExperienceShell";
 
 export default function ServiciosIndexPage() {
   return (
@@ -9,7 +10,7 @@ export default function ServiciosIndexPage() {
           <Link href="/cliente" className="font-semibold text-cyan-100/90">
             TechMarket
           </Link>
-          <span className="tech-chip">Cliente · Servicios</span>
+          <ClientTopbarControls sectionLabel="Servicios" />
         </div>
       </header>
 

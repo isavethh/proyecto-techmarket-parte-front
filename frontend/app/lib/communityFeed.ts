@@ -12,6 +12,7 @@ export type CommunityFeedPost = {
 };
 
 const COMMUNITY_FEED_STORAGE_KEY = "techmarket.community.feed";
+export const COMMUNITY_FEED_UPDATED_EVENT = "techmarket.community.feed.updated";
 const EMPTY_COMMUNITY_FEED: CommunityFeedPost[] = [];
 
 let cachedRawFeed: string | null | undefined;
@@ -84,6 +85,7 @@ export const writeCommunityFeedPosts = (posts: CommunityFeedPost[]): void => {
   window.localStorage.setItem(COMMUNITY_FEED_STORAGE_KEY, serialized);
   cachedRawFeed = serialized;
   cachedFeedPosts = posts.length ? posts : EMPTY_COMMUNITY_FEED;
+  window.dispatchEvent(new Event(COMMUNITY_FEED_UPDATED_EVENT));
 };
 
 export const mergeCommunityFeedPosts = (posts: CommunityFeedPost[]): CommunityFeedPost[] => {

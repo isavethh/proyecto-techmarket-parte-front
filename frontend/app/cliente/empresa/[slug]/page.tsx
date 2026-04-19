@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getClientCompanyProfile } from "../../../lib/clientCompanyProfiles";
+import { ClientTopbarControls } from "../../../components/ClientExperienceShell";
 
 function RatingStars({ rating }: { rating: number }) {
   return (
@@ -32,7 +33,7 @@ export default async function ClienteEmpresaPerfilPage({ params }: { params: Pro
           <Link href="/cliente" className="font-semibold text-cyan-100/90">
             TechMarket
           </Link>
-          <span className="tech-chip">Cliente · Perfil de empresa</span>
+          <ClientTopbarControls sectionLabel="Perfil de empresa" />
         </div>
       </header>
 

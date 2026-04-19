@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 import {
+  COMMUNITY_FEED_UPDATED_EVENT,
   CommunityFeedPost,
   mergeCommunityFeedPosts,
   readCommunityFeedPosts,
 } from "../lib/communityFeed";
 import { clientCompanyProfiles } from "../lib/clientCompanyProfiles";
+import { ClientTopbarControls } from "../components/ClientExperienceShell";
 
 type SearchMode = "normal" | "ia";
 type TopView = "feed" | "marketplace" | "seguimiento";
@@ -202,6 +204,7 @@ const quickActions = [
   { label: "Buscar servicios", href: "/cliente/servicios" },
   { label: "Versus de productos", href: "/cliente/versus" },
   { label: "Explorar empresas", href: "/cliente/empresas" },
+  { label: "Comunidades", href: "/cliente/comunidades" },
   { label: "Actividad reciente", href: "#feed" },
 ];
 
@@ -287,10 +290,16 @@ const subscribeCommunityFeed = (onStoreChange: () => void) => {
     }
   };
 
+  const handleFeedUpdate = () => {
+    onStoreChange();
+  };
+
   window.addEventListener("storage", handleStorage);
+  window.addEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
 
   return () => {
     window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
   };
 };
 
@@ -523,7 +532,7 @@ export default function ClientePage() {
               />
             </form>
           </div>
-          <span className="tech-chip">Cliente activo</span>
+          <ClientTopbarControls sectionLabel="Cliente activo" />
         </div>
       </header>
 
@@ -1068,7 +1077,7 @@ export default function ClientePage() {
             </div>
 
             <div className="border-b border-cyan-100/10 px-3 py-2">
-              <div className="flex gap-2 overflow-x-auto">
+              <div className="chat-scrollbar chat-scrollbar-x flex gap-2 overflow-x-auto">
                 {clientChatThreads.map((chat) => {
                   const isActive = chat.id === activeChatId;
 
@@ -1091,7 +1100,7 @@ export default function ClientePage() {
               </div>
             </div>
 
-            <div className="max-h-[280px] space-y-3 overflow-y-auto px-4 py-3">
+            <div className="chat-scrollbar max-h-[280px] space-y-3 overflow-y-auto px-4 py-3">
               {activeChat.messages.map((message) => (
                 <div
                   key={`${activeChat.id}-${message.id}`}
