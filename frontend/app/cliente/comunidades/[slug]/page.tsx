@@ -5,14 +5,18 @@ import { useParams } from "next/navigation";
 import { ChangeEvent, FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ClientTopbarControls } from "../../../components/ClientExperienceShell";
+import { PublicationActionButton, PublicationCard } from "../../../components/PublicationCard";
 import {
   CommunityMemberRole,
   createCommunityPost,
+  createCommunityPostReply,
   isCurrentUserMember,
+  isCurrentUserLikedCommunityPost,
   joinCommunity,
   readCommunityCatalog,
   readCommunityPosts,
   subscribeCommunityStore,
+  toggleCommunityPostLike,
 } from "../../../lib/communities";
 
 const EMPTY_COMMUNITIES = [];
@@ -67,6 +71,9 @@ export default function CommunityDetailPage() {
   const [draftPost, setDraftPost] = useState("");
   const [draftImage, setDraftImage] = useState<string | undefined>(undefined);
   const [draftImageName, setDraftImageName] = useState("");
+  const [activeReplyPostId, setActiveReplyPostId] = useState<string | null>(null);
+  const [replyDraftByPostId, setReplyDraftByPostId] = useState<Record<string, string>>({});
+  const [auraLikePostId, setAuraLikePostId] = useState<string | null>(null);
 
   const community = useMemo(
     () => communities.find((item) => item.slug === slug),
@@ -111,6 +118,16 @@ export default function CommunityDetailPage() {
     setDraftImageName("");
   };
 
+  const openJoinPrompt = () => {
+    if (!community) {
+      return;
+    }
+
+    setDismissedJoinPrompts((current) =>
+      current.filter((dismissedSlug) => dismissedSlug !== community.slug),
+    );
+  };
+
   const handleCommunityImage = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedImage = event.target.files?.[0];
 
@@ -138,6 +155,61 @@ export default function CommunityDetailPage() {
     }
 
     joinCommunity(community.slug);
+  };
+
+  const handleLikePost = (postId: string, currentlyLiked: boolean) => {
+    if (!isMember) {
+      openJoinPrompt();
+      return;
+    }
+
+    toggleCommunityPostLike(postId);
+
+    if (!currentlyLiked) {
+      setAuraLikePostId(postId);
+      window.setTimeout(() => {
+        setAuraLikePostId((current) => (current === postId ? null : current));
+      }, 520);
+    }
+  };
+
+  const handleReplyToggle = (postId: string) => {
+    if (!isMember) {
+      openJoinPrompt();
+      return;
+    }
+
+    setActiveReplyPostId((current) => (current === postId ? null : postId));
+  };
+
+  const handleReplySubmit = (event: FormEvent<HTMLFormElement>, postId: string) => {
+    event.preventDefault();
+
+    if (!isMember) {
+      openJoinPrompt();
+      return;
+    }
+
+    const draftReply = (replyDraftByPostId[postId] ?? "").trim();
+
+    if (draftReply.length < 3) {
+      return;
+    }
+
+    const createdReply = createCommunityPostReply({
+      postId,
+      body: draftReply,
+    });
+
+    if (!createdReply) {
+      return;
+    }
+
+    setReplyDraftByPostId((current) => ({
+      ...current,
+      [postId]: "",
+    }));
+    setActiveReplyPostId(null);
   };
 
   const handleCreatePost = (event: FormEvent<HTMLFormElement>) => {
@@ -221,15 +293,7 @@ export default function CommunityDetailPage() {
             {!isMember ? (
               <button
                 type="button"
-                onClick={() => {
-                  if (!dismissedJoinPrompts.includes(community.slug)) {
-                    return;
-                  }
-
-                  setDismissedJoinPrompts((current) =>
-                    current.filter((dismissedSlug) => dismissedSlug !== community.slug),
-                  );
-                }}
+                onClick={openJoinPrompt}
                 className="mt-4 w-full rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-3 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
               >
                 Quiero ingresar
@@ -298,6 +362,9 @@ export default function CommunityDetailPage() {
                 Puedes leer solo algunas publicaciones. Para publicar y ver el contenido completo debes ingresar a
                 la comunidad.
               </p>
+              <p className="mt-2 text-xs text-cyan-200/70">
+                Como visitante no puedes reaccionar ni responder publicaciones.
+              </p>
             </section>
           ) : (
             <section className="tech-card">
@@ -343,30 +410,142 @@ export default function CommunityDetailPage() {
           )}
 
           <section className="space-y-3">
-            {visiblePosts.map((post) => (
-              <article
-                key={post.id}
-                className="rounded-3xl border border-cyan-100/15 bg-[linear-gradient(160deg,rgba(13,36,64,0.95),rgba(7,24,44,0.96))] p-4 shadow-lg shadow-slate-950/20"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-cyan-50">{post.authorName}</p>
-                    <p className="text-xs text-cyan-100/70">{formatPostDate(post.createdAt)}</p>
-                  </div>
-                  <span className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${roleBadgeClass[post.authorRole]}`}>
-                    {roleLabel[post.authorRole]}
-                  </span>
-                </div>
+            {visiblePosts.map((post) => {
+              const likedByCurrentUser = isCurrentUserLikedCommunityPost(post);
 
-                <p className="mt-3 text-sm leading-6 text-cyan-100/85">{post.body}</p>
+              return (
+                <PublicationCard
+                  key={post.id}
+                  className="bg-[linear-gradient(160deg,rgba(13,36,64,0.95),rgba(7,24,44,0.96))] shadow-lg shadow-slate-950/20"
+                  header={
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-cyan-50">{post.authorName}</p>
+                        <p className="text-xs text-cyan-100/70">{formatPostDate(post.createdAt)}</p>
+                      </div>
+                      <span className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${roleBadgeClass[post.authorRole]}`}>
+                        {roleLabel[post.authorRole]}
+                      </span>
+                    </div>
+                  }
+                  content={<p className="mt-3 text-sm leading-6 text-cyan-100/85">{post.body}</p>}
+                  media={
+                    post.image
+                      ? {
+                          src: post.image,
+                          alt: "Publicacion de la comunidad",
+                          wrapperClassName: "mt-3",
+                          imageClassName: "h-52 w-full object-cover",
+                        }
+                      : undefined
+                  }
+                  actions={
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:text-sm">
+                      <motion.button
+                        type="button"
+                        onClick={() => handleLikePost(post.id, likedByCurrentUser)}
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.96 }}
+                        animate={
+                          likedByCurrentUser
+                            ? {
+                                scale: [1, 1.04, 1],
+                                boxShadow: [
+                                  "0 0 0 rgba(34,211,238,0)",
+                                  "0 0 24px rgba(34,211,238,0.45)",
+                                  "0 0 12px rgba(34,211,238,0.24)",
+                                ],
+                              }
+                            : {
+                                scale: 1,
+                                boxShadow: "0 0 0 rgba(34,211,238,0)",
+                              }
+                        }
+                        transition={{ duration: 0.45, ease: "easeOut" }}
+                        className={`group relative overflow-hidden rounded-xl border px-3 py-2 font-semibold transition ${
+                          likedByCurrentUser
+                            ? "border-cyan-300/45 bg-cyan-300/18 text-cyan-50"
+                            : "border-cyan-100/12 bg-cyan-300/10 text-cyan-100/90 hover:bg-cyan-300/15"
+                        }`}
+                      >
+                        <span className="pointer-events-none absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_top,rgba(103,232,249,0.3),transparent_70%)]" />
+                        <AnimatePresence>
+                          {auraLikePostId === post.id ? (
+                            <motion.span
+                              className="pointer-events-none absolute inset-0 rounded-xl bg-cyan-300/35"
+                              initial={{ opacity: 0.55, scale: 0.8 }}
+                              animate={{ opacity: 0, scale: 1.35 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.5, ease: "easeOut" }}
+                            />
+                          ) : null}
+                        </AnimatePresence>
+                        <span className="relative z-10">
+                          {likedByCurrentUser ? "Te gusta" : "Me gusta"} ({post.likedByUserIds?.length ?? 0})
+                        </span>
+                      </motion.button>
 
-                {post.image ? (
-                  <div className="mt-3 overflow-hidden rounded-2xl border border-cyan-100/10">
-                    <img src={post.image} alt="Publicacion de la comunidad" className="h-52 w-full object-cover" loading="lazy" />
-                  </div>
-                ) : null}
-              </article>
-            ))}
+                      <PublicationActionButton
+                        onClick={() => handleReplyToggle(post.id)}
+                        accent="neutral"
+                      >
+                        Responder ({post.replies?.length ?? 0})
+                      </PublicationActionButton>
+                    </div>
+                  }
+                  composer={
+                    isMember && activeReplyPostId === post.id ? (
+                      <form onSubmit={(event) => handleReplySubmit(event, post.id)} className="mt-3 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
+                        <textarea
+                          value={replyDraftByPostId[post.id] ?? ""}
+                          onChange={(event) =>
+                            setReplyDraftByPostId((current) => ({
+                              ...current,
+                              [post.id]: event.target.value,
+                            }))
+                          }
+                          rows={3}
+                          placeholder="Escribe tu respuesta para esta publicacion"
+                          className="auth-input min-h-[90px] resize-y"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setActiveReplyPostId(null)}
+                            className="rounded-xl border border-cyan-100/15 bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-100/80"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={(replyDraftByPostId[post.id] ?? "").trim().length < 3}
+                            className="rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-3 py-2 text-xs font-semibold text-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Responder
+                          </button>
+                        </div>
+                      </form>
+                    ) : null
+                  }
+                  thread={
+                    post.replies && post.replies.length > 0 ? (
+                      <div className="mt-3 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
+                        <p className="text-xs font-semibold text-cyan-200/80">Respuestas</p>
+                        {post.replies.map((reply) => (
+                          <div key={reply.id} className="rounded-xl border border-cyan-100/10 bg-white/5 p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs font-semibold text-cyan-50">{reply.authorName}</p>
+                              <p className="text-[10px] text-cyan-200/65">{formatPostDate(reply.createdAt)}</p>
+                            </div>
+                            <p className="mt-2 text-xs leading-5 text-cyan-100/85">{reply.body}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null
+                  }
+                />
+              );
+            })}
 
             {!visiblePosts.length ? (
               <section className="tech-card">

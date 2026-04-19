@@ -1,40 +1,31 @@
 import Link from "next/link";
 import { clientCompanyProfiles } from "../../lib/clientCompanyProfiles";
-import { ClientTopbarControls } from "../../components/ClientExperienceShell";
+import {
+  ClientInfoCard,
+  ClientPageHeader,
+  ClientQuickLinksCard,
+} from "../../components/ClientPageSections";
 
 export default function ClienteEmpresasPage() {
   return (
     <div className="flex-1 pb-10">
-      <header className="tech-top-nav sticky top-0 z-30">
-        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
-          <Link href="/cliente" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <ClientTopbarControls sectionLabel="Empresas" />
-        </div>
-      </header>
+      <ClientPageHeader sectionLabel="Empresas" />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <section className="tech-card">
-            <p className="tech-mono text-xs text-cyan-200/75">EXPLORA EMPRESAS</p>
-            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Descubre quienes son y que hacen</h1>
-            <p className="mt-3 text-sm text-cyan-100/80">
-              Aqui ves varias empresas del ecosistema con un resumen breve. Al abrir una card entras a su perfil.
-            </p>
-          </section>
+          <ClientInfoCard
+            eyebrow="EXPLORA EMPRESAS"
+            title="Descubre quienes son y que hacen"
+            description="Aqui ves varias empresas del ecosistema con un resumen breve. Al abrir una card entras a su perfil."
+          />
 
-          <section className="tech-card space-y-2">
-            <Link href="/cliente" className="auth-action">
-              Volver al feed
-            </Link>
-            <Link href="/cliente/servicios" className="auth-action">
-              Ver servicios
-            </Link>
-            <Link href="/cliente/versus" className="auth-action">
-              Comparar productos
-            </Link>
-          </section>
+          <ClientQuickLinksCard
+            links={[
+              { href: "/cliente", label: "Volver al feed" },
+              { href: "/cliente/servicios", label: "Ver servicios" },
+              { href: "/cliente/versus", label: "Comparar productos" },
+            ]}
+          />
         </aside>
 
         <section className="space-y-4">

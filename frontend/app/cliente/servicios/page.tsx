@@ -1,40 +1,31 @@
 import Link from "next/link";
 import { servicePublications } from "../../lib/servicePublications";
-import { ClientTopbarControls } from "../../components/ClientExperienceShell";
+import {
+  ClientInfoCard,
+  ClientPageHeader,
+  ClientQuickLinksCard,
+} from "../../components/ClientPageSections";
 
 export default function ServiciosIndexPage() {
   return (
     <div className="flex-1 pb-10">
-      <header className="tech-top-nav sticky top-0 z-30">
-        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
-          <Link href="/cliente" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <ClientTopbarControls sectionLabel="Servicios" />
-        </div>
-      </header>
+      <ClientPageHeader sectionLabel="Servicios" />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <section className="tech-card">
-            <p className="tech-mono text-xs text-cyan-200/75">SERVICIOS</p>
-            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Solo publicaciones de servicios</h1>
-            <p className="mt-3 text-sm text-cyan-100/80">
-              Aqui solo aparecen servicios publicados por empresas del ecosistema.
-            </p>
-          </section>
+          <ClientInfoCard
+            eyebrow="SERVICIOS"
+            title="Solo publicaciones de servicios"
+            description="Aqui solo aparecen servicios publicados por empresas del ecosistema."
+          />
 
-          <section className="tech-card space-y-2">
-            <Link href="/cliente" className="auth-action block w-full">
-              Volver al feed
-            </Link>
-            <Link href="/cliente/versus" className="auth-action block w-full">
-              Comparar productos
-            </Link>
-            <Link href="#servicios-activos" className="auth-action block w-full">
-              Ver servicios activos
-            </Link>
-          </section>
+          <ClientQuickLinksCard
+            links={[
+              { href: "/cliente", label: "Volver al feed" },
+              { href: "/cliente/versus", label: "Comparar productos" },
+              { href: "#servicios-activos", label: "Ver servicios activos" },
+            ]}
+          />
         </aside>
 
         <section id="servicios-activos" className="space-y-4">

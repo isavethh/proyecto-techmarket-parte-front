@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ClientTopbarControls } from "../../components/ClientExperienceShell";
+import { ClientInfoCard, ClientPageHeader } from "../../components/ClientPageSections";
 
 type ProductSpec = {
   id: string;
@@ -165,25 +164,15 @@ export default function ClienteVersusPage() {
 
   return (
     <div className="flex-1 pb-10">
-      <header className="tech-top-nav sticky top-0 z-30">
-        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
-          <Link href="/cliente" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <ClientTopbarControls sectionLabel="Versus" />
-        </div>
-      </header>
+      <ClientPageHeader sectionLabel="Versus" />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[320px_minmax(0,1fr)] lg:px-6">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <section className="tech-card">
-            <p className="tech-mono text-xs text-cyan-200/75">VERSUS CONFIG</p>
-            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Compara 2 a 4 productos</h1>
-            <p className="mt-3 text-sm text-cyan-100/80">
-              Selecciona los modelos que quieres comparar. El sistema bloquea menos de 2 productos para
-              que siempre tengas referencia real.
-            </p>
-          </section>
+          <ClientInfoCard
+            eyebrow="VERSUS CONFIG"
+            title="Compara 2 a 4 productos"
+            description="Selecciona los modelos que quieres comparar. El sistema bloquea menos de 2 productos para que siempre tengas referencia real."
+          />
 
           <section className="tech-card space-y-2">
             {products.map((product) => {

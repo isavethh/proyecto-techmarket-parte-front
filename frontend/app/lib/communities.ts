@@ -20,6 +20,15 @@ export type TechCommunity = {
   members: CommunityMember[];
 };
 
+export type CommunityPostReply = {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  body: string;
+  createdAt: string;
+};
+
 export type CommunityPost = {
   id: string;
   communitySlug: string;
@@ -29,6 +38,8 @@ export type CommunityPost = {
   body: string;
   image?: string;
   createdAt: string;
+  likedByUserIds?: string[];
+  replies?: CommunityPostReply[];
 };
 
 export type CreateCommunityInput = {
@@ -42,6 +53,11 @@ export type CreateCommunityPostInput = {
   communitySlug: string;
   body: string;
   image?: string;
+};
+
+export type CreateCommunityPostReplyInput = {
+  postId: string;
+  body: string;
 };
 
 export const CURRENT_CLIENT_USER = {
@@ -263,6 +279,17 @@ const seedPosts: CommunityPost[] = [
     authorRole: "administrador",
     body: "Abrimos hilo oficial de builds 2026. Compartan CPU, GPU, RAM, almacenamiento y presupuesto para recomendar mejoras reales.",
     createdAt: "2026-04-17T09:40:00.000Z",
+    likedByUserIds: [CURRENT_CLIENT_USER.id, "member-pc-mod-1"],
+    replies: [
+      {
+        id: "community-post-1-reply-1",
+        postId: "community-post-1",
+        authorId: "member-pc-mod-1",
+        authorName: "Lorena Vega",
+        body: "Excelente idea, agreguen tambien temperaturas y consumo real bajo carga para comparar mejor.",
+        createdAt: "2026-04-17T10:12:00.000Z",
+      },
+    ],
   },
   {
     id: "community-post-2",
@@ -273,6 +300,7 @@ const seedPosts: CommunityPost[] = [
     body: "Si quieren comparar fuentes, revisen certificacion, protecciones y garantia. No se guien solo por watts declarados.",
     image: "/productos/monitor-ultrawide-34.jpg",
     createdAt: "2026-04-17T12:10:00.000Z",
+    likedByUserIds: ["member-pc-admin", "member-pc-5"],
   },
   {
     id: "community-post-3",
@@ -301,6 +329,16 @@ const seedPosts: CommunityPost[] = [
     body: "Hilo de accesorios recomendados: cargadores, magsafe, protectores y audio. Dejen marca, precio y ciudad.",
     image: "/productos/laptop-pro-14.jpg",
     createdAt: "2026-04-18T13:45:00.000Z",
+    replies: [
+      {
+        id: "community-post-5-reply-1",
+        postId: "community-post-5",
+        authorId: "member-iphone-4",
+        authorName: "Lucia Soto",
+        body: "Recomiendo cargador certificado de 20W con cable de buena calidad, mejora bastante la vida util.",
+        createdAt: "2026-04-18T14:30:00.000Z",
+      },
+    ],
   },
   {
     id: "community-post-6",
@@ -352,6 +390,23 @@ const isStringArray = (value: unknown): value is string[] =>
 
 const isCommunityMemberRole = (value: unknown): value is CommunityMemberRole =>
   value === "administrador" || value === "moderador" || value === "miembro";
+
+const isCommunityPostReply = (value: unknown): value is CommunityPostReply => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+
+  return (
+    isString(candidate.id) &&
+    isString(candidate.postId) &&
+    isString(candidate.authorId) &&
+    isString(candidate.authorName) &&
+    isString(candidate.body) &&
+    isString(candidate.createdAt)
+  );
+};
 
 const isCommunityMember = (value: unknown): value is CommunityMember => {
   if (!value || typeof value !== "object") {
@@ -405,7 +460,10 @@ const isCommunityPost = (value: unknown): value is CommunityPost => {
     isCommunityMemberRole(candidate.authorRole) &&
     isString(candidate.body) &&
     (candidate.image === undefined || isString(candidate.image)) &&
-    isString(candidate.createdAt)
+    isString(candidate.createdAt) &&
+    (candidate.likedByUserIds === undefined || isStringArray(candidate.likedByUserIds)) &&
+    (candidate.replies === undefined ||
+      (Array.isArray(candidate.replies) && candidate.replies.every(isCommunityPostReply)))
   );
 };
 
@@ -415,7 +473,13 @@ const cloneCommunity = (community: TechCommunity): TechCommunity => ({
   rules: [...community.rules],
 });
 
-const clonePost = (post: CommunityPost): CommunityPost => ({ ...post });
+const cloneReply = (reply: CommunityPostReply): CommunityPostReply => ({ ...reply });
+
+const clonePost = (post: CommunityPost): CommunityPost => ({
+  ...post,
+  likedByUserIds: [...(post.likedByUserIds ?? [])],
+  replies: (post.replies ?? []).map(cloneReply),
+});
 
 const sortByCreatedAtDesc = <T extends { createdAt: string }>(items: T[]): T[] =>
   [...items].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
@@ -693,6 +757,8 @@ export const createCommunity = (input: CreateCommunityInput): TechCommunity | nu
     authorRole: "administrador",
     body: `Bienvenidos a ${createdCommunity.name}. Este espacio esta creado para compartir conocimiento, resolver dudas y crecer como comunidad tech.`,
     createdAt: now,
+    likedByUserIds: [],
+    replies: [],
   };
 
   writeCommunityPosts([welcomePost, ...currentPosts]);
@@ -731,10 +797,94 @@ export const createCommunityPost = (input: CreateCommunityPostInput): CommunityP
     body: normalizedBody,
     image: input.image,
     createdAt: new Date().toISOString(),
+    likedByUserIds: [],
+    replies: [],
   };
 
   const currentPosts = readCommunityPosts();
   writeCommunityPosts([nextPost, ...currentPosts]);
 
   return nextPost;
+};
+
+export const isCurrentUserLikedCommunityPost = (post: CommunityPost): boolean =>
+  (post.likedByUserIds ?? []).includes(CURRENT_CLIENT_USER.id);
+
+export const toggleCommunityPostLike = (postId: string): CommunityPost | null => {
+  const currentPosts = readCommunityPosts();
+  const targetIndex = currentPosts.findIndex((post) => post.id === postId);
+
+  if (targetIndex === -1) {
+    return null;
+  }
+
+  const targetPost = currentPosts[targetIndex];
+  const targetCommunity = getCommunityBySlug(targetPost.communitySlug);
+
+  if (!targetCommunity || !isCurrentUserMember(targetCommunity)) {
+    return null;
+  }
+
+  const currentLikes = targetPost.likedByUserIds ?? [];
+  const alreadyLiked = currentLikes.includes(CURRENT_CLIENT_USER.id);
+  const nextLikes = alreadyLiked
+    ? currentLikes.filter((id) => id !== CURRENT_CLIENT_USER.id)
+    : [...currentLikes, CURRENT_CLIENT_USER.id];
+
+  const updatedPost: CommunityPost = {
+    ...targetPost,
+    likedByUserIds: nextLikes,
+    replies: targetPost.replies ?? [],
+  };
+
+  const nextPosts = [...currentPosts];
+  nextPosts[targetIndex] = updatedPost;
+  writeCommunityPosts(nextPosts);
+
+  return updatedPost;
+};
+
+export const createCommunityPostReply = (
+  input: CreateCommunityPostReplyInput,
+): CommunityPostReply | null => {
+  const normalizedBody = input.body.trim();
+
+  if (!normalizedBody || normalizedBody.length < 3) {
+    return null;
+  }
+
+  const currentPosts = readCommunityPosts();
+  const targetIndex = currentPosts.findIndex((post) => post.id === input.postId);
+
+  if (targetIndex === -1) {
+    return null;
+  }
+
+  const targetPost = currentPosts[targetIndex];
+  const targetCommunity = getCommunityBySlug(targetPost.communitySlug);
+
+  if (!targetCommunity || !isCurrentUserMember(targetCommunity)) {
+    return null;
+  }
+
+  const nextReply: CommunityPostReply = {
+    id: `community-reply-${Date.now()}`,
+    postId: targetPost.id,
+    authorId: CURRENT_CLIENT_USER.id,
+    authorName: CURRENT_CLIENT_USER.name,
+    body: normalizedBody,
+    createdAt: new Date().toISOString(),
+  };
+
+  const updatedPost: CommunityPost = {
+    ...targetPost,
+    likedByUserIds: targetPost.likedByUserIds ?? [],
+    replies: [...(targetPost.replies ?? []), nextReply],
+  };
+
+  const nextPosts = [...currentPosts];
+  nextPosts[targetIndex] = updatedPost;
+  writeCommunityPosts(nextPosts);
+
+  return nextReply;
 };

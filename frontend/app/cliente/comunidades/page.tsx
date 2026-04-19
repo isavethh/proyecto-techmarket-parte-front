@@ -4,7 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ClientTopbarControls } from "../../components/ClientExperienceShell";
+import {
+  ClientInfoCard,
+  ClientPageHeader,
+  ClientQuickLinksCard,
+} from "../../components/ClientPageSections";
 import {
   createCommunity,
   CURRENT_CLIENT_USER,
@@ -138,24 +142,15 @@ export default function ComunidadesPage() {
 
   return (
     <div className="flex-1 pb-10">
-      <header className="tech-top-nav sticky top-0 z-30">
-        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
-          <Link href="/cliente" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <ClientTopbarControls sectionLabel="Comunidades" />
-        </div>
-      </header>
+      <ClientPageHeader sectionLabel="Comunidades" />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <section className="tech-card">
-            <p className="tech-mono text-xs text-cyan-200/75">COMUNIDADES</p>
-            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Encuentra tu grupo tech ideal</h1>
-            <p className="mt-3 text-sm text-cyan-100/80">
-              Unete a comunidades enfocadas en temas especificos como PC Building, iPhones, Android,
-              comparaciones y mas.
-            </p>
+          <ClientInfoCard
+            eyebrow="COMUNIDADES"
+            title="Encuentra tu grupo tech ideal"
+            description="Unete a comunidades enfocadas en temas especificos como PC Building, iPhones, Android, comparaciones y mas."
+          >
             <button
               type="button"
               onClick={() => setShowCreateModal(true)}
@@ -163,7 +158,7 @@ export default function ComunidadesPage() {
             >
               Crear nueva comunidad
             </button>
-          </section>
+          </ClientInfoCard>
 
           <section className="tech-card">
             <p className="text-sm font-semibold text-cyan-50">Tu estado</p>
@@ -177,17 +172,13 @@ export default function ComunidadesPage() {
             </div>
           </section>
 
-          <section className="tech-card space-y-2">
-            <Link href="/cliente" className="auth-action block w-full">
-              Volver al feed
-            </Link>
-            <Link href="/cliente/servicios" className="auth-action block w-full">
-              Ir a servicios
-            </Link>
-            <Link href="/cliente/empresas" className="auth-action block w-full">
-              Explorar empresas
-            </Link>
-          </section>
+          <ClientQuickLinksCard
+            links={[
+              { href: "/cliente", label: "Volver al feed" },
+              { href: "/cliente/servicios", label: "Ir a servicios" },
+              { href: "/cliente/empresas", label: "Explorar empresas" },
+            ]}
+          />
         </aside>
 
         <section className="space-y-4">

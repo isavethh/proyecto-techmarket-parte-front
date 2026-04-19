@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState, useSyncExternalStore } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   COMMUNITY_FEED_UPDATED_EVENT,
   CommunityFeedPost,
@@ -10,9 +11,18 @@ import {
 } from "../lib/communityFeed";
 import { clientCompanyProfiles } from "../lib/clientCompanyProfiles";
 import { ClientTopbarControls } from "../components/ClientExperienceShell";
+import {
+  PublicationActionButton,
+  PublicationAvatar,
+  PublicationCard,
+} from "../components/PublicationCard";
+import {
+  PublicationViewerData,
+  PublicationViewerModal,
+} from "../components/PublicationViewerModal";
 
 type SearchMode = "normal" | "ia";
-type TopView = "feed" | "marketplace" | "seguimiento";
+type TopView = "feed" | "seguimiento";
 
 type MiniCard = {
   name: string;
@@ -201,6 +211,8 @@ const suggestedAccounts: SuggestedAccount[] = [
 ];
 
 const quickActions = [
+  { label: "Explorar marketplace", href: "/cliente/marketplace" },
+  { label: "Mis chats", href: "/cliente/chat" },
   { label: "Buscar servicios", href: "/cliente/servicios" },
   { label: "Versus de productos", href: "/cliente/versus" },
   { label: "Explorar empresas", href: "/cliente/empresas" },
@@ -242,6 +254,15 @@ const feedCommentsByPostId: Record<string, PostComment[]> = {
     },
   ],
 };
+
+const feedBaseLikesByPostId: Record<string, number> = {
+  "post-1": 24,
+  "post-2": 17,
+  "post-3": 12,
+  "seed-company-post-1": 9,
+};
+
+const activeClientName = "Camila Mendoza";
 
 const clientChatThreads: ChatThread[] = [
   {
@@ -403,28 +424,47 @@ const formatPublishedAt = (isoDate: string): string => {
   return `${day}/${month}/${year} ${hours}:${minutes} UTC`;
 };
 
-const isMarketplaceSaleItem = (item: CommunityFeedPost): boolean => {
-  const normalizedTag = item.tag.toLowerCase();
-  const normalizedText = `${item.title} ${item.body}`.toLowerCase();
+const getFeedSaleMeta = (
+  item: CommunityFeedPost,
+): Pick<PublicationViewerData, "variant" | "saleKind" | "priceLabel" | "conditionLabel" | "categoryLabel"> => {
+  const normalizedText = `${item.tag} ${item.title} ${item.body}`.toLowerCase();
+  const hasSaleSignals =
+    normalizedText.includes("producto") ||
+    normalizedText.includes("servicio") ||
+    normalizedText.includes("venta") ||
+    normalizedText.includes("oferta") ||
+    normalizedText.includes("promoc") ||
+    normalizedText.includes("precio") ||
+    normalizedText.includes("stock");
 
-  if (normalizedTag.includes("interaccion") || normalizedTag.includes("publicacion")) {
-    return false;
+  if (!hasSaleSignals) {
+    return { variant: "normal" };
   }
 
-  return (
-    normalizedTag.includes("producto") ||
-    normalizedTag.includes("servicio") ||
-    normalizedTag.includes("oferta") ||
-    normalizedTag.includes("promoc") ||
-    normalizedTag.includes("venta") ||
+  const saleKind =
     normalizedText.includes("servicio") ||
-    normalizedText.includes("producto") ||
-    normalizedText.includes("descuento") ||
-    normalizedText.includes("precio") ||
-    normalizedText.includes("stock") ||
-    normalizedText.includes("combo") ||
-    normalizedText.includes("pack")
-  );
+    normalizedText.includes("mantenimiento") ||
+    normalizedText.includes("diagnostico")
+      ? "servicio"
+      : "producto";
+
+  const priceMatch = `${item.title} ${item.body}`.match(/(bs\.?\s?[\d.,]+|\$\s?[\d.,]+)/i);
+
+  const conditionLabel = normalizedText.includes("seminuevo")
+    ? "Seminuevo"
+    : normalizedText.includes("usado")
+      ? "Usado"
+      : normalizedText.includes("nuevo")
+        ? "Nuevo"
+        : "Sin dato";
+
+  return {
+    variant: "sale",
+    saleKind,
+    priceLabel: priceMatch ? priceMatch[1].replace(/\s+/g, " ").trim() : "Precio por inbox",
+    conditionLabel,
+    categoryLabel: item.tag,
+  };
 };
 
 export default function ClientePage() {
@@ -442,6 +482,12 @@ export default function ClientePage() {
   const [activeChatId, setActiveChatId] = useState(clientChatThreads[0].id);
   const [draftMessage, setDraftMessage] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(true);
+  const [likedFeedPostIds, setLikedFeedPostIds] = useState<string[]>([]);
+  const [activeFeedCommentPostId, setActiveFeedCommentPostId] = useState<string | null>(null);
+  const [feedCommentDraftByPostId, setFeedCommentDraftByPostId] = useState<Record<string, string>>({});
+  const [customFeedCommentsByPostId, setCustomFeedCommentsByPostId] = useState<Record<string, PostComment[]>>({});
+  const [auraLikePostId, setAuraLikePostId] = useState<string | null>(null);
+  const [activePublication, setActivePublication] = useState<PublicationViewerData | null>(null);
 
   const activeChat =
     clientChatThreads.find((chat) => chat.id === activeChatId) ?? clientChatThreads[0];
@@ -469,24 +515,6 @@ export default function ClientePage() {
     });
   }, [fullFeed, query]);
 
-  const marketplaceItems = useMemo(
-    () => fullFeed.filter((item) => isMarketplaceSaleItem(item)),
-    [fullFeed],
-  );
-
-  const filteredMarketplaceItems = useMemo(() => {
-    const cleanQuery = query.trim().toLowerCase();
-
-    if (!cleanQuery) {
-      return marketplaceItems;
-    }
-
-    return marketplaceItems.filter((item) => {
-      const bucket = `${item.author} ${item.title} ${item.body} ${item.tag} ${item.location}`.toLowerCase();
-      return bucket.includes(cleanQuery);
-    });
-  }, [marketplaceItems, query]);
-
   const filteredFollowingPosts = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
 
@@ -513,6 +541,93 @@ export default function ClientePage() {
 
   const handleNormalSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+  };
+
+  const isPostLiked = (postId: string): boolean => likedFeedPostIds.includes(postId);
+
+  const getFeedLikeCount = (postId: string): number => {
+    const baseLikes = feedBaseLikesByPostId[postId] ?? 0;
+    return baseLikes + (isPostLiked(postId) ? 1 : 0);
+  };
+
+  const getMergedFeedComments = (postId: string): PostComment[] => [
+    ...(feedCommentsByPostId[postId] ?? []),
+    ...(customFeedCommentsByPostId[postId] ?? []),
+  ];
+
+  const handleToggleFeedLike = (postId: string) => {
+    const liked = isPostLiked(postId);
+
+    setLikedFeedPostIds((current) => {
+      if (liked) {
+        return current.filter((id) => id !== postId);
+      }
+
+      return [...current, postId];
+    });
+
+    if (!liked) {
+      setAuraLikePostId(postId);
+      window.setTimeout(() => {
+        setAuraLikePostId((current) => (current === postId ? null : current));
+      }, 520);
+    }
+  };
+
+  const handleToggleFeedComment = (postId: string) => {
+    setActiveFeedCommentPostId((current) => (current === postId ? null : postId));
+  };
+
+  const handleSubmitFeedComment = (event: FormEvent<HTMLFormElement>, postId: string) => {
+    event.preventDefault();
+
+    const draftComment = (feedCommentDraftByPostId[postId] ?? "").trim();
+
+    if (draftComment.length < 3) {
+      return;
+    }
+
+    const nextComment: PostComment = {
+      id: `${postId}-client-comment-${Date.now()}`,
+      author: activeClientName,
+      text: draftComment,
+      time: "Ahora",
+    };
+
+    setCustomFeedCommentsByPostId((current) => ({
+      ...current,
+      [postId]: [...(current[postId] ?? []), nextComment],
+    }));
+
+    setFeedCommentDraftByPostId((current) => ({
+      ...current,
+      [postId]: "",
+    }));
+  };
+
+  const handleOpenFeedPublication = (item: CommunityFeedPost) => {
+    const mergedComments = getMergedFeedComments(item.id);
+
+    setActivePublication({
+      id: item.id,
+      title: item.title,
+      body: item.body,
+      author: item.author,
+      role: item.role,
+      location: item.location,
+      createdAt: item.time || formatPublishedAt(item.createdAt),
+      tag: item.tag,
+      image: item.image,
+      initialLikeCount: getFeedLikeCount(item.id),
+      initiallyLiked: isPostLiked(item.id),
+      initialComments: mergedComments.map((comment) => ({
+        id: comment.id,
+        author: comment.author,
+        text: comment.text,
+        time: comment.time,
+      })),
+      ...getFeedSaleMeta(item),
+    });
   };
 
   return (
@@ -634,7 +749,7 @@ export default function ClientePage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD CLIENTE</p>
-                <h1 className="mt-2 text-xl font-semibold text-cyan-50 md:text-2xl">Feed y Marketplace</h1>
+                <h1 className="mt-2 text-xl font-semibold text-cyan-50 md:text-2xl">Feed principal</h1>
               </div>
               <div className="auth-switch">
                 <button
@@ -646,13 +761,6 @@ export default function ClientePage() {
                 </button>
                 <button
                   type="button"
-                  className={topView === "marketplace" ? "active" : ""}
-                  onClick={() => setTopView("marketplace")}
-                >
-                  Marketplace
-                </button>
-                <button
-                  type="button"
                   className={topView === "seguimiento" ? "active" : ""}
                   onClick={() => setTopView("seguimiento")}
                 >
@@ -661,7 +769,7 @@ export default function ClientePage() {
               </div>
             </div>
             <p className="mt-3 text-sm text-cyan-100/75">
-              Marketplace muestra ventas y Seguimiento muestra publicaciones de cuentas que sigues.
+              Seguimiento muestra publicaciones de cuentas que sigues. Marketplace ahora vive en su propia seccion.
             </p>
           </section>
 
@@ -768,147 +876,180 @@ export default function ClientePage() {
               </div>
             )}
 
-            {filteredFeed.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-3xl border border-cyan-100/15 bg-[linear-gradient(165deg,rgba(16,41,72,0.92),rgba(7,24,44,0.96))] p-4 shadow-xl shadow-slate-950/25"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                      {item.author.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-cyan-50">{item.author}</p>
-                      <p className="text-xs text-cyan-200/70">
-                        {item.role} · {item.location} · {formatPublishedAt(item.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="rounded-full border border-cyan-100/20 bg-cyan-100/10 px-3 py-1 text-xs text-cyan-100/85">
-                    {item.tag}
-                  </span>
-                </div>
+            {filteredFeed.map((item) => {
+              const isLiked = isPostLiked(item.id);
+              const isCommentOpen = activeFeedCommentPostId === item.id;
+              const mergedComments = getMergedFeedComments(item.id);
+              const likeCount = getFeedLikeCount(item.id);
+              const draftComment = feedCommentDraftByPostId[item.id] ?? "";
 
-                <h2 className="mt-4 text-lg font-semibold text-cyan-50">{item.title}</h2>
-                <p className="mt-2 text-sm leading-7 text-cyan-100/85">{item.body}</p>
-
-                {item.image ? (
-                  <div className="mt-4 overflow-hidden rounded-2xl border border-cyan-100/10">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="h-64 w-full object-cover md:h-80"
-                      loading="lazy"
-                    />
-                  </div>
-                ) : null}
-
-                <div className="mt-4 border-t border-cyan-100/10 pt-3 text-xs text-cyan-200/75">
-                  {item.time || formatPublishedAt(item.createdAt)}
-                </div>
-
-                <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
-                  <button type="button" className="rounded-xl border border-cyan-100/10 bg-cyan-300/10 px-3 py-2 text-cyan-100/90">
-                    Me gusta
-                  </button>
-                  <button type="button" className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-cyan-100/90">
-                    Comentar
-                  </button>
-                  <button type="button" className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-cyan-100/90">
-                    Compartir
-                  </button>
-                </div>
-
-                {feedCommentsByPostId[item.id] && feedCommentsByPostId[item.id].length > 0 ? (
-                  <div className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
-                    <p className="text-xs font-semibold text-cyan-200/80">Comentarios</p>
-                    {feedCommentsByPostId[item.id].map((comment) => (
-                      <div key={comment.id} className="rounded-xl border border-cyan-100/10 bg-white/5 p-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-semibold text-cyan-50">{comment.author}</p>
-                          <p className="text-[10px] text-cyan-200/65">{comment.time}</p>
+              return (
+                <PublicationCard
+                  key={item.id}
+                  header={
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <PublicationAvatar label={item.author} />
+                        <div>
+                          <p className="text-sm font-semibold text-cyan-50">{item.author}</p>
+                          <p className="text-xs text-cyan-200/70">
+                            {item.role} · {item.location} · {formatPublishedAt(item.createdAt)}
+                          </p>
                         </div>
-                        <p className="mt-2 text-xs leading-5 text-cyan-100/85">{comment.text}</p>
                       </div>
-                    ))}
-                  </div>
-                ) : null}
-              </article>
-            ))}
+                      <span className="rounded-full border border-cyan-100/20 bg-cyan-100/10 px-3 py-1 text-xs text-cyan-100/85">
+                        {item.tag}
+                      </span>
+                    </div>
+                  }
+                  content={
+                    <>
+                      <h2 className="mt-4 text-lg font-semibold text-cyan-50">{item.title}</h2>
+                      <p className="mt-2 text-sm leading-7 text-cyan-100/85">{item.body}</p>
+                    </>
+                  }
+                  media={
+                    item.image
+                      ? {
+                          src: item.image,
+                          alt: item.title,
+                          imageClassName: "h-64 w-full object-cover md:h-80",
+                        }
+                      : undefined
+                  }
+                  footer={
+                    <div className="mt-4 border-t border-cyan-100/10 pt-3 text-xs text-cyan-200/75">
+                      {item.time || formatPublishedAt(item.createdAt)}
+                    </div>
+                  }
+                  actions={
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                      <motion.button
+                        type="button"
+                        onClick={() => handleToggleFeedLike(item.id)}
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.96 }}
+                        animate={
+                          isLiked
+                            ? {
+                                scale: [1, 1.04, 1],
+                                boxShadow: [
+                                  "0 0 0 rgba(34,211,238,0)",
+                                  "0 0 24px rgba(34,211,238,0.45)",
+                                  "0 0 12px rgba(34,211,238,0.25)",
+                                ],
+                              }
+                            : {
+                                scale: 1,
+                                boxShadow: "0 0 0 rgba(34,211,238,0)",
+                              }
+                        }
+                        transition={{ duration: 0.45, ease: "easeOut" }}
+                        className={`group relative overflow-hidden rounded-xl border px-3 py-2 font-semibold transition ${
+                          isLiked
+                            ? "border-cyan-200/45 bg-cyan-300/20 text-cyan-50"
+                            : "border-cyan-100/10 bg-cyan-300/10 text-cyan-100/90 hover:border-cyan-200/30 hover:bg-cyan-300/15"
+                        }`}
+                      >
+                        <span className="pointer-events-none absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_top,rgba(103,232,249,0.3),transparent_70%)]" />
+                        <AnimatePresence>
+                          {auraLikePostId === item.id ? (
+                            <motion.span
+                              className="pointer-events-none absolute inset-0 rounded-xl bg-cyan-300/35"
+                              initial={{ opacity: 0.55, scale: 0.78 }}
+                              animate={{ opacity: 0, scale: 1.38 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.5, ease: "easeOut" }}
+                            />
+                          ) : null}
+                        </AnimatePresence>
+                        <span className="relative z-10">{isLiked ? "Te gusta" : "Me gusta"} · {likeCount}</span>
+                      </motion.button>
+
+                      <PublicationActionButton
+                        onClick={() => handleToggleFeedComment(item.id)}
+                        active={isCommentOpen}
+                        accent="neutral"
+                      >
+                        Comentar · {mergedComments.length}
+                      </PublicationActionButton>
+
+                      <PublicationActionButton
+                        onClick={() => handleOpenFeedPublication(item)}
+                        accent="neutral"
+                      >
+                        Ver publicacion
+                      </PublicationActionButton>
+                    </div>
+                  }
+                  composer={
+                    <AnimatePresence initial={false}>
+                      {isCommentOpen ? (
+                        <motion.form
+                          key={`${item.id}-comment-form`}
+                          onSubmit={(event) => handleSubmitFeedComment(event, item.id)}
+                          initial={{ opacity: 0, height: 0, y: -4 }}
+                          animate={{ opacity: 1, height: "auto", y: 0 }}
+                          exit={{ opacity: 0, height: 0, y: -4 }}
+                          transition={{ duration: 0.22, ease: "easeOut" }}
+                          className="mt-3 space-y-2 overflow-hidden rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3"
+                        >
+                          <label className="block text-xs font-semibold text-cyan-200/80">Agregar comentario</label>
+                          <textarea
+                            value={draftComment}
+                            onChange={(event) =>
+                              setFeedCommentDraftByPostId((current) => ({
+                                ...current,
+                                [item.id]: event.target.value,
+                              }))
+                            }
+                            placeholder="Comparte tu opinion sobre esta publicacion..."
+                            className="h-24 w-full resize-none rounded-2xl border border-cyan-100/10 bg-slate-950/45 px-3 py-2 text-sm text-cyan-50 placeholder:text-cyan-100/45 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setActiveFeedCommentPostId(null)}
+                              className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-100/85"
+                            >
+                              Cerrar
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={draftComment.trim().length < 3}
+                              className="rounded-xl border border-cyan-200/25 bg-cyan-400/20 px-3 py-2 text-xs font-semibold text-cyan-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Publicar
+                            </button>
+                          </div>
+                        </motion.form>
+                      ) : null}
+                    </AnimatePresence>
+                  }
+                  thread={
+                    mergedComments.length > 0 ? (
+                      <motion.div
+                        layout
+                        className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3"
+                      >
+                        <p className="text-xs font-semibold text-cyan-200/80">Comentarios · {mergedComments.length}</p>
+                        {mergedComments.map((comment) => (
+                          <div key={comment.id} className="rounded-xl border border-cyan-100/10 bg-white/5 p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs font-semibold text-cyan-50">{comment.author}</p>
+                              <p className="text-[10px] text-cyan-200/65">{comment.time}</p>
+                            </div>
+                            <p className="mt-2 text-xs leading-5 text-cyan-100/85">{comment.text}</p>
+                          </div>
+                        ))}
+                      </motion.div>
+                    ) : null
+                  }
+                />
+              );
+            })}
           </section>
             </>
-          )}
-
-          {topView === "marketplace" && (
-            <section id="marketplace" className="space-y-4">
-              <section className="tech-card">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="tech-mono text-xs text-cyan-200/75">MARKETPLACE</p>
-                    <h2 className="mt-2 text-xl font-semibold text-cyan-50 md:text-2xl">Solo ventas de empresas</h2>
-                  </div>
-                  <p className="text-xs text-cyan-100/70">
-                    {filteredMarketplaceItems.length} resultados de venta activos
-                  </p>
-                </div>
-              </section>
-
-              {filteredMarketplaceItems.length === 0 && (
-                <section className="tech-card">
-                  <p className="text-sm text-cyan-100/80">
-                    No hay ventas que coincidan con tu busqueda. Prueba con otro termino.
-                  </p>
-                </section>
-              )}
-
-              {filteredMarketplaceItems.length > 0 && (
-                <section className="grid gap-4 md:grid-cols-2">
-                  {filteredMarketplaceItems.map((item) => (
-                    <article
-                      key={`market-${item.id}`}
-                      className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(155deg,rgba(17,45,80,0.95),rgba(7,24,44,0.96))] shadow-xl shadow-slate-950/25"
-                    >
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="h-48 w-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : null}
-                      <div className="p-4">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-cyan-50">{item.author}</p>
-                          <span className="rounded-full border border-cyan-100/20 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100/90">
-                            {item.tag}
-                          </span>
-                        </div>
-                        <h3 className="mt-3 text-lg font-semibold text-white">{item.title}</h3>
-                        <p className="mt-2 text-sm text-cyan-100/80">{item.body}</p>
-                        <p className="mt-3 text-xs text-cyan-200/75">
-                          {item.location} · {formatPublishedAt(item.createdAt)}
-                        </p>
-                        <div className="mt-4 grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            className="rounded-xl border border-cyan-100/10 bg-cyan-300/15 px-3 py-2 text-sm font-semibold text-cyan-50"
-                          >
-                            Ver detalle
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-sm font-semibold text-cyan-100/90"
-                          >
-                            Contactar
-                          </button>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </section>
-              )}
-            </section>
           )}
 
           {topView === "seguimiento" && (
@@ -1044,6 +1185,39 @@ export default function ClientePage() {
         </aside>
       </main>
 
+      <PublicationViewerModal
+        publication={activePublication}
+        onClose={() => setActivePublication(null)}
+        secondaryActionLabel={activePublication?.variant === "sale" ? "Contactar vendedor" : undefined}
+        onSecondaryAction={() => setActivePublication(null)}
+        onEngagementChange={(publicationId, snapshot) => {
+          setLikedFeedPostIds((current) => {
+            if (snapshot.likedByCurrentUser) {
+              return current.includes(publicationId) ? current : [...current, publicationId];
+            }
+
+            return current.filter((id) => id !== publicationId);
+          });
+
+          const baseCommentIds = new Set(
+            (feedCommentsByPostId[publicationId] ?? []).map((comment) => comment.id),
+          );
+          const nextCustomComments = snapshot.comments
+            .filter((comment) => !baseCommentIds.has(comment.id))
+            .map((comment) => ({
+              id: comment.id,
+              author: comment.author,
+              text: comment.text,
+              time: comment.time,
+            }));
+
+          setCustomFeedCommentsByPostId((current) => ({
+            ...current,
+            [publicationId]: nextCustomComments,
+          }));
+        }}
+      />
+
       {isThinking && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 backdrop-blur">
           <div className="rounded-3xl border border-cyan-100/20 bg-background-soft/90 px-8 py-6 text-center">
@@ -1054,98 +1228,147 @@ export default function ClientePage() {
         </div>
       )}
 
-      <div className="fixed bottom-6 right-6 z-50 w-[320px]">
-        {isChatOpen ? (
-          <div className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/40">
-            <div className="flex items-center justify-between border-b border-cyan-100/10 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
-                  {activeChat.avatar}
+      <div className="fixed bottom-5 right-4 z-50 w-[340px] max-w-[calc(100vw-1rem)] md:bottom-6 md:right-6">
+        <AnimatePresence mode="wait" initial={false}>
+          {isChatOpen ? (
+            <motion.div
+              key="chat-open"
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 14, scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 280, damping: 24, mass: 0.9 }}
+              className="overflow-hidden rounded-[1.75rem] border border-cyan-100/20 bg-[linear-gradient(180deg,rgba(8,20,35,0.98),rgba(5,13,24,0.99))] shadow-[0_24px_55px_rgba(2,12,27,0.55)]"
+            >
+              <div className="relative border-b border-cyan-100/12 bg-[linear-gradient(120deg,rgba(19,78,110,0.32),rgba(7,24,44,0.85))] px-4 py-3.5">
+                <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(103,232,249,0.22),transparent_62%)]" />
+
+                <div className="relative flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                      {activeChat.avatar}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{activeChat.company}</p>
+                      <p className="text-xs text-cyan-100/75">{activeChat.name}</p>
+                    </div>
+                  </div>
+
+                  <motion.button
+                    type="button"
+                    onClick={() => setIsChatOpen(false)}
+                    whileHover={{ y: -1, backgroundColor: "rgba(255,255,255,0.12)" }}
+                    whileTap={{ scale: 0.96 }}
+                    className="rounded-full border border-cyan-100/20 bg-white/5 px-3 py-1 text-[10px] font-semibold text-cyan-100/85"
+                  >
+                    Cerrar
+                  </motion.button>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">{activeChat.company}</p>
-                  <p className="text-xs text-cyan-100/70">{activeChat.name}</p>
+
+                <div className="relative mt-2 flex items-center gap-2 text-[11px] text-cyan-100/75">
+                  <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.85)]" />
+                  Activo ahora
+                  {activeChat.unread ? (
+                    <span className="rounded-full border border-cyan-100/20 bg-white/10 px-2 py-0.5 text-[10px] text-cyan-50">
+                      {activeChat.unread} nuevos
+                    </span>
+                  ) : null}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsChatOpen(false)}
-                className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-[10px] font-semibold text-cyan-100/80"
-              >
-                Cerrar
-              </button>
-            </div>
 
-            <div className="border-b border-cyan-100/10 px-3 py-2">
-              <div className="chat-scrollbar chat-scrollbar-x flex gap-2 overflow-x-auto">
-                {clientChatThreads.map((chat) => {
-                  const isActive = chat.id === activeChatId;
+              <div className="border-b border-cyan-100/10 bg-slate-950/45 px-3 py-2.5">
+                <div className="chat-scrollbar chat-scrollbar-x flex gap-2 overflow-x-auto">
+                  {clientChatThreads.map((chat) => {
+                    const isActive = chat.id === activeChatId;
 
-                  return (
-                    <button
-                      key={chat.id}
-                      type="button"
-                      onClick={() => setActiveChatId(chat.id)}
-                      className={`rounded-full border px-3 py-1 text-xs ${
-                        isActive
-                          ? "border-cyan-300/60 bg-cyan-300/15 text-cyan-50"
-                          : "border-cyan-100/15 bg-white/5 text-cyan-100/80"
+                    return (
+                      <motion.button
+                        key={chat.id}
+                        type="button"
+                        onClick={() => setActiveChatId(chat.id)}
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                          isActive
+                            ? "border-cyan-300/65 bg-cyan-300/20 text-cyan-50"
+                            : "border-cyan-100/15 bg-white/5 text-cyan-100/80 hover:border-cyan-200/35 hover:bg-white/10"
+                        }`}
+                      >
+                        {chat.company}
+                        {chat.unread ? ` · ${chat.unread}` : ""}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="chat-scrollbar max-h-[300px] space-y-3 overflow-y-auto bg-[linear-gradient(180deg,rgba(4,13,24,0.35),rgba(4,11,20,0.6))] px-4 py-3">
+                {activeChat.messages.map((message, messageIndex) => (
+                  <motion.div
+                    key={`${activeChat.id}-${message.id}`}
+                    className={`flex ${message.author === "cliente" ? "justify-end" : "justify-start"}`}
+                    initial={{ opacity: 0, y: 8, x: message.author === "cliente" ? 8 : -8 }}
+                    animate={{ opacity: 1, y: 0, x: 0 }}
+                    transition={{ duration: 0.2, delay: messageIndex * 0.03 }}
+                  >
+                    <div
+                      className={`max-w-[84%] rounded-2xl border px-3 py-2 text-xs leading-5 ${
+                        message.author === "cliente"
+                          ? "border-cyan-200/25 bg-cyan-300/16 text-cyan-50"
+                          : "border-cyan-100/10 bg-white/6 text-cyan-100/92"
                       }`}
                     >
-                      {chat.company}
-                      {chat.unread ? ` · ${chat.unread}` : ""}
-                    </button>
-                  );
-                })}
+                      <p>{message.text}</p>
+                      <p className="mt-2 text-right text-[10px] text-cyan-100/55">{message.time}</p>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-            </div>
 
-            <div className="chat-scrollbar max-h-[280px] space-y-3 overflow-y-auto px-4 py-3">
-              {activeChat.messages.map((message) => (
-                <div
-                  key={`${activeChat.id}-${message.id}`}
-                  className={`flex ${message.author === "cliente" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[82%] rounded-2xl px-3 py-2 text-xs leading-5 ${
-                      message.author === "cliente"
-                        ? "bg-cyan-300/15 text-cyan-50"
-                        : "bg-white/5 text-cyan-100/90"
-                    }`}
+              <div className="border-t border-cyan-100/10 bg-slate-950/45 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={draftMessage}
+                    onChange={(event) => setDraftMessage(event.target.value)}
+                    placeholder="Escribe un mensaje..."
+                    className="w-full rounded-2xl border border-cyan-100/15 bg-slate-950/45 px-3 py-2 text-xs text-cyan-50 placeholder:text-cyan-100/42 focus:outline-none focus:ring-2 focus:ring-cyan-300/35"
+                  />
+                  <motion.button
+                    type="button"
+                    whileHover={{ y: -1, boxShadow: "0 10px 20px rgba(6,182,212,0.22)" }}
+                    whileTap={{ scale: 0.96 }}
+                    className="rounded-2xl border border-cyan-200/25 bg-cyan-400/20 px-3 py-2 text-xs font-semibold text-cyan-50"
                   >
-                    <p>{message.text}</p>
-                    <p className="mt-2 text-right text-[10px] text-cyan-100/55">{message.time}</p>
-                  </div>
+                    Enviar
+                  </motion.button>
                 </div>
-              ))}
-            </div>
-
-            <div className="border-t border-cyan-100/10 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <input
-                  value={draftMessage}
-                  onChange={(event) => setDraftMessage(event.target.value)}
-                  placeholder="Escribe un mensaje..."
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-3 py-2 text-xs text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-                <button
-                  type="button"
-                  className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
-                >
-                  Enviar
-                </button>
               </div>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setIsChatOpen(true)}
-            className="w-full rounded-full border border-cyan-100/15 bg-[linear-gradient(135deg,_rgba(14,116,144,0.9),_rgba(8,47,73,0.96))] px-4 py-3 text-xs font-semibold text-cyan-50 shadow-lg shadow-slate-950/40"
-          >
-            Chat activo · {activeChat.company}
-          </button>
-        )}
+            </motion.div>
+          ) : (
+            <motion.button
+              key="chat-closed"
+              type="button"
+              onClick={() => setIsChatOpen(true)}
+              initial={{ opacity: 0, y: 14, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              whileHover={{ y: -1, boxShadow: "0 16px 30px rgba(8, 145, 178, 0.28)" }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="group relative w-full overflow-hidden rounded-full border border-cyan-100/20 bg-[linear-gradient(135deg,rgba(14,116,144,0.95),rgba(8,47,73,0.98))] px-4 py-3 text-xs font-semibold text-cyan-50 shadow-lg shadow-slate-950/45"
+            >
+              <span className="pointer-events-none absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_top,rgba(153,246,228,0.28),transparent_68%)]" />
+              <span className="relative flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.8)]" />
+                  Chat activo · {activeChat.company}
+                </span>
+                <span className="rounded-full border border-cyan-100/25 bg-white/10 px-2 py-0.5 text-[10px]">
+                  {clientChatThreads.length} chats
+                </span>
+              </span>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
