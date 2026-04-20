@@ -67,7 +67,7 @@ export default function AuthView({
 
       if (username === "admin1" && password === "admin1") {
         document.cookie = "techmarket_role=empresa_tecnico; path=/; SameSite=Lax";
-        router.push("/empresa/especialista");
+        router.push("/especialista");
         return;
       }
 
