@@ -20,6 +20,7 @@ import {
   PublicationViewerData,
   PublicationViewerModal,
 } from "../components/PublicationViewerModal";
+import { buildClientProfileHref } from "../lib/clientUserProfiles";
 
 type SearchMode = "normal" | "ia";
 type TopView = "feed" | "seguimiento";
@@ -1191,6 +1192,14 @@ export default function ClientePage() {
                   <div className="mt-4 flex items-center justify-between border-t border-cyan-100/10 pt-3 text-xs text-cyan-200/75">
                     <span>{formatPublishedAt(post.createdAt)}</span>
                     <div className="flex gap-2">
+                      {post.kind === "usuario" ? (
+                        <Link
+                          href={buildClientProfileHref(post.author)}
+                          className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-cyan-100/90"
+                        >
+                          Ver perfil
+                        </Link>
+                      ) : null}
                       <button type="button" className="rounded-xl border border-cyan-100/10 bg-cyan-300/10 px-3 py-2 text-cyan-100/90">
                         Me interesa
                       </button>

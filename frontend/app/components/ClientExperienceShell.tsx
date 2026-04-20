@@ -14,6 +14,7 @@ import {
   useState,
 } from "react";
 import { CommunityFeedPost, upsertCommunityFeedPosts } from "../lib/communityFeed";
+import { buildClientProfileHref } from "../lib/clientUserProfiles";
 
 type ClientExperienceShellProps = {
   children: ReactNode;
@@ -147,8 +148,12 @@ export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps
           </div>
 
           <div className="mt-3 grid gap-2">
-            <Link href="/cliente" onClick={() => setIsProfileMenuOpen(false)} className="auth-action block w-full">
-              Mi perfil
+            <Link
+              href={buildClientProfileHref(CLIENT_PROFILE.name)}
+              onClick={() => setIsProfileMenuOpen(false)}
+              className="auth-action block w-full"
+            >
+              Ver perfil
             </Link>
             <button
               type="button"
