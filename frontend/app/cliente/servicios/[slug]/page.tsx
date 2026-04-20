@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getServicePublication, servicePublications } from "../../../lib/servicePublications";
-import { ClientTopbarControls } from "../../../components/ClientExperienceShell";
+import { ClientPageHeader } from "../../../components/ClientPageSections";
 
 type Review = {
   user: string;
@@ -43,19 +43,16 @@ export default async function ServicioPage({
 
   return (
     <div className="flex-1 pb-12">
-      <header className="tech-top-nav">
-        <div className="tech-shell flex items-center justify-between py-4">
-          <Link href="/" className="font-semibold text-cyan-100/90">
-            TechMarket
+      <ClientPageHeader
+        sectionLabel="Detalle de servicio"
+        brandHref="/"
+        sticky={false}
+        rightSlot={(
+          <Link href="/cliente" className="text-sm text-cyan-200/80">
+            Volver a cliente
           </Link>
-          <div className="flex items-center gap-2">
-            <Link href="/cliente" className="text-sm text-cyan-200/80">
-              Volver a cliente
-            </Link>
-            <ClientTopbarControls sectionLabel="Detalle de servicio" />
-          </div>
-        </div>
-      </header>
+        )}
+      />
 
       <main className="tech-shell mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_360px] lg:items-start">
         <section className="space-y-5">

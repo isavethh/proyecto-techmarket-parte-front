@@ -4,6 +4,11 @@ import { ClientTopbarControls } from "./ClientExperienceShell";
 
 type ClientPageHeaderProps = {
   sectionLabel: string;
+  brandHref?: string;
+  middleSlot?: ReactNode;
+  rightSlot?: ReactNode;
+  sticky?: boolean;
+  className?: string;
 };
 
 type ClientInfoCardProps = {
@@ -27,14 +32,29 @@ type ClientQuickLinksCardProps = {
 const combineClassNames = (...classNames: Array<string | undefined | false>) =>
   classNames.filter(Boolean).join(" ");
 
-export function ClientPageHeader({ sectionLabel }: ClientPageHeaderProps) {
+export function ClientPageHeader({
+  sectionLabel,
+  brandHref = "/cliente",
+  middleSlot,
+  rightSlot,
+  sticky = true,
+  className,
+}: ClientPageHeaderProps) {
   return (
-    <header className="tech-top-nav sticky top-0 z-30">
+    <header
+      className={combineClassNames("tech-top-nav z-30", sticky && "sticky top-0", className)}
+    >
       <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
-        <Link href="/cliente" className="font-semibold text-cyan-100/90">
+        <Link href={brandHref} className="font-semibold text-cyan-100/90">
           TechMarket
         </Link>
-        <ClientTopbarControls sectionLabel={sectionLabel} />
+
+        {middleSlot ? <div className="hidden flex-1 max-w-xl md:block">{middleSlot}</div> : null}
+
+        <div className="flex items-center gap-2">
+          {rightSlot}
+          <ClientTopbarControls sectionLabel={sectionLabel} />
+        </div>
       </div>
     </header>
   );

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { ClientTopbarControls } from "../../components/ClientExperienceShell";
+import { ClientPageHeader } from "../../components/ClientPageSections";
 
 type ChatAuthor = "cliente" | "empresa";
 
@@ -418,22 +418,17 @@ export default function ClienteChatPage() {
 
   return (
     <div className="flex-1 pb-10">
-      <header className="tech-top-nav sticky top-0 z-30">
-        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
-          <Link href="/cliente" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <div className="hidden flex-1 max-w-xl md:block">
-            <input
-              className="auth-input"
-              placeholder="Buscar conversaciones, vendedor o producto..."
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-          </div>
-          <ClientTopbarControls sectionLabel="Chats cliente" />
-        </div>
-      </header>
+      <ClientPageHeader
+        sectionLabel="Chats cliente"
+        middleSlot={(
+          <input
+            className="auth-input"
+            placeholder="Buscar conversaciones, vendedor o producto..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
+        )}
+      />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[320px_minmax(0,1fr)] lg:px-6">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)]">

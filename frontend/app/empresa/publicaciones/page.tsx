@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { CompanyPageHeader, CompanyPanelCard } from "../../components/CompanyPageSections";
 import { CommunityFeedPost, upsertCommunityFeedPosts } from "../../lib/communityFeed";
 
 type MainFilter = "Productos disponibles" | "Servicios" | "Ofertas y promociones" | "Publicaciones de interacción" | "Publicaciones de texto";
@@ -11,6 +13,7 @@ const companyModules = [
   { title: "Perfil y tienda", href: "/empresa/perfil" },
   { title: "Publicaciones", href: "/empresa/publicaciones" },
   { title: "Chat", href: "/empresa/chat" },
+  { title: "Resenas", href: "/empresa/resenas" },
   { title: "Consultor IA", href: "/empresa/ia" },
   { title: "Analiticas", href: "/empresa/analiticas" },
 ];
@@ -149,6 +152,57 @@ type OfferEditForm = {
   label: string;
   image: string;
 };
+
+type PublicationPreview = {
+  id: string;
+  kind: "Producto" | "Servicio" | "Oferta" | "Publicacion";
+  title: string;
+  description: string;
+  image?: string;
+  price?: string;
+  status?: string;
+  date?: string;
+};
+
+type PublicationMetric = {
+  label: string;
+  value: string;
+  trend: string;
+};
+
+function buildPublicationMetrics(publicationId: string): PublicationMetric[] {
+  const seed = publicationId
+    .split("")
+    .reduce((accumulator, char) => accumulator + char.charCodeAt(0), 0);
+
+  const views = 900 + (seed % 1400);
+  const interactions = 36 + (seed % 190);
+  const chats = 4 + (seed % 22);
+  const ctr = ((interactions / views) * 100).toFixed(1);
+
+  return [
+    {
+      label: "Vistas",
+      value: views.toLocaleString("es-BO"),
+      trend: "+12% vs semana anterior",
+    },
+    {
+      label: "Interacciones",
+      value: interactions.toString(),
+      trend: "Likes y comentarios",
+    },
+    {
+      label: "Chats iniciados",
+      value: chats.toString(),
+      trend: "Contactos desde esta publicacion",
+    },
+    {
+      label: "CTR estimado",
+      value: `${ctr}%`,
+      trend: "Rendimiento de conversion",
+    },
+  ];
+}
 
 function LikeIcon() {
   return (
@@ -421,6 +475,7 @@ export default function PublicacionesPage() {
     image: "",
   });
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedPublication, setSelectedPublication] = useState<PublicationPreview | null>(null);
   const [publishMessage, setPublishMessage] = useState("");
   const [uploadedImagePreview, setUploadedImagePreview] = useState("");
   const [uploadedImageName, setUploadedImageName] = useState("");
@@ -447,6 +502,46 @@ export default function PublicacionesPage() {
       : "Agregar publicacion";
   const createFormTitle = isServicesView ? "Nuevo servicio" : isTextView ? "Nueva publicacion de texto" : "Nueva publicacion";
   const submitButtonLabel = isServicesView ? "Publicar servicio" : isTextView ? "Publicar texto" : "Publicar";
+
+  const totalPublicationItems =
+    productItems.length + serviceItems.length + offerItems.length + postItems.length + textPostItems.length;
+
+  const activeItemsCount =
+    activeFilter === "Productos disponibles"
+      ? productItems.length
+      : activeFilter === "Servicios"
+        ? serviceItems.length
+        : activeFilter === "Ofertas y promociones"
+          ? offerItems.length
+          : activeFilter === "Publicaciones de texto"
+            ? textPostItems.length
+            : activeInteractionFilter === "Encuestas"
+              ? surveys.length
+              : activeInteractionFilter === "Publicaciones"
+                ? postItems.length
+                : users.length;
+
+  const openPublicationPreview = (publication: PublicationPreview) => {
+    setSelectedPublication(publication);
+  };
+
+  const closeProductEditModal = () => {
+    setShowProductEditModal(false);
+    setEditingProductId(null);
+    setProductEditMessage("");
+  };
+
+  const closeServiceEditModal = () => {
+    setShowServiceEditModal(false);
+    setEditingServiceId(null);
+    setServiceEditMessage("");
+  };
+
+  const closeOfferEditModal = () => {
+    setShowOfferEditModal(false);
+    setEditingOfferId(null);
+    setOfferEditMessage("");
+  };
 
   useEffect(() => {
     const seededPosts = posts.map((post, index) =>
@@ -767,43 +862,46 @@ export default function PublicacionesPage() {
 
   return (
     <div className="flex-1 pb-8">
-      <header className="tech-top-nav">
-        <div className="flex items-center justify-between px-6 py-4">
-          <Link href="/" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <span className="tech-chip">Panel empresa</span>
-        </div>
-      </header>
+      <CompanyPageHeader
+        sectionLabel="Publicaciones"
+        brandHref="/"
+        middleSlot={
+          <div className="inline-flex rounded-full border border-cyan-100/15 bg-slate-950/45 px-3 py-1.5 text-xs text-cyan-100/80 md:items-center md:gap-2">
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.85)]" />
+            <span className="ml-2 md:ml-0">Centro de publicaciones activo</span>
+          </div>
+        }
+      />
 
-      <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_1fr]">
-        <aside className="tech-card h-fit">
-          <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                TC
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+          <section className="tech-card">
+            <p className="tech-mono text-xs text-cyan-200/75">CENTRO DE PUBLICACIONES</p>
+            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Gestion comercial</h1>
+            <p className="mt-3 text-sm text-cyan-100/80">
+              Administra contenido, mejoras y seguimiento de rendimiento desde un solo lugar.
+            </p>
+          </section>
+
+          <CompanyPanelCard links={companyModules} panelSubtitle="Empresa activa en TechMarket" />
+
+          <section className="tech-card">
+            <p className="text-sm font-semibold text-cyan-50">Resumen rapido</p>
+            <div className="mt-3 grid gap-2">
+              <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-cyan-200/70">Publicaciones totales</p>
+                <p className="mt-2 text-xl font-semibold text-cyan-50">{totalPublicationItems}</p>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
-                <p className="text-xs text-cyan-100/75">TechMarket</p>
+              <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-cyan-200/70">Seccion activa</p>
+                <p className="mt-2 text-base font-semibold text-cyan-50">{activeFilter}</p>
+                <p className="mt-1 text-xs text-cyan-100/72">{activeItemsCount} elementos visibles</p>
               </div>
             </div>
-          </div>
-          <p className="tech-mono mt-4 text-xs text-cyan-200/75">MODULO EMPRESAS</p>
-          <nav className="mt-4 space-y-2 text-sm text-cyan-100/90">
-            {companyModules.map((module) => (
-              <Link
-                key={module.title}
-                href={module.href}
-                className="block rounded-2xl border border-cyan-100/10 p-3 font-semibold text-cyan-50 transition hover:bg-cyan-100/5"
-              >
-                {module.title}
-              </Link>
-            ))}
-          </nav>
+          </section>
         </aside>
 
-        <section className="space-y-6 overflow-y-auto pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
+        <section className="space-y-6 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
           <section className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/30">
             <div className="p-6 md:p-8">
               <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -819,7 +917,20 @@ export default function PublicacionesPage() {
                 <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-5">
                   <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Contenido visible</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">{activeFilter}</h2>
-                  
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">En pantalla</p>
+                      <p className="mt-2 text-lg font-semibold text-cyan-50">{activeItemsCount}</p>
+                    </div>
+                    <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">Total gestionado</p>
+                      <p className="mt-2 text-lg font-semibold text-cyan-50">{totalPublicationItems}</p>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-sm leading-6 text-cyan-100/76">
+                    Tip: usa &quot;Ver publicacion&quot; para revisar cada pieza con su bloque de metricas antes de editarla.
+                  </p>
                 </div>
               </div>
 
@@ -983,7 +1094,12 @@ export default function PublicacionesPage() {
               {activeFilter === "Productos disponibles" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {productItems.map((product) => (
-                    <article key={product.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35">
+                    <motion.article
+                      key={product.id}
+                      whileHover={{ y: -4, boxShadow: "0 18px 34px rgba(8,145,178,0.2)" }}
+                      transition={{ duration: 0.22, ease: "easeOut" }}
+                      className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
+                    >
                       <img src={product.image} alt={product.name} className="h-44 w-full object-cover" loading="lazy" />
                       <div className="space-y-4 p-5">
                         <div className="flex items-start justify-between gap-4">
@@ -1009,16 +1125,36 @@ export default function PublicacionesPage() {
                             <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Precio</p>
                             <p className="mt-1 text-lg font-bold text-white">{product.price ?? "Consultar"}</p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => openProductEditModal(product)}
-                            className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
-                          >
-                            Editar
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openPublicationPreview({
+                                  id: product.id,
+                                  kind: "Producto",
+                                  title: product.name,
+                                  description: product.description,
+                                  image: product.image,
+                                  price: product.price ?? "Consultar",
+                                  status: product.status,
+                                  date: "Hoy",
+                                })
+                              }
+                              className="rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10"
+                            >
+                              Ver publicacion
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openProductEditModal(product)}
+                              className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                            >
+                              Editar
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </article>
+                    </motion.article>
                   ))}
                 </div>
               )}
@@ -1026,7 +1162,12 @@ export default function PublicacionesPage() {
               {activeFilter === "Servicios" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {serviceItems.map((service) => (
-                    <article key={service.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35">
+                    <motion.article
+                      key={service.id}
+                      whileHover={{ y: -4, boxShadow: "0 18px 34px rgba(8,145,178,0.2)" }}
+                      transition={{ duration: 0.22, ease: "easeOut" }}
+                      className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
+                    >
                       {service.image ? <img src={service.image} alt={service.name} className="h-40 w-full object-cover" loading="lazy" /> : null}
                       <div className="space-y-4 p-5">
                         <div className="flex items-center gap-3 text-sm text-cyan-100/75">
@@ -1044,16 +1185,36 @@ export default function PublicacionesPage() {
                           <p className="text-sm text-cyan-100/75">
                             <span className="font-semibold text-white">Precio:</span> {service.price}
                           </p>
-                          <button
-                            type="button"
-                            onClick={() => openServiceEditModal(service)}
-                            className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
-                          >
-                            Editar
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openPublicationPreview({
+                                  id: service.id,
+                                  kind: "Servicio",
+                                  title: service.name,
+                                  description: service.description,
+                                  image: service.image,
+                                  price: service.price,
+                                  status: "Servicio activo",
+                                  date: "Hoy",
+                                })
+                              }
+                              className="rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10"
+                            >
+                              Ver publicacion
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openServiceEditModal(service)}
+                              className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                            >
+                              Editar
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </article>
+                    </motion.article>
                   ))}
                 </div>
               )}
@@ -1061,7 +1222,12 @@ export default function PublicacionesPage() {
               {activeFilter === "Ofertas y promociones" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {offerItems.map((offer) => (
-                    <article key={offer.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35">
+                    <motion.article
+                      key={offer.id}
+                      whileHover={{ y: -4, boxShadow: "0 18px 34px rgba(8,145,178,0.2)" }}
+                      transition={{ duration: 0.22, ease: "easeOut" }}
+                      className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
+                    >
                       <img src={offer.image} alt={offer.title} className="h-44 w-full object-cover" loading="lazy" />
                       <div className="space-y-4 p-5">
                         <div className="flex items-start justify-between gap-4">
@@ -1094,15 +1260,35 @@ export default function PublicacionesPage() {
                             </div>
                           ) : null}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => openOfferEditModal(offer)}
-                          className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
-                        >
-                          Editar
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openPublicationPreview({
+                                id: offer.id,
+                                kind: "Oferta",
+                                title: offer.title,
+                                description: offer.description,
+                                image: offer.image,
+                                price: offer.currentPrice,
+                                status: offer.label,
+                                date: "Hoy",
+                              })
+                            }
+                            className="rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10"
+                          >
+                            Ver publicacion
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openOfferEditModal(offer)}
+                            className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                          >
+                            Editar
+                          </button>
+                        </div>
                       </div>
-                    </article>
+                    </motion.article>
                   ))}
                 </div>
               )}
@@ -1321,304 +1507,423 @@ export default function PublicacionesPage() {
         </section>
       </main>
 
-      {showProductEditModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
-          <form
-            onSubmit={handleProductEditSubmit}
-            className="w-full max-w-2xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+      <AnimatePresence>
+        {selectedPublication ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/78 px-4 py-6 backdrop-blur"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                setSelectedPublication(null);
+              }
+            }}
           >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Producto</p>
-                <h2 className="mt-2 text-2xl font-bold text-white">Editar producto</h2>
+            <motion.article
+              className="chat-scrollbar max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-cyan-100/15 bg-[linear-gradient(175deg,rgba(9,30,53,0.98),rgba(5,18,35,0.98))] p-5 shadow-2xl shadow-slate-950/60 md:p-6"
+              initial={{ opacity: 0, y: 30, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28, mass: 0.92 }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="tech-mono text-xs text-cyan-200/70">VISTA DE PUBLICACION</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-cyan-50">{selectedPublication.title}</h2>
+                  <p className="mt-2 text-sm text-cyan-100/78">
+                    {selectedPublication.kind} • {selectedPublication.date ?? "Reciente"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPublication(null)}
+                  className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10"
+                >
+                  Cerrar
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowProductEditModal(false);
-                  setEditingProductId(null);
-                  setProductEditMessage("");
-                }}
-                className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
-              >
-                Cerrar
-              </button>
-            </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                <span>Nombre</span>
-                <input
-                  value={productEditForm.name}
-                  onChange={(event) => setProductEditForm((current) => ({ ...current, name: event.target.value }))}
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+              <div className="mt-5 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+                <section className="rounded-3xl border border-cyan-100/12 bg-slate-950/40 p-4">
+                  {selectedPublication.image ? (
+                    <img
+                      src={selectedPublication.image}
+                      alt={selectedPublication.title}
+                      className="h-56 w-full rounded-2xl object-cover"
+                    />
+                  ) : null}
 
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                <span>Descripcion</span>
-                <textarea
-                  value={productEditForm.description}
-                  onChange={(event) => setProductEditForm((current) => ({ ...current, description: event.target.value }))}
-                  rows={4}
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs font-semibold text-cyan-100/80">
+                      {selectedPublication.kind}
+                    </span>
+                    {selectedPublication.status ? (
+                      <span className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+                        {selectedPublication.status}
+                      </span>
+                    ) : null}
+                    {selectedPublication.price ? (
+                      <span className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs font-semibold text-cyan-100/85">
+                        {selectedPublication.price}
+                      </span>
+                    ) : null}
+                  </div>
 
-              <label className="space-y-2 text-sm text-cyan-100/85">
-                <span>Precio</span>
-                <input
-                  value={productEditForm.price}
-                  onChange={(event) => setProductEditForm((current) => ({ ...current, price: event.target.value }))}
-                  placeholder="Ej: Bs 1.500.000"
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+                  <p className="mt-4 text-sm leading-7 text-cyan-100/84">{selectedPublication.description}</p>
+                </section>
 
-              <label className="space-y-2 text-sm text-cyan-100/85">
-                <span>Estado</span>
-                <input
-                  value={productEditForm.status}
-                  onChange={(event) => setProductEditForm((current) => ({ ...current, status: event.target.value }))}
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+                <section className="rounded-3xl border border-cyan-100/12 bg-slate-950/40 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Metricas de esta publicacion</p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {buildPublicationMetrics(selectedPublication.id).map((metric) => (
+                      <div key={metric.label} className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-3">
+                        <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">{metric.label}</p>
+                        <p className="mt-2 text-xl font-semibold text-cyan-50">{metric.value}</p>
+                        <p className="mt-1 text-xs text-cyan-100/72">{metric.trend}</p>
+                      </div>
+                    ))}
+                  </div>
 
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                <span>URL de imagen</span>
-                <input
-                  value={productEditForm.image}
-                  onChange={(event) => setProductEditForm((current) => ({ ...current, image: event.target.value }))}
-                  placeholder="/productos/laptop-pro-14.jpg"
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
-            </div>
+                  <div className="mt-4 rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/70">Recomendacion rapida</p>
+                    <p className="mt-2 text-sm leading-6 text-cyan-100/84">
+                      Esta publicacion tiene buen potencial. Ajusta imagen principal y CTA para convertir mas clics en chats.
+                    </p>
+                  </div>
+                </section>
+              </div>
+            </motion.article>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
-            {productEditMessage ? <p className="mt-4 text-sm text-amber-200">{productEditMessage}</p> : null}
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="submit"
-                className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
-              >
-                Guardar cambios
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowProductEditModal(false);
-                  setEditingProductId(null);
-                  setProductEditMessage("");
-                }}
-                className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : null}
-
-      {showServiceEditModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
-          <form
-            onSubmit={handleServiceEditSubmit}
-            className="w-full max-w-2xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+      <AnimatePresence>
+        {showProductEditModal ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                closeProductEditModal();
+              }
+            }}
           >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Servicio</p>
-                <h2 className="mt-2 text-2xl font-bold text-white">Editar servicio</h2>
+            <motion.form
+              onSubmit={handleProductEditSubmit}
+              className="w-full max-w-2xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+              initial={{ opacity: 0, y: 28, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28, mass: 0.92 }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Producto</p>
+                  <h2 className="mt-2 text-2xl font-bold text-white">Editar producto</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeProductEditModal}
+                  className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                >
+                  Cerrar
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowServiceEditModal(false);
-                  setEditingServiceId(null);
-                  setServiceEditMessage("");
-                }}
-                className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
-              >
-                Cerrar
-              </button>
-            </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                <span>Nombre</span>
-                <input
-                  value={serviceEditForm.name}
-                  onChange={(event) => setServiceEditForm((current) => ({ ...current, name: event.target.value }))}
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                  <span>Nombre</span>
+                  <input
+                    value={productEditForm.name}
+                    onChange={(event) => setProductEditForm((current) => ({ ...current, name: event.target.value }))}
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
 
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                <span>Descripcion</span>
-                <textarea
-                  value={serviceEditForm.description}
-                  onChange={(event) => setServiceEditForm((current) => ({ ...current, description: event.target.value }))}
-                  rows={4}
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                  <span>Descripcion</span>
+                  <textarea
+                    value={productEditForm.description}
+                    onChange={(event) => setProductEditForm((current) => ({ ...current, description: event.target.value }))}
+                    rows={4}
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
 
-              <label className="space-y-2 text-sm text-cyan-100/85">
-                <span>Precio</span>
-                <input
-                  value={serviceEditForm.price}
-                  onChange={(event) => setServiceEditForm((current) => ({ ...current, price: event.target.value }))}
-                  placeholder="Ej: Bs 120.000"
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+                <label className="space-y-2 text-sm text-cyan-100/85">
+                  <span>Precio</span>
+                  <input
+                    value={productEditForm.price}
+                    onChange={(event) => setProductEditForm((current) => ({ ...current, price: event.target.value }))}
+                    placeholder="Ej: Bs 1.500.000"
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
 
-              <label className="space-y-2 text-sm text-cyan-100/85">
-                <span>URL de imagen</span>
-                <input
-                  value={serviceEditForm.image}
-                  onChange={(event) => setServiceEditForm((current) => ({ ...current, image: event.target.value }))}
-                  placeholder="/productos/monitor-ultrawide-34.jpg"
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
-            </div>
+                <label className="space-y-2 text-sm text-cyan-100/85">
+                  <span>Estado</span>
+                  <input
+                    value={productEditForm.status}
+                    onChange={(event) => setProductEditForm((current) => ({ ...current, status: event.target.value }))}
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
 
-            {serviceEditMessage ? <p className="mt-4 text-sm text-amber-200">{serviceEditMessage}</p> : null}
+                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                  <span>URL de imagen</span>
+                  <input
+                    value={productEditForm.image}
+                    onChange={(event) => setProductEditForm((current) => ({ ...current, image: event.target.value }))}
+                    placeholder="/productos/laptop-pro-14.jpg"
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
+              </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="submit"
-                className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
-              >
-                Guardar cambios
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowServiceEditModal(false);
-                  setEditingServiceId(null);
-                  setServiceEditMessage("");
-                }}
-                className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : null}
+              {productEditMessage ? <p className="mt-4 text-sm text-amber-200">{productEditMessage}</p> : null}
 
-      {showOfferEditModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
-          <form
-            onSubmit={handleOfferEditSubmit}
-            className="w-full max-w-2xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="submit"
+                  className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                >
+                  Guardar cambios
+                </button>
+                <button
+                  type="button"
+                  onClick={closeProductEditModal}
+                  className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </motion.form>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showServiceEditModal ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                closeServiceEditModal();
+              }
+            }}
           >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Oferta</p>
-                <h2 className="mt-2 text-2xl font-bold text-white">Editar oferta o promocion</h2>
+            <motion.form
+              onSubmit={handleServiceEditSubmit}
+              className="w-full max-w-2xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+              initial={{ opacity: 0, y: 28, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28, mass: 0.92 }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Servicio</p>
+                  <h2 className="mt-2 text-2xl font-bold text-white">Editar servicio</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeServiceEditModal}
+                  className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                >
+                  Cerrar
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowOfferEditModal(false);
-                  setEditingOfferId(null);
-                  setOfferEditMessage("");
-                }}
-                className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
-              >
-                Cerrar
-              </button>
-            </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                <span>Titulo</span>
-                <input
-                  value={offerEditForm.title}
-                  onChange={(event) => setOfferEditForm((current) => ({ ...current, title: event.target.value }))}
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                  <span>Nombre</span>
+                  <input
+                    value={serviceEditForm.name}
+                    onChange={(event) => setServiceEditForm((current) => ({ ...current, name: event.target.value }))}
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
 
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                <span>Descripcion</span>
-                <textarea
-                  value={offerEditForm.description}
-                  onChange={(event) => setOfferEditForm((current) => ({ ...current, description: event.target.value }))}
-                  rows={4}
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                  <span>Descripcion</span>
+                  <textarea
+                    value={serviceEditForm.description}
+                    onChange={(event) => setServiceEditForm((current) => ({ ...current, description: event.target.value }))}
+                    rows={4}
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
 
-              <label className="space-y-2 text-sm text-cyan-100/85">
-                <span>Precio actual</span>
-                <input
-                  value={offerEditForm.currentPrice}
-                  onChange={(event) => setOfferEditForm((current) => ({ ...current, currentPrice: event.target.value }))}
-                  placeholder="Ej: Bs 95.000"
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+                <label className="space-y-2 text-sm text-cyan-100/85">
+                  <span>Precio</span>
+                  <input
+                    value={serviceEditForm.price}
+                    onChange={(event) => setServiceEditForm((current) => ({ ...current, price: event.target.value }))}
+                    placeholder="Ej: Bs 120.000"
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
 
-              <label className="space-y-2 text-sm text-cyan-100/85">
-                <span>Precio anterior (opcional)</span>
-                <input
-                  value={offerEditForm.previousPrice}
-                  onChange={(event) => setOfferEditForm((current) => ({ ...current, previousPrice: event.target.value }))}
-                  placeholder="Ej: Bs 140.000"
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+                <label className="space-y-2 text-sm text-cyan-100/85">
+                  <span>URL de imagen</span>
+                  <input
+                    value={serviceEditForm.image}
+                    onChange={(event) => setServiceEditForm((current) => ({ ...current, image: event.target.value }))}
+                    placeholder="/productos/monitor-ultrawide-34.jpg"
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
+              </div>
 
-              <label className="space-y-2 text-sm text-cyan-100/85">
-                <span>Etiqueta</span>
-                <input
-                  value={offerEditForm.label}
-                  onChange={(event) => setOfferEditForm((current) => ({ ...current, label: event.target.value }))}
-                  placeholder="Oferta"
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
+              {serviceEditMessage ? <p className="mt-4 text-sm text-amber-200">{serviceEditMessage}</p> : null}
 
-              <label className="space-y-2 text-sm text-cyan-100/85">
-                <span>URL de imagen</span>
-                <input
-                  value={offerEditForm.image}
-                  onChange={(event) => setOfferEditForm((current) => ({ ...current, image: event.target.value }))}
-                  placeholder="/productos/laptop-pro-14.jpg"
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
-            </div>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="submit"
+                  className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                >
+                  Guardar cambios
+                </button>
+                <button
+                  type="button"
+                  onClick={closeServiceEditModal}
+                  className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </motion.form>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
-            {offerEditMessage ? <p className="mt-4 text-sm text-amber-200">{offerEditMessage}</p> : null}
+      <AnimatePresence>
+        {showOfferEditModal ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                closeOfferEditModal();
+              }
+            }}
+          >
+            <motion.form
+              onSubmit={handleOfferEditSubmit}
+              className="w-full max-w-2xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+              initial={{ opacity: 0, y: 28, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28, mass: 0.92 }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Oferta</p>
+                  <h2 className="mt-2 text-2xl font-bold text-white">Editar oferta o promocion</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeOfferEditModal}
+                  className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                >
+                  Cerrar
+                </button>
+              </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="submit"
-                className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
-              >
-                Guardar cambios
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowOfferEditModal(false);
-                  setEditingOfferId(null);
-                  setOfferEditMessage("");
-                }}
-                className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : null}
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                  <span>Titulo</span>
+                  <input
+                    value={offerEditForm.title}
+                    onChange={(event) => setOfferEditForm((current) => ({ ...current, title: event.target.value }))}
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                  <span>Descripcion</span>
+                  <textarea
+                    value={offerEditForm.description}
+                    onChange={(event) => setOfferEditForm((current) => ({ ...current, description: event.target.value }))}
+                    rows={4}
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-cyan-100/85">
+                  <span>Precio actual</span>
+                  <input
+                    value={offerEditForm.currentPrice}
+                    onChange={(event) => setOfferEditForm((current) => ({ ...current, currentPrice: event.target.value }))}
+                    placeholder="Ej: Bs 95.000"
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-cyan-100/85">
+                  <span>Precio anterior (opcional)</span>
+                  <input
+                    value={offerEditForm.previousPrice}
+                    onChange={(event) => setOfferEditForm((current) => ({ ...current, previousPrice: event.target.value }))}
+                    placeholder="Ej: Bs 140.000"
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-cyan-100/85">
+                  <span>Etiqueta</span>
+                  <input
+                    value={offerEditForm.label}
+                    onChange={(event) => setOfferEditForm((current) => ({ ...current, label: event.target.value }))}
+                    placeholder="Oferta"
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-cyan-100/85">
+                  <span>URL de imagen</span>
+                  <input
+                    value={offerEditForm.image}
+                    onChange={(event) => setOfferEditForm((current) => ({ ...current, image: event.target.value }))}
+                    placeholder="/productos/laptop-pro-14.jpg"
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
+              </div>
+
+              {offerEditMessage ? <p className="mt-4 text-sm text-amber-200">{offerEditMessage}</p> : null}
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="submit"
+                  className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                >
+                  Guardar cambios
+                </button>
+                <button
+                  type="button"
+                  onClick={closeOfferEditModal}
+                  className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </motion.form>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

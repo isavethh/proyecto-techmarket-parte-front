@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { CompanyPageHeader, CompanyPanelCard } from "../../components/CompanyPageSections";
 
 type ChatMessage = {
   id: string;
@@ -25,6 +25,7 @@ const companyModules = [
   { title: "Perfil y tienda", href: "/empresa/perfil" },
   { title: "Publicaciones", href: "/empresa/publicaciones" },
   { title: "Chat", href: "/empresa/chat" },
+  { title: "Resenas", href: "/empresa/resenas" },
   { title: "Consultor IA", href: "/empresa/ia" },
   { title: "Analiticas", href: "/empresa/analiticas" },
 ];
@@ -109,43 +110,31 @@ export default function ChatPage() {
 
   return (
     <div className="flex-1 pb-8">
-      <header className="tech-top-nav">
-        <div className="flex items-center justify-between px-6 py-4">
-          <Link href="/" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <span className="tech-chip">Panel empresa</span>
-        </div>
-      </header>
-
-      <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_1fr]">
-        <aside className="tech-card h-fit">
-          <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                TC
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
-                <p className="text-xs text-cyan-100/75">TechMarket</p>
-              </div>
-            </div>
+      <CompanyPageHeader
+        sectionLabel="Chat empresa"
+        brandHref="/"
+        middleSlot={
+          <div className="inline-flex rounded-full border border-cyan-100/15 bg-slate-950/45 px-3 py-1.5 text-xs text-cyan-100/80 md:items-center md:gap-2">
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.85)]" />
+            <span className="ml-2 md:ml-0">Centro de conversaciones activo</span>
           </div>
-          <p className="tech-mono mt-4 text-xs text-cyan-200/75">MODULO EMPRESAS</p>
-          <nav className="mt-4 space-y-2 text-sm text-cyan-100/90">
-            {companyModules.map((module) => (
-              <Link
-                key={module.title}
-                href={module.href}
-                className="block rounded-2xl border border-cyan-100/10 p-3 font-semibold text-cyan-50 transition hover:bg-cyan-100/5"
-              >
-                {module.title}
-              </Link>
-            ))}
-          </nav>
+        }
+      />
+
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+          <section className="tech-card">
+            <p className="tech-mono text-xs text-cyan-200/75">CHAT COMERCIAL</p>
+            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Conversaciones de clientes</h1>
+            <p className="mt-3 text-sm text-cyan-100/80">
+              Responde rapido para convertir mas consultas en ventas.
+            </p>
+          </section>
+
+          <CompanyPanelCard links={companyModules} panelSubtitle="Empresa activa en TechMarket" />
         </aside>
 
-        <section className="space-y-6 overflow-y-auto pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
+        <section className="chat-scrollbar space-y-6 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
           <section className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/30">
             <div className="p-6 md:p-8">
               <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
@@ -158,7 +147,7 @@ export default function ChatPage() {
                     <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">{chatThreads.length}</span>
                   </div>
 
-                  <div className="mt-5 space-y-3">
+                  <div className="chat-scrollbar mt-5 max-h-[calc(100vh-320px)] space-y-3 overflow-y-auto pr-1">
                     {chatThreads.map((chat) => {
                       const isActive = chat.id === activeChatId;
 
@@ -199,7 +188,7 @@ export default function ChatPage() {
                   </div>
                 </aside>
 
-                <section className="flex h-[calc(100vh-170px)] min-h-[620px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-4 md:p-5">
+                <section className="flex h-[calc(100vh-190px)] min-h-[560px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-4 md:p-5">
                   <div className="flex items-center justify-between border-b border-cyan-100/10 pb-4">
                     <div className="flex items-center gap-4">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
@@ -213,7 +202,7 @@ export default function ChatPage() {
                     <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">En linea</span>
                   </div>
 
-                  <div className="mt-4 flex-1 space-y-3 overflow-y-auto rounded-3xl bg-slate-950/30 p-4 md:p-5">
+                  <div className="chat-scrollbar mt-4 flex-1 space-y-3 overflow-y-auto rounded-3xl bg-slate-950/30 p-4 md:p-5">
                     {activeChat.messages.map((message) => (
                       <div key={message.id} className={`flex ${message.author === "empresa" ? "justify-end" : "justify-start"}`}>
                         <div

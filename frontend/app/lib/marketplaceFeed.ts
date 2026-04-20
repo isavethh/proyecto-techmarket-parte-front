@@ -103,6 +103,17 @@ export const marketplaceSeedPosts: CommunityFeedPost[] = [
   },
 ];
 
+export const createMarketplaceSellerKey = (sellerName: string): string => {
+  const normalized = sellerName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized || "vendedor";
+};
+
 const detectMarketplaceCategory = (post: CommunityFeedPost): Exclude<MarketplaceCategory, "Todos"> | "Otros" => {
   const normalizedText = `${post.title} ${post.body} ${post.tag}`.toLowerCase();
 

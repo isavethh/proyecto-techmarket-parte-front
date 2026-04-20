@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChangeEvent, FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ClientTopbarControls } from "../../../components/ClientExperienceShell";
+import { ClientPageHeader } from "../../../components/ClientPageSections";
 import { PublicationActionButton, PublicationCard } from "../../../components/PublicationCard";
 import {
   CommunityMemberRole,
@@ -235,14 +235,7 @@ export default function CommunityDetailPage() {
   if (!community) {
     return (
       <div className="flex-1 pb-10">
-        <header className="tech-top-nav sticky top-0 z-30">
-          <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
-            <Link href="/cliente" className="font-semibold text-cyan-100/90">
-              TechMarket
-            </Link>
-            <ClientTopbarControls sectionLabel="Comunidades" />
-          </div>
-        </header>
+        <ClientPageHeader sectionLabel="Comunidades" />
 
         <main className="mx-auto mt-8 w-full max-w-[900px] px-4 lg:px-6">
           <section className="tech-card">
@@ -262,14 +255,7 @@ export default function CommunityDetailPage() {
 
   return (
     <div className="flex-1 pb-10">
-      <header className="tech-top-nav sticky top-0 z-30">
-        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
-          <Link href="/cliente" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <ClientTopbarControls sectionLabel={community.focus} />
-        </div>
-      </header>
+      <ClientPageHeader sectionLabel={community.focus} />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useSyncExternalStore } from "react";
@@ -16,6 +17,7 @@ import {
 import { COMMUNITY_FEED_UPDATED_EVENT, readCommunityFeedPosts } from "../../lib/communityFeed";
 import {
   buildMarketplaceListings,
+  createMarketplaceSellerKey,
   MarketplaceCategory,
   marketplaceCategoryOptions,
   marketplaceSeedPosts,
@@ -318,6 +320,7 @@ export default function ClienteMarketplacePage() {
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filteredListings.map((listing) => {
                 const sellerPosts = listingCountBySeller[listing.post.author] ?? 1;
+                const sellerProfileHref = `/cliente/marketplace/vendedor/${createMarketplaceSellerKey(listing.post.author)}?seller=${encodeURIComponent(listing.post.author)}`;
 
                 return (
                   <motion.article
@@ -351,10 +354,33 @@ export default function ClienteMarketplacePage() {
                         </span>
                       </div>
 
-                      <div className="mt-4 rounded-2xl border border-cyan-100/12 bg-slate-950/35 px-3 py-2 text-xs text-cyan-100/78">
-                        <p>{listing.post.location}</p>
-                        <p className="mt-1">{sellerPosts} publicaciones de {listing.post.author}</p>
-                      </div>
+                      <Link
+                        href={sellerProfileHref}
+                        className="mt-4 block rounded-2xl border border-cyan-100/15 bg-[linear-gradient(140deg,rgba(18,57,90,0.55),rgba(9,27,48,0.8))] p-3 transition hover:border-cyan-300/40 hover:shadow-[0_14px_26px_rgba(8,145,178,0.24)]"
+                      >
+                        <p className="tech-mono text-[10px] tracking-[0.18em] text-cyan-200/70">VENDEDOR</p>
+                        <div className="mt-2 flex items-center gap-3">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan-200/35 bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                            {listing.post.author
+                              .split(" ")
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((token) => token[0]?.toUpperCase() ?? "")
+                              .join("")}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-cyan-50">{listing.post.author}</p>
+                            <p className="truncate text-xs text-cyan-200/75">{listing.post.role}</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-2 text-xs text-cyan-100/80">
+                          <p className="truncate">{listing.post.location}</p>
+                          <span className="rounded-full border border-cyan-100/15 bg-white/5 px-2.5 py-1 text-[11px] text-cyan-100/90">
+                            {sellerPosts} anuncios
+                          </span>
+                        </div>
+                        <p className="mt-2 text-[11px] font-semibold text-cyan-200/80">Ver perfil del vendedor</p>
+                      </Link>
 
                       <div className="mt-4 grid grid-cols-2 gap-2">
                         <button

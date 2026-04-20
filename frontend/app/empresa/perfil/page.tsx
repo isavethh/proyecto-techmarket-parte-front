@@ -7,6 +7,7 @@ const companyModules = [
   { title: "Perfil", href: "/empresa/perfil" },
   { title: "Publicaciones", href: "/empresa/publicaciones" },
   { title: "Chat", href: "/empresa/chat" },
+  { title: "Resenas", href: "/empresa/resenas" },
   { title: "Consultor IA", href: "/empresa/ia" },
   { title: "Analiticas", href: "/empresa/analiticas" },
 ];

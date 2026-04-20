@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getClientCompanyProfile } from "../../../lib/clientCompanyProfiles";
-import { ClientTopbarControls } from "../../../components/ClientExperienceShell";
+import { ClientPageHeader } from "../../../components/ClientPageSections";
 
 function RatingStars({ rating }: { rating: number }) {
   return (
@@ -17,7 +17,6 @@ function RatingStars({ rating }: { rating: number }) {
           </span>
         );
       })}
-      <span className="ml-2 text-sm text-cyan-100/80">{rating.toFixed(1)} / 5</span>
     </div>
   );
 }
@@ -28,14 +27,7 @@ export default async function ClienteEmpresaPerfilPage({ params }: { params: Pro
 
   return (
     <div className="flex-1 pb-8">
-      <header className="tech-top-nav">
-        <div className="flex items-center justify-between px-6 py-4">
-          <Link href="/cliente" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <ClientTopbarControls sectionLabel="Perfil de empresa" />
-        </div>
-      </header>
+      <ClientPageHeader sectionLabel="Perfil de empresa" sticky={false} />
 
       <main className="mx-auto mt-8 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_1fr] lg:px-6">
         <aside className="tech-card h-fit space-y-2">
@@ -53,7 +45,7 @@ export default async function ClienteEmpresaPerfilPage({ params }: { params: Pro
 
         <section className="space-y-6 overflow-y-auto pr-4">
           <section className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/30">
-            <div className="grid gap-6 p-6 md:grid-cols-[1.1fr_0.9fr] md:p-8">
+            <div className="grid gap-6 p-6 xl:grid-cols-[1.1fr_0.9fr] md:p-8">
               <div>
                 <div className="flex items-center gap-4">
                   <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-cyan-100/10 bg-gradient-to-br from-cyan-300 to-blue-600 text-2xl font-bold text-slate-950 shadow-lg shadow-cyan-500/20">
@@ -71,12 +63,14 @@ export default async function ClienteEmpresaPerfilPage({ params }: { params: Pro
                   <span className="rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-cyan-100/85">{profile.city}</span>
                 </div>
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                     <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificacion</p>
-                    <div className="mt-3">
+                    <div className="mt-3 flex items-center justify-between gap-3">
                       <RatingStars rating={profile.rating} />
+                      <p className="text-lg font-bold text-white">{profile.rating.toFixed(1)} / 5</p>
                     </div>
+                    <p className="mt-2 text-xs text-cyan-100/70">Valoracion promedio de clientes</p>
                   </div>
                   <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                     <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Reseñas</p>
@@ -86,7 +80,7 @@ export default async function ClienteEmpresaPerfilPage({ params }: { params: Pro
                   <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                     <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Servicios</p>
                     <p className="mt-3 text-base font-semibold text-white">Soporte y venta especializada</p>
-                    <p className="mt-1 text-sm text-cyan-100/70">Pensado para comparar antes de comprar</p>
+                    <p className="mt-1 text-sm text-cyan-100/70">Asesoria clara para comparar antes de comprar</p>
                   </div>
                   <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                     <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cobertura</p>

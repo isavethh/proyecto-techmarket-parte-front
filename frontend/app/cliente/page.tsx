@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState, useSyncExternalStore } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   COMMUNITY_FEED_UPDATED_EVENT,
@@ -10,7 +10,7 @@ import {
   readCommunityFeedPosts,
 } from "../lib/communityFeed";
 import { clientCompanyProfiles } from "../lib/clientCompanyProfiles";
-import { ClientTopbarControls } from "../components/ClientExperienceShell";
+import { ClientPageHeader } from "../components/ClientPageSections";
 import {
   PublicationActionButton,
   PublicationAvatar,
@@ -176,6 +176,15 @@ const aiSuggestions = [
     imageClass: "from-violet-300/35 via-sky-500/30 to-slate-900/60",
   },
 ];
+
+const aiThinkingMessages = [
+  "Interpretando tu necesidad tecnica...",
+  "Rastreando proveedores con mejor reputacion...",
+  "Calculando ranking por relevancia y cercania...",
+  "Filtrando opciones con disponibilidad real...",
+];
+
+const aiThinkingSignals = ["NLP", "SCORE", "MATCH", "RANK"];
 
 const suggestedAccounts: SuggestedAccount[] = [
   {
@@ -473,7 +482,10 @@ export default function ClientePage() {
   const [query, setQuery] = useState<string>("");
   const [aiQuery, setAiQuery] = useState<string>("");
   const [isThinking, setIsThinking] = useState<boolean>(false);
+  const [hasAiSearchRun, setHasAiSearchRun] = useState<boolean>(false);
+  const [aiThinkingMessageIndex, setAiThinkingMessageIndex] = useState(0);
   const [aiResults, setAiResults] = useState<typeof aiSuggestions>([]);
+  const aiSearchTimerRef = useRef<number | null>(null);
   const companyFeedPosts = useSyncExternalStore(
     subscribeCommunityFeed,
     readCommunityFeedPosts,
@@ -493,9 +505,31 @@ export default function ClientePage() {
     clientChatThreads.find((chat) => chat.id === activeChatId) ?? clientChatThreads[0];
 
   const aiSummary = useMemo(() => {
-    if (!aiResults.length) return "";
+    if (!hasAiSearchRun || !aiResults.length) return "";
     return `Entendi tu necesidad: ${aiQuery.trim() || "consulta tecnica"}.`;
-  }, [aiQuery, aiResults.length]);
+  }, [aiQuery, aiResults.length, hasAiSearchRun]);
+
+  useEffect(() => {
+    if (!isThinking) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setAiThinkingMessageIndex((current) => (current + 1) % aiThinkingMessages.length);
+    }, 820);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isThinking]);
+
+  useEffect(() => {
+    return () => {
+      if (aiSearchTimerRef.current !== null) {
+        window.clearTimeout(aiSearchTimerRef.current);
+      }
+    };
+  }, []);
 
   const fullFeed = useMemo(
     () => mergeCommunityFeedPosts([...baseFeedItems, ...companyFeedPosts]),
@@ -528,15 +562,42 @@ export default function ClientePage() {
     });
   }, [query]);
 
+  const clearPendingAiSearch = () => {
+    if (aiSearchTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(aiSearchTimerRef.current);
+    aiSearchTimerRef.current = null;
+  };
+
+  const resetAiSearchSession = () => {
+    clearPendingAiSearch();
+    setIsThinking(false);
+    setHasAiSearchRun(false);
+    setAiThinkingMessageIndex(0);
+    setAiResults([]);
+  };
+
   const handleAiSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (isThinking) {
+      return;
+    }
+
+    clearPendingAiSearch();
+
+    setHasAiSearchRun(true);
+    setAiThinkingMessageIndex(0);
     setIsThinking(true);
     setAiResults([]);
 
-    setTimeout(() => {
+    aiSearchTimerRef.current = window.setTimeout(() => {
       setAiResults(aiSuggestions);
       setIsThinking(false);
-    }, 1400);
+      aiSearchTimerRef.current = null;
+    }, 1850);
   };
 
   const handleNormalSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -632,24 +693,20 @@ export default function ClientePage() {
 
   return (
     <div className="flex-1 pb-10">
-      <header className="tech-top-nav sticky top-0 z-30">
-        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
-          <Link href="/" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <div className="hidden flex-1 max-w-xl md:block">
-            <form onSubmit={handleNormalSearch}>
-              <input
-                className="auth-input"
-                placeholder="Buscar en TechMarket..."
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </form>
-          </div>
-          <ClientTopbarControls sectionLabel="Cliente activo" />
-        </div>
-      </header>
+      <ClientPageHeader
+        sectionLabel="Cliente activo"
+        brandHref="/"
+        middleSlot={(
+          <form onSubmit={handleNormalSearch}>
+            <input
+              className="auth-input"
+              placeholder="Buscar en TechMarket..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </form>
+        )}
+      />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[260px_minmax(0,1fr)_300px] lg:px-6">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
@@ -799,7 +856,11 @@ export default function ClientePage() {
                 className={`tech-button ${
                   searchMode === "normal" ? "tech-button-primary" : "tech-button-secondary"
                 }`}
-                onClick={() => setSearchMode("normal")}
+                onClick={() => {
+                  clearPendingAiSearch();
+                  setIsThinking(false);
+                  setSearchMode("normal");
+                }}
               >
                 Busqueda normal
               </button>
@@ -808,63 +869,83 @@ export default function ClientePage() {
                 className={`tech-button ${
                   searchMode === "ia" ? "tech-button-primary" : "tech-button-secondary"
                 }`}
-                onClick={() => setSearchMode("ia")}
+                onClick={() => {
+                  setSearchMode("ia");
+                  resetAiSearchSession();
+                }}
               >
                 Busqueda con IA
               </button>
             </div>
 
             {searchMode === "normal" && (
-              <form className="mt-4 space-y-3" onSubmit={handleNormalSearch}>
-                <input
-                  className="auth-input"
-                  placeholder="Busca productos, tiendas o servicios..."
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-                <button type="submit" className="tech-button tech-button-primary">
-                  Buscar en el feed
-                </button>
+              <form className="mt-4" onSubmit={handleNormalSearch}>
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                  <input
+                    className="auth-input w-full"
+                    placeholder="Busca productos, tiendas o servicios..."
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    className="tech-button tech-button-primary w-full md:w-auto md:whitespace-nowrap"
+                  >
+                    Buscar en el feed
+                  </button>
+                </div>
               </form>
             )}
 
             {searchMode === "ia" && (
               <form className="mt-4 space-y-4" onSubmit={handleAiSearch}>
-                <div className="flex flex-col gap-3 md:flex-row">
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <input
-                    className="auth-input"
+                    className="auth-input w-full"
                     placeholder="Ej: mi laptop funciona mal y se recalienta"
                     value={aiQuery}
                     onChange={(event) => setAiQuery(event.target.value)}
                   />
-                  <button type="submit" className="tech-button tech-button-primary">
-                    Buscar con IA
+                  <button
+                    type="submit"
+                    disabled={isThinking}
+                    className="tech-button tech-button-primary w-full md:w-auto md:whitespace-nowrap"
+                  >
+                    {isThinking ? "Analizando..." : "Buscar con IA"}
                   </button>
                 </div>
 
                 {aiSummary && <p className="text-sm text-cyan-100/80">{aiSummary}</p>}
 
-                <div className="grid gap-3 md:grid-cols-3">
-                  {aiResults.map((result) => (
-                    <article key={result.title} className="rounded-2xl border border-cyan-100/15 p-4">
-                      <div
-                        className={`h-24 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${result.imageClass}`}
-                      />
-                      <p className="mt-3 text-xs text-cyan-200/75">Servicio tecnico</p>
-                      <h3 className="mt-2 text-base font-semibold text-cyan-50">{result.title}</h3>
-                      <p className="mt-2 text-sm text-cyan-100/80">{result.match}</p>
-                      <div className="mt-3 flex items-center justify-between gap-2">
-                        <span className="text-xs text-cyan-200/85">Reputacion {result.rating}</span>
-                        <Link
-                          className="tech-button tech-button-secondary"
-                          href={`/cliente/servicios/${result.slug}`}
-                        >
-                          Ver resenas
-                        </Link>
-                      </div>
-                    </article>
-                  ))}
-                </div>
+                {!hasAiSearchRun && !isThinking ? (
+                  <p className="text-xs text-cyan-200/75">
+                    Escribe tu consulta y presiona &quot;Buscar con IA&quot; para iniciar el analisis.
+                  </p>
+                ) : null}
+
+                {hasAiSearchRun && aiResults.length > 0 ? (
+                  <div className="grid gap-3 md:grid-cols-3">
+                    {aiResults.map((result) => (
+                      <article key={result.title} className="rounded-2xl border border-cyan-100/15 p-4">
+                        <div
+                          className={`h-24 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${result.imageClass}`}
+                        />
+                        <p className="mt-3 text-xs text-cyan-200/75">Servicio tecnico</p>
+                        <h3 className="mt-2 text-base font-semibold text-cyan-50">{result.title}</h3>
+                        <p className="mt-2 text-sm text-cyan-100/80">{result.match}</p>
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <span className="text-xs text-cyan-200/85">Reputacion {result.rating}</span>
+                          <Link
+                            className="tech-button tech-button-secondary"
+                            href={`/cliente/servicios/${result.slug}`}
+                          >
+                            Ver resenas
+                          </Link>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
               </form>
             )}
           </section>
@@ -1218,15 +1299,72 @@ export default function ClientePage() {
         }}
       />
 
-      {isThinking && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 backdrop-blur">
-          <div className="rounded-3xl border border-cyan-100/20 bg-background-soft/90 px-8 py-6 text-center">
-            <p className="tech-mono text-xs text-cyan-200/80">IA ANALIZANDO</p>
-            <p className="mt-3 text-lg font-semibold text-cyan-50">Busqueda semantica en progreso...</p>
-            <p className="mt-2 text-sm text-cyan-100/80">Estamos buscando servicios tecnicos.</p>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {isThinking ? (
+          <motion.div
+            className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/72 px-4 backdrop-blur-md"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 14, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 280, damping: 24, mass: 0.9 }}
+              className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-cyan-100/25 bg-[linear-gradient(165deg,rgba(8,27,48,0.96),rgba(4,16,30,0.98))] px-6 py-6 text-center shadow-2xl shadow-slate-950/60"
+            >
+              <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.26),transparent_62%)]" />
+              <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.05),transparent)]" />
+
+              <div className="relative">
+                <p className="tech-mono text-[11px] tracking-[0.24em] text-cyan-200/78">IA SEARCH ENGINE</p>
+                <h3 className="mt-3 text-xl font-semibold text-cyan-50">Analizando tu consulta con IA</h3>
+
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  {aiThinkingSignals.map((signal, index) => (
+                    <motion.span
+                      key={signal}
+                      animate={{ opacity: [0.4, 1, 0.4], y: [0, -2, 0] }}
+                      transition={{ duration: 1.15, repeat: Number.POSITIVE_INFINITY, delay: index * 0.12 }}
+                      className="rounded-full border border-cyan-100/18 bg-cyan-300/12 px-3 py-1 text-[11px] font-semibold text-cyan-100/92"
+                    >
+                      {signal}
+                    </motion.span>
+                  ))}
+                </div>
+
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.p
+                    key={aiThinkingMessageIndex}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="mt-4 text-sm text-cyan-100/85"
+                  >
+                    {aiThinkingMessages[aiThinkingMessageIndex]}
+                  </motion.p>
+                </AnimatePresence>
+
+                <div className="mt-5 overflow-hidden rounded-full border border-cyan-100/15 bg-slate-950/55">
+                  <motion.div
+                    className="h-2 rounded-full bg-[linear-gradient(90deg,rgba(6,182,212,0.45),rgba(34,211,238,0.95),rgba(59,130,246,0.55))]"
+                    initial={{ width: "8%", opacity: 0.8 }}
+                    animate={{ width: "100%", opacity: 0.95 }}
+                    transition={{ duration: 1.75, ease: "linear" }}
+                  />
+                </div>
+
+                <p className="mt-3 text-xs text-cyan-200/75">
+                  Cruzando semantica, reputacion y disponibilidad en tiempo real.
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div className="fixed bottom-5 right-4 z-50 w-[340px] max-w-[calc(100vw-1rem)] md:bottom-6 md:right-6">
         <AnimatePresence mode="wait" initial={false}>
