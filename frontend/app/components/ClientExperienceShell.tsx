@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ChangeEvent,
@@ -24,8 +25,6 @@ type ClientTopbarControlsProps = {
   sectionLabel: string;
 };
 
-type PostCategory = "Consulta" | "Producto" | "Servicio" | "Comunidad";
-
 type ClientExperienceContextValue = {
   openPostModal: () => void;
 };
@@ -40,7 +39,10 @@ const CLIENT_PROFILE = {
   initials: "CM",
 };
 
-const postCategoryOptions: PostCategory[] = ["Consulta", "Producto", "Servicio", "Comunidad"];
+const CLIENT_ALLOWED_POST_CATEGORY = "Consulta";
+
+const isClientCommunityDetailRoute = (pathname: string | null) =>
+  typeof pathname === "string" && /^\/cliente\/comunidades\/[^/]+$/.test(pathname);
 
 const getCurrentIso = () => new Date().toISOString();
 
@@ -64,6 +66,8 @@ const useClientExperience = (): ClientExperienceContextValue => {
 
 export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps) {
   const { openPostModal } = useClientExperience();
+  const pathname = usePathname();
+  const canCreatePost = isClientCommunityDetailRoute(pathname);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
@@ -102,13 +106,15 @@ export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps
 
   return (
     <div className="relative flex items-center gap-2">
-      <button
-        type="button"
-        onClick={openPostModal}
-        className="hidden rounded-xl border border-cyan-100/15 bg-cyan-300/12 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:border-cyan-300/45 hover:bg-cyan-300/18 sm:inline-flex"
-      >
-        Nueva publicacion
-      </button>
+      {canCreatePost ? (
+        <button
+          type="button"
+          onClick={openPostModal}
+          className="hidden rounded-xl border border-cyan-100/15 bg-cyan-300/12 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:border-cyan-300/45 hover:bg-cyan-300/18 sm:inline-flex"
+        >
+          Nueva publicacion
+        </button>
+      ) : null}
 
       <button
         ref={profileTriggerRef}
@@ -155,16 +161,18 @@ export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps
             >
               Ver perfil
             </Link>
-            <button
-              type="button"
-              onClick={() => {
-                setIsProfileMenuOpen(false);
-                openPostModal();
-              }}
-              className="auth-action block w-full text-left"
-            >
-              Nueva publicacion
-            </button>
+            {canCreatePost ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsProfileMenuOpen(false);
+                  openPostModal();
+                }}
+                className="auth-action block w-full text-left"
+              >
+                Nueva publicacion
+              </button>
+            ) : null}
             <Link href="/auth" onClick={() => setIsProfileMenuOpen(false)} className="auth-action block w-full">
               Cerrar sesion
             </Link>
@@ -176,9 +184,9 @@ export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps
 }
 
 export default function ClientExperienceShell({ children }: ClientExperienceShellProps) {
+  const pathname = usePathname();
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [postText, setPostText] = useState("");
-  const [postCategory, setPostCategory] = useState<PostCategory>("Comunidad");
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   const [imageName, setImageName] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
@@ -211,7 +219,6 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
 
   const resetPostForm = () => {
     setPostText("");
-    setPostCategory("Comunidad");
     setImagePreview(undefined);
     setImageName("");
     setIsPublishing(false);
@@ -238,6 +245,10 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
   };
 
   const openPostModal = () => {
+    if (!isClientCommunityDetailRoute(pathname)) {
+      return;
+    }
+
     setIsPostModalOpen(true);
   };
 
@@ -256,9 +267,9 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
       author: CLIENT_PROFILE.name,
       role: "Cliente",
       time: formatQuickTimestamp(),
-      title: `${postCategory}: ${normalizedText.slice(0, 56)}${normalizedText.length > 56 ? "..." : ""}`,
+      title: `${CLIENT_ALLOWED_POST_CATEGORY}: ${normalizedText.slice(0, 56)}${normalizedText.length > 56 ? "..." : ""}`,
       body: normalizedText,
-      tag: postCategory,
+      tag: CLIENT_ALLOWED_POST_CATEGORY,
       location: CLIENT_PROFILE.city,
       image: imagePreview,
       createdAt: getCurrentIso(),
@@ -307,9 +318,9 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="tech-mono text-xs text-cyan-200/70">NUEVA PUBLICACION</p>
-                <h2 className="mt-2 text-2xl font-semibold text-cyan-50">Comparte algo con la comunidad tech</h2>
+                <h2 className="mt-2 text-2xl font-semibold text-cyan-50">Publicar consulta en la comunidad</h2>
                 <p className="mt-2 text-sm text-cyan-100/75">
-                  Publica avances, preguntas, recomendaciones o contenido relacionado con tecnologia.
+                  Los clientes solo pueden publicar consultas dentro de Comunidades.
                 </p>
               </div>
               <button
@@ -321,21 +332,10 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
               </button>
             </div>
 
-            <label className="mt-5 block text-sm font-semibold text-cyan-50" htmlFor="client-post-category">
-              Tipo de publicacion
-            </label>
-            <select
-              id="client-post-category"
-              value={postCategory}
-              onChange={(event) => setPostCategory(event.target.value as PostCategory)}
-              className="auth-select mt-2"
-            >
-              {postCategoryOptions.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
+            <div className="mt-5 rounded-2xl border border-cyan-100/15 bg-slate-950/30 px-3 py-2">
+              <p className="text-xs text-cyan-100/65">Tipo de publicacion</p>
+              <p className="mt-1 text-sm font-semibold text-cyan-50">Consulta</p>
+            </div>
 
             <label className="mt-5 block text-sm font-semibold text-cyan-50" htmlFor="client-post-text">
               Que quieres compartir?

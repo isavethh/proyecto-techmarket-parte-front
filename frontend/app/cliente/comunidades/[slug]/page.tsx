@@ -258,7 +258,7 @@ export default function CommunityDetailPage() {
       <ClientPageHeader sectionLabel={community.focus} />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+        <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">{community.name}</h1>

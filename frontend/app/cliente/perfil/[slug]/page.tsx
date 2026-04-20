@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { useMemo, useSyncExternalStore } from "react";
+import { FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   ClientInfoCard,
   ClientPageHeader,
@@ -20,6 +20,16 @@ import {
 } from "../../../lib/clientUserProfiles";
 
 const EMPTY_FEED_SNAPSHOT = [];
+const ACTIVE_CLIENT_SLUG = "camila-mendoza";
+const ACTIVE_CLIENT_PROFILE_STORAGE_KEY = "techmarket.client.profile.camila-mendoza";
+
+type EditableClientProfile = {
+  name: string;
+  email: string;
+  city: string;
+  residenceArea: string;
+  bio: string;
+};
 
 const subscribeCommunityFeed = (onStoreChange: () => void) => {
   if (typeof window === "undefined") {
@@ -81,6 +91,15 @@ export default function ClienteUsuarioPerfilPage() {
   const locationHint = searchParams.get("location")?.trim() ?? "";
 
   const profile = resolveClientUserProfile(normalizedSlug, nameHint, locationHint);
+  const isOwnProfile = profile.slug === ACTIVE_CLIENT_SLUG;
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editableProfile, setEditableProfile] = useState<EditableClientProfile>({
+    name: profile.name,
+    email: profile.email,
+    city: profile.city,
+    residenceArea: profile.residenceArea,
+    bio: profile.bio,
+  });
 
   const dynamicFeedPosts = useSyncExternalStore(
     subscribeCommunityFeed,
@@ -100,25 +119,91 @@ export default function ClienteUsuarioPerfilPage() {
     return mergeCommunityFeedPosts([...seedPosts, ...dynamicPosts]);
   }, [dynamicFeedPosts, profile.slug]);
 
+  useEffect(() => {
+    const initialProfile: EditableClientProfile = {
+      name: profile.name,
+      email: profile.email,
+      city: profile.city,
+      residenceArea: profile.residenceArea,
+      bio: profile.bio,
+    };
+
+    if (!isOwnProfile || typeof window === "undefined") {
+      setEditableProfile(initialProfile);
+      setIsEditingProfile(false);
+      return;
+    }
+
+    const rawStoredProfile = window.localStorage.getItem(ACTIVE_CLIENT_PROFILE_STORAGE_KEY);
+
+    if (!rawStoredProfile) {
+      setEditableProfile(initialProfile);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(rawStoredProfile) as Partial<EditableClientProfile>;
+
+      setEditableProfile({
+        name: parsed.name?.trim() || initialProfile.name,
+        email: parsed.email?.trim() || initialProfile.email,
+        city: parsed.city?.trim() || initialProfile.city,
+        residenceArea: parsed.residenceArea?.trim() || initialProfile.residenceArea,
+        bio: parsed.bio?.trim() || initialProfile.bio,
+      });
+    } catch {
+      setEditableProfile(initialProfile);
+    }
+  }, [
+    isOwnProfile,
+    profile.bio,
+    profile.city,
+    profile.email,
+    profile.name,
+    profile.residenceArea,
+  ]);
+
+  const profileView = isOwnProfile ? { ...profile, ...editableProfile } : profile;
+
+  const handleProfileSave = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!isOwnProfile || typeof window === "undefined") {
+      return;
+    }
+
+    const normalizedProfile: EditableClientProfile = {
+      name: editableProfile.name.trim() || profile.name,
+      email: editableProfile.email.trim() || profile.email,
+      city: editableProfile.city.trim() || profile.city,
+      residenceArea: editableProfile.residenceArea.trim() || profile.residenceArea,
+      bio: editableProfile.bio.trim() || profile.bio,
+    };
+
+    setEditableProfile(normalizedProfile);
+    window.localStorage.setItem(ACTIVE_CLIENT_PROFILE_STORAGE_KEY, JSON.stringify(normalizedProfile));
+    setIsEditingProfile(false);
+  };
+
   return (
     <div className="flex-1 pb-8">
       <ClientPageHeader sectionLabel="Perfil de usuario" />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+        <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
           <ClientInfoCard
             eyebrow="PERFIL CLIENTE"
-            title={profile.name}
+            title={profileView.name}
             description="Perfil publico del usuario dentro de la comunidad cliente de TechMarket."
           >
             <div className="mt-4 rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-3 text-xs text-cyan-100/80">
               <div className="flex items-center justify-between gap-3">
                 <span>Ciudad</span>
-                <strong className="text-cyan-50">{profile.city}</strong>
+                <strong className="text-cyan-50">{profileView.city}</strong>
               </div>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <span>Area de residencia</span>
-                <strong className="text-cyan-50">{profile.residenceArea}</strong>
+                <strong className="text-cyan-50">{profileView.residenceArea}</strong>
               </div>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <span>Estado</span>
@@ -129,6 +214,9 @@ export default function ClienteUsuarioPerfilPage() {
                 <strong className="text-cyan-50">{authoredPosts.length}</strong>
               </div>
             </div>
+            {isOwnProfile ? (
+              <p className="mt-3 text-xs text-cyan-200/80">Este es tu perfil. Puedes editar tus datos visibles.</p>
+            ) : null}
           </ClientInfoCard>
 
           <ClientQuickLinksCard
@@ -146,23 +234,23 @@ export default function ClienteUsuarioPerfilPage() {
               <div>
                 <div className="flex items-center gap-4">
                   <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-cyan-100/10 bg-gradient-to-br from-cyan-300 to-blue-600 text-2xl font-bold text-slate-950 shadow-lg shadow-cyan-500/20">
-                    {getInitials(profile.name)}
+                    {getInitials(profileView.name)}
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/70">Perfil de usuario</p>
-                    <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">{profile.name}</h1>
-                    <p className="mt-2 text-sm text-cyan-100/80">{profile.email}</p>
+                    <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">{profileView.name}</h1>
+                    <p className="mt-2 text-sm text-cyan-100/80">{profileView.email}</p>
                   </div>
                 </div>
 
-                <p className="mt-5 max-w-3xl text-sm leading-7 text-cyan-100/85">{profile.bio}</p>
+                <p className="mt-5 max-w-3xl text-sm leading-7 text-cyan-100/85">{profileView.bio}</p>
 
                 <div className="mt-6 flex flex-wrap gap-3 text-sm">
                   <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-4 py-2 text-cyan-100">
-                    {profile.city}
+                    {profileView.city}
                   </span>
                   <span className="rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-cyan-100/85">
-                    {profile.residenceArea}
+                    {profileView.residenceArea}
                   </span>
                 </div>
               </div>
@@ -176,21 +264,137 @@ export default function ClienteUsuarioPerfilPage() {
                     </div>
                   ))}
                 </div>
-                <Link
-                  href="/cliente/chat"
-                  className="mt-4 inline-flex rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-3 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
-                >
-                  Enviar mensaje
-                </Link>
+                {isOwnProfile ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="mt-4 inline-flex cursor-not-allowed rounded-xl border border-cyan-100/15 bg-white/5 px-3 py-2 text-sm font-semibold text-cyan-100/65"
+                  >
+                    No puedes enviarte mensajes a ti mismo
+                  </button>
+                ) : (
+                  <Link
+                    href="/cliente/chat"
+                    className="mt-4 inline-flex rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-3 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                  >
+                    Enviar mensaje
+                  </Link>
+                )}
               </div>
             </div>
           </section>
+
+          {isOwnProfile ? (
+            <section className="rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Perfil editable</p>
+                  <h2 className="mt-2 text-2xl font-bold text-white">Gestiona tus datos visibles</h2>
+                </div>
+                {!isEditingProfile ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile(true)}
+                    className="rounded-xl border border-cyan-100/20 bg-cyan-300/12 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/18"
+                  >
+                    Editar perfil
+                  </button>
+                ) : null}
+              </div>
+
+              {isEditingProfile ? (
+                <form onSubmit={handleProfileSave} className="mt-5 grid gap-3 md:grid-cols-2">
+                  <div>
+                    <label className="text-xs text-cyan-100/75" htmlFor="profile-name">Nombre</label>
+                    <input
+                      id="profile-name"
+                      value={editableProfile.name}
+                      onChange={(event) =>
+                        setEditableProfile((current) => ({ ...current, name: event.target.value }))
+                      }
+                      className="auth-input mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-cyan-100/75" htmlFor="profile-email">Correo</label>
+                    <input
+                      id="profile-email"
+                      value={editableProfile.email}
+                      onChange={(event) =>
+                        setEditableProfile((current) => ({ ...current, email: event.target.value }))
+                      }
+                      className="auth-input mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-cyan-100/75" htmlFor="profile-city">Ciudad</label>
+                    <input
+                      id="profile-city"
+                      value={editableProfile.city}
+                      onChange={(event) =>
+                        setEditableProfile((current) => ({ ...current, city: event.target.value }))
+                      }
+                      className="auth-input mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-cyan-100/75" htmlFor="profile-area">Area de residencia</label>
+                    <input
+                      id="profile-area"
+                      value={editableProfile.residenceArea}
+                      onChange={(event) =>
+                        setEditableProfile((current) => ({ ...current, residenceArea: event.target.value }))
+                      }
+                      className="auth-input mt-1"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-cyan-100/75" htmlFor="profile-bio">Bio</label>
+                    <textarea
+                      id="profile-bio"
+                      value={editableProfile.bio}
+                      onChange={(event) =>
+                        setEditableProfile((current) => ({ ...current, bio: event.target.value }))
+                      }
+                      rows={4}
+                      className="auth-input mt-1 min-h-[110px] resize-y"
+                    />
+                  </div>
+                  <div className="md:col-span-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditableProfile({
+                          name: profileView.name,
+                          email: profileView.email,
+                          city: profileView.city,
+                          residenceArea: profileView.residenceArea,
+                          bio: profileView.bio,
+                        });
+                        setIsEditingProfile(false);
+                      }}
+                      className="rounded-xl border border-cyan-100/15 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/80"
+                    >
+                      Cancelar
+                    </button>
+                    <button type="submit" className="tech-button tech-button-primary">
+                      Guardar cambios
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <p className="mt-4 text-sm text-cyan-100/78">
+                  Tus cambios se guardan en este navegador para personalizar como se muestra tu perfil.
+                </p>
+              )}
+            </section>
+          ) : null}
 
           <section className="rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Publicaciones</p>
-                <h2 className="mt-2 text-2xl font-bold text-white">Todas las publicaciones de {profile.name}</h2>
+                <h2 className="mt-2 text-2xl font-bold text-white">Todas las publicaciones de {profileView.name}</h2>
               </div>
               <span className="rounded-full border border-cyan-100/15 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100/90">
                 {authoredPosts.length} publicaciones
