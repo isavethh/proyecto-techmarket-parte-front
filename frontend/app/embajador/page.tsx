@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ambassadorProfile,
   referredAmbassadors,
@@ -64,6 +64,112 @@ const ambassadorKpis = [
   },
   { label: "Rating promedio", value: `${averageRating}/5`, helper: "Valoracion de clientes" },
 ];
+
+export type EmbajadorSidebarSection = "resumen" | "negocios" | "usuarios" | "embajadores";
+
+type EmbajadorSidebarProps = {
+  activeSection?: EmbajadorSidebarSection;
+  onOpenReferralModal?: () => void;
+};
+
+const getSidebarLinkClass = (isActive: boolean) => {
+  return isActive ? "auth-action active" : "auth-action";
+};
+
+export function EmbajadorSidebar({
+  activeSection = "resumen",
+  onOpenReferralModal,
+}: EmbajadorSidebarProps) {
+  return (
+    <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+      <section className="tech-card">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+            {ambassadorProfile.initials}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-cyan-50">{ambassadorProfile.name}</p>
+            <p className="text-xs text-cyan-100/75">{ambassadorProfile.account}</p>
+            <p className="mt-1 inline-flex rounded-full border border-cyan-100/15 bg-cyan-300/12 px-2 py-0.5 text-[11px] font-semibold text-cyan-50">
+              Nivel {ambassadorProfile.level}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3 text-xs text-cyan-100/85">
+          <div className="flex items-center justify-between gap-3">
+            <span>Ciudad</span>
+            <strong className="text-cyan-50">{ambassadorProfile.city}</strong>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span>Residencia</span>
+            <strong className="text-cyan-50">{ambassadorProfile.residenceArea}</strong>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span>Especialidad</span>
+            <strong className="text-cyan-50">Captacion local</strong>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-2">
+          <p className="tech-mono text-[11px] text-cyan-200/70">[ PERFIL EMBJADOR ]</p>
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- PANEL ---</p>
+          <Link href="/embajador/resumen" className={getSidebarLinkClass(activeSection === "resumen")}>
+            Resumen
+          </Link>
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- RED ---</p>
+          <a href="/embajador/negocios-referidos" className={getSidebarLinkClass(activeSection === "negocios")}>
+            Negocios referidos
+          </a>
+          <Link href="/embajador/vision-usuarios" className={getSidebarLinkClass(activeSection === "usuarios")}>
+            Vision de usuarios
+          </Link>
+          <Link
+            href="/embajador/embajadores-referidos"
+            className={getSidebarLinkClass(activeSection === "embajadores")}
+          >
+            Embajadores referidos
+          </Link>
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- CRECIMIENTO ---</p>
+          <Link href="/embajador/prospectos" className="auth-action">
+            Prospectos
+          </Link>
+          <Link href="/embajador/onboarding" className="auth-action">
+            Onboarding
+          </Link>
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- MONETIZACION ---</p>
+          <Link href="/embajador/comisiones" className="auth-action">
+            Comisiones
+          </Link>
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">[ BOTON ]</p>
+          {onOpenReferralModal ? (
+            <button
+              type="button"
+              onClick={onOpenReferralModal}
+              className="auth-action active"
+            >
+              Referir
+            </button>
+          ) : (
+            <Link href="/embajador" className="auth-action active">
+              Referir
+            </Link>
+          )}
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- SISTEMA ---</p>
+          <Link href="/auth?mode=login&type=embajador" className="auth-action">
+            Cerrar sesion
+          </Link>
+        </div>
+      </section>
+    </aside>
+  );
+}
 
 export default function EmbajadorPage() {
   const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
@@ -132,62 +238,10 @@ export default function EmbajadorPage() {
       </header>
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <section className="tech-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                {ambassadorProfile.initials}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">{ambassadorProfile.name}</p>
-                <p className="text-xs text-cyan-100/75">{ambassadorProfile.account}</p>
-                <p className="mt-1 inline-flex rounded-full border border-cyan-100/15 bg-cyan-300/12 px-2 py-0.5 text-[11px] font-semibold text-cyan-50">
-                  Nivel {ambassadorProfile.level}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3 text-xs text-cyan-100/85">
-              <div className="flex items-center justify-between gap-3">
-                <span>Ciudad</span>
-                <strong className="text-cyan-50">{ambassadorProfile.city}</strong>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>Residencia</span>
-                <strong className="text-cyan-50">{ambassadorProfile.residenceArea}</strong>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>Especialidad</span>
-                <strong className="text-cyan-50">Captacion local</strong>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2">
-              <a href="#resumen" className="auth-action">
-                Resumen
-              </a>
-              <Link href="/embajador/negocios-referidos" className="auth-action">
-                Negocios referidos
-              </Link>
-              <a href="#usuarios" className="auth-action">
-                Vision de usuarios
-              </a>
-              <a href="#embajadores-referidos" className="auth-action">
-                Embajadores referidos
-              </a>
-              <button
-                type="button"
-                onClick={() => setIsReferralModalOpen(true)}
-                className="auth-action active"
-              >
-                Referir
-              </button>
-              <Link href="/auth?mode=login&type=embajador" className="auth-action">
-                Cerrar sesion
-              </Link>
-            </div>
-          </section>
-        </aside>
+        <EmbajadorSidebar
+          activeSection="resumen"
+          onOpenReferralModal={() => setIsReferralModalOpen(true)}
+        />
 
         <section className="space-y-6">
           <section

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { EmbajadorSidebar } from "../page";
 import { ambassadorProfile, referredBusinesses } from "../ambassadorData";
 
 const scoreTone = (score: number) => {
@@ -71,38 +72,7 @@ export default function EmbajadorNegociosReferidosPage() {
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:px-6">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <section className="tech-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                {ambassadorProfile.initials}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">Mi panel</p>
-                <p className="text-xs text-cyan-100/75">Embajador Nivel {ambassadorProfile.level}</p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2">
-              <Link href="/embajador#resumen" className="auth-action">
-                Resumen
-              </Link>
-              <Link href="/embajador/negocios-referidos" className="auth-action active">
-                Negocios referidos
-              </Link>
-              <Link href="/embajador#usuarios" className="auth-action">
-                Vision de usuarios
-              </Link>
-              <Link href="/embajador#embajadores-referidos" className="auth-action">
-                Embajadores referidos
-              </Link>
-              <Link href="/embajador" className="auth-action">
-                Referir
-              </Link>
-              <Link href="/auth?mode=login&type=embajador" className="auth-action">
-                Cerrar sesion
-              </Link>
-            </div>
-          </section>
+          <EmbajadorSidebar activeSection="negocios" />
 
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">NEGOCIOS REFERIDOS</p>
