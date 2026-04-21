@@ -3,20 +3,12 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CompanyPageHeader, CompanyPanelCard } from "../../components/CompanyPageSections";
+import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CommunityFeedPost, upsertCommunityFeedPosts } from "../../lib/communityFeed";
+import { CompanySidebar } from "../CompanySidebar";
 
 type MainFilter = "Productos disponibles" | "Servicios" | "Ofertas y promociones" | "Publicaciones de interacción" | "Publicaciones de texto";
 type InteractionFilter = "Encuestas" | "Publicaciones" | "Lista de usuarios que interactúan";
-
-const companyModules = [
-  { title: "Perfil y tienda", href: "/empresa/perfil" },
-  { title: "Publicaciones", href: "/empresa/publicaciones" },
-  { title: "Chat", href: "/empresa/chat" },
-  { title: "Resenas", href: "/empresa/resenas" },
-  { title: "Consultor IA", href: "/empresa/ia" },
-  { title: "Analiticas", href: "/empresa/analiticas" },
-];
 
 const mainFilters: MainFilter[] = [
   "Productos disponibles",
@@ -883,7 +875,7 @@ export default function PublicacionesPage() {
             </p>
           </section>
 
-          <CompanyPanelCard links={companyModules} panelSubtitle="Empresa activa en TechMarket" />
+          <CompanySidebar />
 
           <section className="tech-card">
             <p className="text-sm font-semibold text-cyan-50">Resumen rapido</p>

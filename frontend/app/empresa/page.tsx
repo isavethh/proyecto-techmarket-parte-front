@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { CompanyPageHeader, CompanyPanelCard } from "../components/CompanyPageSections";
+import { CompanyPageHeader } from "../components/CompanyPageSections";
+import { CompanySidebar } from "./CompanySidebar";
 
 type ExecutiveMetric = {
   id: string;
@@ -43,15 +44,6 @@ type AiBusinessInsight = {
   advice: string;
   nextStep: string;
 };
-
-const companyModules = [
-  { title: "Resumen", href: "/empresa" },
-  { title: "Publicaciones", href: "/empresa/publicaciones" },
-  { title: "Chat", href: "/empresa/chat" },
-  { title: "Resenas", href: "/empresa/resenas" },
-  { title: "Consultor IA", href: "/empresa/ia" },
-  { title: "Analiticas", href: "/empresa/analiticas" },
-];
 
 const executiveMetrics: ExecutiveMetric[] = [
   {
@@ -317,7 +309,7 @@ export default function EmpresaPage() {
             </p>
           </section>
 
-          <CompanyPanelCard links={companyModules} panelSubtitle="Empresa activa en TechMarket" />
+          <CompanySidebar />
 
           <section className="tech-card">
             <p className="text-sm font-semibold text-cyan-50">Radar de negocio</p>

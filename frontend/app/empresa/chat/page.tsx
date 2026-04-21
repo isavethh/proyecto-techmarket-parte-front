@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CompanyPageHeader, CompanyPanelCard } from "../../components/CompanyPageSections";
+import { CompanyPageHeader } from "../../components/CompanyPageSections";
+import { CompanySidebar } from "../CompanySidebar";
 
 type ChatMessage = {
   id: string;
@@ -20,15 +21,6 @@ type ChatThread = {
   avatar: string;
   messages: ChatMessage[];
 };
-
-const companyModules = [
-  { title: "Perfil y tienda", href: "/empresa/perfil" },
-  { title: "Publicaciones", href: "/empresa/publicaciones" },
-  { title: "Chat", href: "/empresa/chat" },
-  { title: "Resenas", href: "/empresa/resenas" },
-  { title: "Consultor IA", href: "/empresa/ia" },
-  { title: "Analiticas", href: "/empresa/analiticas" },
-];
 
 const chatThreads: ChatThread[] = [
   {
@@ -131,7 +123,7 @@ export default function ChatPage() {
             </p>
           </section>
 
-          <CompanyPanelCard links={companyModules} panelSubtitle="Empresa activa en TechMarket" />
+          <CompanySidebar />
         </aside>
 
         <section className="chat-scrollbar space-y-6 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>

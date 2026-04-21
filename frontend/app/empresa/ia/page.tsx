@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { CompanyPageHeader, CompanyPanelCard } from "../../components/CompanyPageSections";
+import { CompanyPageHeader } from "../../components/CompanyPageSections";
+import { CompanySidebar } from "../CompanySidebar";
 
 type AiBusinessInsight = {
   summary: string;
@@ -16,15 +17,6 @@ type AiBusinessInsight = {
   focusLabel: string;
   focusHref: string;
 };
-
-const companyModules = [
-  { title: "Perfil", href: "/empresa/perfil" },
-  { title: "Publicaciones", href: "/empresa/publicaciones" },
-  { title: "Chat", href: "/empresa/chat" },
-  { title: "Resenas", href: "/empresa/resenas" },
-  { title: "Consultor IA", href: "/empresa/ia" },
-  { title: "Analiticas", href: "/empresa/analiticas" },
-];
 
 const recommendedAiQuestions = [
   "Que accion me conviene priorizar hoy para subir conversion?",
@@ -293,7 +285,7 @@ export default function ConsultorIAPage() {
             </p>
           </section>
 
-          <CompanyPanelCard links={companyModules} panelSubtitle="Empresa activa en TechMarket" />
+          <CompanySidebar />
         </aside>
 
         <section className="chat-scrollbar space-y-6 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CompanyPageHeader, CompanyPanelCard } from "../../components/CompanyPageSections";
+import { CompanyPageHeader } from "../../components/CompanyPageSections";
+import { CompanySidebar } from "../CompanySidebar";
 
 type ReviewFilter = "Todas" | "Sin responder" | "5 estrellas" | "Con mejora";
 
@@ -19,15 +20,6 @@ type CustomerReview = {
   needsFollowUp: boolean;
   wasResponded: boolean;
 };
-
-const companyModules = [
-  { title: "Perfil y tienda", href: "/empresa/perfil" },
-  { title: "Publicaciones", href: "/empresa/publicaciones" },
-  { title: "Chat", href: "/empresa/chat" },
-  { title: "Resenas", href: "/empresa/resenas" },
-  { title: "Consultor IA", href: "/empresa/ia" },
-  { title: "Analiticas", href: "/empresa/analiticas" },
-];
 
 const reviewFilters: ReviewFilter[] = ["Todas", "Sin responder", "5 estrellas", "Con mejora"];
 
@@ -204,7 +196,7 @@ export default function ResenasPage() {
             </p>
           </section>
 
-          <CompanyPanelCard links={companyModules} panelSubtitle="Empresa activa en TechMarket" />
+          <CompanySidebar />
 
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">TEMAS RECURRENTES</p>

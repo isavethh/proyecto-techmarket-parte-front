@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CompanySidebar } from "../CompanySidebar";
 
 type PublicationMetric = {
   id: string;
@@ -33,15 +34,6 @@ type GrowthPoint = {
   month: string;
   visits: number;
 };
-
-const companyModules = [
-  { title: "Perfil y tienda", href: "/empresa/perfil" },
-  { title: "Publicaciones", href: "/empresa/publicaciones" },
-  { title: "Chat", href: "/empresa/chat" },
-  { title: "Resenas", href: "/empresa/resenas" },
-  { title: "Consultor IA", href: "/empresa/ia" },
-  { title: "Analiticas", href: "/empresa/analiticas" },
-];
 
 const publicationMetrics: PublicationMetric[] = [
   { id: "pm-1", title: "Laptop Pro 14", visits: 2380, conversion: 18 },
@@ -150,30 +142,8 @@ export default function AnaliticasPage() {
       </header>
 
       <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_1fr]">
-        <aside className="tech-card h-fit">
-          <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                TC
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
-                <p className="text-xs text-cyan-100/75">TechMarket</p>
-              </div>
-            </div>
-          </div>
-          <p className="tech-mono mt-4 text-xs text-cyan-200/75">MODULO EMPRESAS</p>
-          <nav className="mt-4 space-y-2 text-sm text-cyan-100/90">
-            {companyModules.map((module) => (
-              <Link
-                key={module.title}
-                href={module.href}
-                className="block rounded-2xl border border-cyan-100/10 p-3 font-semibold text-cyan-50 transition hover:bg-cyan-100/5"
-              >
-                {module.title}
-              </Link>
-            ))}
-          </nav>
+        <aside className="h-fit">
+          <CompanySidebar />
         </aside>
 
         <section className="space-y-6 overflow-y-auto pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
