@@ -14,7 +14,11 @@ import {
   PublicationViewerData,
   PublicationViewerModal,
 } from "../../components/PublicationViewerModal";
-import { COMMUNITY_FEED_UPDATED_EVENT, readCommunityFeedPosts } from "../../lib/communityFeed";
+import {
+  COMMUNITY_FEED_UPDATED_EVENT,
+  CommunityFeedPost,
+  readCommunityFeedPosts,
+} from "../../lib/communityFeed";
 import {
   buildMarketplaceListings,
   createMarketplaceSellerKey,
@@ -23,7 +27,7 @@ import {
   marketplaceSeedPosts,
 } from "../../lib/marketplaceFeed";
 
-const EMPTY_FEED_SNAPSHOT = [];
+const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
 
 type SortMode = "recientes" | "precio-bajo" | "precio-alto";
 

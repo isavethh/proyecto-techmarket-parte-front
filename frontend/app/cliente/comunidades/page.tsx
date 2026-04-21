@@ -10,8 +10,10 @@ import {
   ClientQuickLinksCard,
 } from "../../components/ClientPageSections";
 import {
-  createCommunity,
+  CommunityPost,
   CURRENT_CLIENT_USER,
+  TechCommunity,
+  createCommunity,
   isCurrentUserMember,
   joinCommunity,
   readCommunityCatalog,
@@ -19,8 +21,8 @@ import {
   subscribeCommunityStore,
 } from "../../lib/communities";
 
-const EMPTY_COMMUNITIES = [];
-const EMPTY_POSTS = [];
+const EMPTY_COMMUNITIES: TechCommunity[] = [];
+const EMPTY_POSTS: CommunityPost[] = [];
 
 const communityFocusOptions = [
   "PC Building",

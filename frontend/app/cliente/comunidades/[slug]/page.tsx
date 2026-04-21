@@ -7,7 +7,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { ClientPageHeader } from "../../../components/ClientPageSections";
 import { PublicationActionButton, PublicationCard } from "../../../components/PublicationCard";
 import {
+  CommunityPost,
   CommunityMemberRole,
+  TechCommunity,
   createCommunityPost,
   createCommunityPostReply,
   isCurrentUserMember,
@@ -19,8 +21,8 @@ import {
   toggleCommunityPostLike,
 } from "../../../lib/communities";
 
-const EMPTY_COMMUNITIES = [];
-const EMPTY_POSTS = [];
+const EMPTY_COMMUNITIES: TechCommunity[] = [];
+const EMPTY_POSTS: CommunityPost[] = [];
 
 const roleLabel: Record<CommunityMemberRole, string> = {
   administrador: "Administrador",
