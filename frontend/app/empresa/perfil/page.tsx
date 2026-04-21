@@ -280,7 +280,14 @@ export default function Perfil() {
       </header>
 
       <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_1fr]">
-        <aside className="h-fit">
+        <aside className="space-y-4 h-fit">
+          <section className="tech-card">
+            <p className="tech-mono text-xs text-cyan-200/75">PERFIL EMPRESA</p>
+            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Identidad y datos del negocio</h1>
+            <p className="mt-3 text-sm text-cyan-100/80">
+              Gestiona la informacion clave de tu empresa para mantener un perfil claro y confiable.
+            </p>
+          </section>
           <CompanySidebar />
         </aside>
 

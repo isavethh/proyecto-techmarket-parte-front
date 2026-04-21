@@ -142,7 +142,14 @@ export default function AnaliticasPage() {
       </header>
 
       <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_1fr]">
-        <aside className="h-fit">
+        <aside className="space-y-4 h-fit">
+          <section className="tech-card">
+            <p className="tech-mono text-xs text-cyan-200/75">ANALITICAS EMPRESA</p>
+            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Estado del rendimiento</h1>
+            <p className="mt-3 text-sm text-cyan-100/80">
+              Revisa indicadores de visitas, conversion y crecimiento para tomar mejores decisiones.
+            </p>
+          </section>
           <CompanySidebar />
         </aside>
 
