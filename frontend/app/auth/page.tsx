@@ -1,7 +1,7 @@
 import AuthView from "./AuthView";
 
 type Mode = "login" | "register";
-type AccountType = "cliente" | "empresa";
+type AccountType = "cliente" | "empresa" | "embajador";
 
 type SearchParams = {
   mode?: string;
@@ -16,7 +16,10 @@ export default async function AuthPage({
   const params = await searchParams;
 
   const initialMode: Mode = params.mode === "register" ? "register" : "login";
-  const initialType: AccountType = params.type === "empresa" ? "empresa" : "cliente";
+  const initialType: AccountType =
+    params.type === "empresa" || params.type === "embajador"
+      ? params.type
+      : "cliente";
 
   return <AuthView initialMode={initialMode} initialType={initialType} />;
 }

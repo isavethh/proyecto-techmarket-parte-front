@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 
 type Mode = "login" | "register";
-type AccountType = "cliente" | "empresa";
+type AccountType = "cliente" | "empresa" | "embajador";
 type EnterpriseType = "tienda" | "servicio_tecnico";
 
 type AuthViewProps = {
@@ -28,23 +28,35 @@ export default function AuthView({
 
   const title = useMemo(() => {
     if (mode === "login") {
+      if (accountType === "embajador") {
+        return "Accede a tu panel de embajador";
+      }
       return "Accede a tu espacio TechMarket";
+    }
+    if (accountType === "embajador") {
+      return "Postula como embajador de TechMarket";
     }
     if (accountType === "empresa") {
       return "Registra tu empresa en TechMarket";
     }
     return "Crea tu cuenta de cliente";
-  }, [mode, accountType]);
+  }, [accountType, mode]);
 
   const subtitle = useMemo(() => {
     if (mode === "login") {
+      if (accountType === "embajador") {
+        return "Ingresa para gestionar captacion, campanas y crecimiento del ecosistema.";
+      }
       return "Accede con tu cuenta y retoma tu espacio personalizado.";
+    }
+    if (accountType === "embajador") {
+      return "Comparte tu experiencia y ayuda a crecer la comunidad de negocios tecnologicos.";
     }
     if (accountType === "empresa") {
       return "Selecciona si tu empresa opera como tienda o servicio tecnico.";
     }
     return "Empieza a descubrir productos y servicios con confianza.";
-  }, [mode, accountType]);
+  }, [accountType, mode]);
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -56,6 +68,18 @@ export default function AuthView({
       if (accountType === "cliente") {
         document.cookie = "techmarket_role=; Max-Age=0; path=/; SameSite=Lax";
         router.push("/cliente");
+        return;
+      }
+
+      if (accountType === "embajador") {
+        if (username === "embajador" && password === "embajador123") {
+          document.cookie = "techmarket_role=embajador; path=/; SameSite=Lax";
+          router.push("/embajador");
+          return;
+        }
+
+        document.cookie = "techmarket_role=; Max-Age=0; path=/; SameSite=Lax";
+        setFeedback("Credenciales invalidas. Embajador: embajador/embajador123.");
         return;
       }
 
@@ -73,7 +97,14 @@ export default function AuthView({
 
       document.cookie = "techmarket_role=; Max-Age=0; path=/; SameSite=Lax";
       setFeedback(
-        "Credenciales invalidas. Tienda: admin/admin123. Tecnico: admin1/admin1.",
+        "Credenciales invalidas. Tienda: admin/admin123. Tecnico: admin1/admin1. Embajador: embajador/embajador123.",
+      );
+      return;
+    }
+
+    if (accountType === "embajador") {
+      setFeedback(
+        "Postulacion de embajador capturada. Siguiente paso: validacion de perfil, zona e impacto comercial.",
       );
       return;
     }
@@ -184,22 +215,24 @@ export default function AuthView({
 
               <div>
                 <label className="auth-label" htmlFor="email">
-                  {mode === "login" && accountType === "empresa" ? "Usuario" : "Correo"}
+                  {mode === "login" && accountType !== "cliente" ? "Usuario" : "Correo"}
                 </label>
                 <input
                   className="auth-input"
-                  id={mode === "login" && accountType === "empresa" ? "username" : "email"}
-                  name={mode === "login" && accountType === "empresa" ? "username" : "email"}
-                  type={mode === "login" && accountType === "empresa" ? "text" : "email"}
-                  value={mode === "login" && accountType === "empresa" ? loginUsername : undefined}
+                  id={mode === "login" && accountType !== "cliente" ? "username" : "email"}
+                  name={mode === "login" && accountType !== "cliente" ? "username" : "email"}
+                  type={mode === "login" && accountType !== "cliente" ? "text" : "email"}
+                  value={mode === "login" && accountType !== "cliente" ? loginUsername : undefined}
                   onChange={
-                    mode === "login" && accountType === "empresa"
+                    mode === "login" && accountType !== "cliente"
                       ? (event) => setLoginUsername(event.target.value)
                       : undefined
                   }
                   placeholder={
-                    mode === "login" && accountType === "empresa"
-                      ? "admin o admin1"
+                    mode === "login" && accountType !== "cliente"
+                      ? accountType === "embajador"
+                        ? "embajador"
+                        : "admin o admin1"
                       : "correo@empresa.com"
                   }
                   required

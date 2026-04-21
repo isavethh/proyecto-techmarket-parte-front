@@ -33,6 +33,9 @@ export default function Home() {
               <Link className="tech-button tech-button-secondary" href="/auth?mode=login&type=empresa">
                 Ingresar como empresa
               </Link>
+              <Link className="tech-button tech-button-secondary" href="/auth?mode=login&type=embajador">
+                Ingresar como embajador
+              </Link>
             </div>
             <p className="mt-2 text-sm text-cyan-100/80">No tienes una cuenta?</p>
             <div className="flex flex-wrap gap-3">
