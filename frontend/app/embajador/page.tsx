@@ -65,7 +65,7 @@ const ambassadorKpis = [
   { label: "Rating promedio", value: `${averageRating}/5`, helper: "Valoracion de clientes" },
 ];
 
-export type EmbajadorSidebarSection = "resumen" | "negocios" | "usuarios" | "embajadores";
+export type EmbajadorSidebarSection = "resumen" | "negocios" | "usuarios" | "embajadores" | "prospectos";
 
 type EmbajadorSidebarProps = {
   activeSection?: EmbajadorSidebarSection;
@@ -134,7 +134,7 @@ export function EmbajadorSidebar({
           </Link>
 
           <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- CRECIMIENTO ---</p>
-          <Link href="/embajador/prospectos" className="auth-action">
+          <Link href="/embajador/prospectos" className={getSidebarLinkClass(activeSection === "prospectos")}>
             Prospectos
           </Link>
           <Link href="/embajador/onboarding" className="auth-action">

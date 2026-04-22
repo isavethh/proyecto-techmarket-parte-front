@@ -31,6 +31,46 @@ export type ReferredAmbassador = {
   activeBusinesses: number;
 };
 
+export const prospectLeadSources = ["Visita", "Redes", "Referido", "Evento"] as const;
+export type LeadSource = (typeof prospectLeadSources)[number];
+
+export const prospectPipelineStages = [
+  "Nuevo",
+  "Contactado",
+  "Interesado",
+  "Demo agendada",
+  "En onboarding",
+  "Activo",
+  "Perdido",
+] as const;
+export type ProspectStage = (typeof prospectPipelineStages)[number];
+
+export type ProspectStatus = "Activo" | "Perdido";
+
+export type ProspectAction = {
+  id: string;
+  title: string;
+  happenedAt: string;
+  summary: string;
+};
+
+export type Prospect = {
+  id: string;
+  businessName: string;
+  category: string;
+  city: string;
+  contactName: string;
+  phone: string;
+  source: LeadSource;
+  currentStage: ProspectStage;
+  createdAt: string;
+  nextAction: string;
+  nextActionDate: string;
+  status: ProspectStatus;
+  ambassadorNotes: string;
+  actionHistory: ProspectAction[];
+};
+
 export const ambassadorProfile = {
   name: "Sofia Vargas",
   initials: "SV",
@@ -157,5 +197,158 @@ export const referredBusinesses: ReferredBusiness[] = [
       "Buena valoracion en comparativas del marketplace.",
     ],
     risks: ["Dependencia alta de campanas de descuento."],
+  },
+];
+
+export const prospectosData: Prospect[] = [
+  {
+    id: "pros-101",
+    businessName: "Pixel One Store",
+    category: "Tienda de accesorios",
+    city: "Santa Cruz",
+    contactName: "Mariana Paz",
+    phone: "+591 721-44110",
+    source: "Redes",
+    currentStage: "Interesado",
+    createdAt: "06 Abr 2026",
+    nextAction: "Enviar propuesta comercial por WhatsApp",
+    nextActionDate: "24 Abr 2026",
+    status: "Activo",
+    ambassadorNotes:
+      "Le interesa publicar combos para estudiantes. Pidio referencias de negocios activos dentro de TechMarket.",
+    actionHistory: [
+      {
+        id: "pros-101-a1",
+        title: "Lead captado por Instagram",
+        happenedAt: "06 Abr 2026",
+        summary: "Llego por una historia promocionada y pidio informacion del modelo de comision.",
+      },
+      {
+        id: "pros-101-a2",
+        title: "Llamada de validacion",
+        happenedAt: "09 Abr 2026",
+        summary: "Confirma interes en sumar catalogo y promociones semanales.",
+      },
+      {
+        id: "pros-101-a3",
+        title: "Reunion corta con gerente",
+        happenedAt: "18 Abr 2026",
+        summary: "Solicita propuesta aterrizada con costos, calendario de onboarding y tiempo estimado.",
+      },
+    ],
+  },
+  {
+    id: "pros-102",
+    businessName: "NetPro Instalaciones",
+    category: "Redes e infraestructura",
+    city: "Santa Cruz",
+    contactName: "Diego Salvatierra",
+    phone: "+591 773-80216",
+    source: "Referido",
+    currentStage: "Demo agendada",
+    createdAt: "28 Mar 2026",
+    nextAction: "Presentar demo del panel empresa",
+    nextActionDate: "23 Abr 2026",
+    status: "Activo",
+    ambassadorNotes:
+      "Tiene potencial alto para clientes corporativos. Quiere ver como se muestran los casos de exito y resenas.",
+    actionHistory: [
+      {
+        id: "pros-102-a1",
+        title: "Presentacion inicial",
+        happenedAt: "29 Mar 2026",
+        summary: "El lead viene recomendado por un tecnico aliado de la zona norte.",
+      },
+      {
+        id: "pros-102-a2",
+        title: "Seguimiento comercial",
+        happenedAt: "10 Abr 2026",
+        summary: "Confirma interes si puede medir solicitudes por zona y por servicio.",
+      },
+    ],
+  },
+  {
+    id: "pros-103",
+    businessName: "Mobix Repair Lab",
+    category: "Servicio tecnico",
+    city: "Montero",
+    contactName: "Luciano Cuellar",
+    phone: "+591 750-11983",
+    source: "Visita",
+    currentStage: "Contactado",
+    createdAt: "15 Abr 2026",
+    nextAction: "Segunda visita para explicar onboarding",
+    nextActionDate: "25 Abr 2026",
+    status: "Activo",
+    ambassadorNotes:
+      "Buena recepcion en tienda fisica. El dueño quiere revisar el flujo de pagos y la carga de publicaciones.",
+    actionHistory: [
+      {
+        id: "pros-103-a1",
+        title: "Visita en punto de venta",
+        happenedAt: "15 Abr 2026",
+        summary: "Se presento el ecosistema TechMarket y quedo pendiente enviar brochure operativo.",
+      },
+    ],
+  },
+  {
+    id: "pros-104",
+    businessName: "CloudBox Digital",
+    category: "Software y soporte",
+    city: "Santa Cruz",
+    contactName: "Andrea Roca",
+    phone: "+591 708-66302",
+    source: "Evento",
+    currentStage: "En onboarding",
+    createdAt: "22 Mar 2026",
+    nextAction: "Revisar primera carga de servicios y banners",
+    nextActionDate: "26 Abr 2026",
+    status: "Activo",
+    ambassadorNotes:
+      "Ya compartio logo, lineamientos y lista de servicios. Necesita acompanamiento para definir su primera campana.",
+    actionHistory: [
+      {
+        id: "pros-104-a1",
+        title: "Captado en meetup local",
+        happenedAt: "22 Mar 2026",
+        summary: "Interes inmediato por la red de embajadores y el enfoque en reputacion.",
+      },
+      {
+        id: "pros-104-a2",
+        title: "Aprobacion de propuesta",
+        happenedAt: "04 Abr 2026",
+        summary: "Confirma ingreso y envia materiales para configuracion inicial.",
+      },
+    ],
+  },
+  {
+    id: "pros-105",
+    businessName: "TecHouse Equipos",
+    category: "Computacion y perifericos",
+    city: "Warnes",
+    contactName: "Ruben Flores",
+    phone: "+591 760-55441",
+    source: "Redes",
+    currentStage: "Perdido",
+    createdAt: "11 Mar 2026",
+    nextAction: "Reactivar en proxima campana de temporada",
+    nextActionDate: "12 May 2026",
+    status: "Perdido",
+    ambassadorNotes:
+      "Detuvo la conversacion por prioridades internas. Conviene reactivar solo con oferta de temporada y caso de exito cercano.",
+    actionHistory: [
+      {
+        id: "pros-105-a1",
+        title: "Lead entrante por Facebook",
+        happenedAt: "11 Mar 2026",
+        summary: "Mostro interes inicial por visibilidad y reputacion digital.",
+      },
+      {
+        id: "pros-105-a2",
+        title: "Cierre sin avance",
+        happenedAt: "02 Abr 2026",
+        summary: "Pospone decision por reorganizacion interna y presupuesto congelado.",
+      },
+    ],
   },
 ];
