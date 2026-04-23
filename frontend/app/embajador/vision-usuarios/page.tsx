@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { EmbajadorSidebar } from "../page";
-import { referredBusinesses } from "../ambassadorData";
+import { useReferredBusinessesState } from "../businessStore";
 
 export default function EmbajadorVisionUsuariosPage() {
+  const referredBusinessesState = useReferredBusinessesState();
+
   return (
     <div className="flex-1 pb-10">
       <header className="tech-top-nav sticky top-0 z-30">
@@ -37,7 +39,7 @@ export default function EmbajadorVisionUsuariosPage() {
             </div>
 
             <div className="mt-4 grid gap-3">
-              {referredBusinesses.map((business) => (
+              {referredBusinessesState.map((business) => (
                 <article key={`${business.id}-users`} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-cyan-50">{business.name}</p>
@@ -51,7 +53,7 @@ export default function EmbajadorVisionUsuariosPage() {
                     />
                   </div>
 
-                  <p className="mt-3 text-sm text-cyan-100/82">"{business.topComment}"</p>
+                  <p className="mt-3 text-sm text-cyan-100/82">&quot;{business.topComment}&quot;</p>
                   <p className="mt-2 text-xs text-cyan-100/70">
                     Impacto en tu reputacion como embajador: {business.reputationContribution}/100
                   </p>

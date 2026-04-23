@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { EmbajadorSidebar } from "../page";
-import { ambassadorProfile, referredBusinesses } from "../ambassadorData";
+import { ambassadorProfile } from "../ambassadorData";
+import { useReferredBusinessesState } from "../businessStore";
 
 const currentLevel = ambassadorProfile.level;
 const nextLevel = currentLevel === 1 ? 2 : currentLevel === 2 ? 3 : null;
@@ -10,37 +12,46 @@ const levelRuleDescription = nextLevel
   ? `Como embajador Nivel ${currentLevel}, puedes referir embajadores Nivel ${nextLevel}.`
   : "Como embajador Nivel 3, ya no puedes referir nuevos niveles de embajadores.";
 
-const totalReferredBusinesses = referredBusinesses.length;
-const activeBusinesses = referredBusinesses.filter((business) => business.status === "Activo").length;
-const averageRating = (
-  referredBusinesses.reduce((acc, business) => acc + business.rating, 0) / totalReferredBusinesses
-).toFixed(1);
-const averageUserScore = Math.round(
-  referredBusinesses.reduce((acc, business) => acc + business.userScore, 0) / totalReferredBusinesses,
-);
-const averageConversion = Math.round(
-  referredBusinesses.reduce((acc, business) => acc + business.conversionRate, 0) / totalReferredBusinesses,
-);
-const totalCommissionGenerated = referredBusinesses.reduce(
-  (acc, business) => acc + business.commissionGenerated,
-  0,
-);
-
-const ambassadorKpis = [
-  { label: "Nivel de embajador", value: `Nivel ${ambassadorProfile.level}`, helper: "Rango actual" },
-  { label: "Negocios referidos", value: `${totalReferredBusinesses}`, helper: "Cuentas en tu red" },
-  { label: "Negocios activos", value: `${activeBusinesses}`, helper: "Operando este mes" },
-  { label: "Percepcion usuario", value: `${averageUserScore}/100`, helper: "Promedio de confianza" },
-  { label: "Conversion promedio", value: `${averageConversion}%`, helper: "Lead a cierre comercial" },
-  {
-    label: "Comision estimada",
-    value: `Bs ${totalCommissionGenerated.toLocaleString("es-BO")}`,
-    helper: "Acumulado en negocios activos",
-  },
-  { label: "Rating promedio", value: `${averageRating}/5`, helper: "Valoracion de clientes" },
-];
-
 export default function EmbajadorResumenPage() {
+  const referredBusinessesState = useReferredBusinessesState();
+
+  const ambassadorKpis = useMemo(() => {
+    const totalReferredBusinesses = referredBusinessesState.length;
+    const activeBusinesses = referredBusinessesState.filter((business) => business.status === "Activo").length;
+    const averageRating = (
+      totalReferredBusinesses
+        ? referredBusinessesState.reduce((acc, business) => acc + business.rating, 0) / totalReferredBusinesses
+        : 0
+    ).toFixed(1);
+    const averageUserScore = Math.round(
+      totalReferredBusinesses
+        ? referredBusinessesState.reduce((acc, business) => acc + business.userScore, 0) / totalReferredBusinesses
+        : 0,
+    );
+    const averageConversion = Math.round(
+      totalReferredBusinesses
+        ? referredBusinessesState.reduce((acc, business) => acc + business.conversionRate, 0) / totalReferredBusinesses
+        : 0,
+    );
+    const totalCommissionGenerated = referredBusinessesState
+      .filter((business) => business.status === "Activo")
+      .reduce((acc, business) => acc + business.commissionGenerated, 0);
+
+    return [
+      { label: "Nivel de embajador", value: `Nivel ${ambassadorProfile.level}`, helper: "Rango actual" },
+      { label: "Negocios referidos", value: `${totalReferredBusinesses}`, helper: "Cuentas en tu red" },
+      { label: "Negocios activos", value: `${activeBusinesses}`, helper: "Operando este mes" },
+      { label: "Percepcion usuario", value: `${averageUserScore}/100`, helper: "Promedio de confianza" },
+      { label: "Conversion promedio", value: `${averageConversion}%`, helper: "Lead a cierre comercial" },
+      {
+        label: "Comision estimada",
+        value: `Bs ${totalCommissionGenerated.toLocaleString("es-BO")}`,
+        helper: "Acumulado en negocios activos",
+      },
+      { label: "Rating promedio", value: `${averageRating}/5`, helper: "Valoracion de clientes" },
+    ];
+  }, [referredBusinessesState]);
+
   return (
     <div className="flex-1 pb-10">
       <header className="tech-top-nav sticky top-0 z-30">

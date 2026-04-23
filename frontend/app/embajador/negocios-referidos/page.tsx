@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { EmbajadorSidebar } from "../page";
-import { ambassadorProfile, referredBusinesses } from "../ambassadorData";
+import { ambassadorProfile } from "../ambassadorData";
+import { useReferredBusinessesState } from "../businessStore";
 
 const scoreTone = (score: number) => {
   if (score >= 85) {
@@ -21,22 +22,23 @@ const scoreTone = (score: number) => {
 export default function EmbajadorNegociosReferidosPage() {
   const searchParams = useSearchParams();
   const requestedBusinessId = searchParams.get("business") ?? "";
-  const [activeBusinessId, setActiveBusinessId] = useState(referredBusinesses[0]?.id ?? "");
-
-  useEffect(() => {
-    if (!requestedBusinessId) {
-      return;
+  const referredBusinessesState = useReferredBusinessesState();
+  const [selectedBusinessId, setSelectedBusinessId] = useState("");
+  const activeBusinessId = useMemo(() => {
+    if (requestedBusinessId && referredBusinessesState.some((business) => business.id === requestedBusinessId)) {
+      return requestedBusinessId;
     }
 
-    const exists = referredBusinesses.some((business) => business.id === requestedBusinessId);
-    if (exists) {
-      setActiveBusinessId(requestedBusinessId);
+    if (selectedBusinessId && referredBusinessesState.some((business) => business.id === selectedBusinessId)) {
+      return selectedBusinessId;
     }
-  }, [requestedBusinessId]);
+
+    return referredBusinessesState[0]?.id ?? "";
+  }, [requestedBusinessId, selectedBusinessId, referredBusinessesState]);
 
   const activeBusiness = useMemo(
-    () => referredBusinesses.find((business) => business.id === activeBusinessId) ?? referredBusinesses[0],
-    [activeBusinessId],
+    () => referredBusinessesState.find((business) => business.id === activeBusinessId) ?? referredBusinessesState[0],
+    [activeBusinessId, referredBusinessesState],
   );
 
   if (!activeBusiness) {
@@ -82,14 +84,14 @@ export default function EmbajadorNegociosReferidosPage() {
             </p>
 
             <div className="mt-4 space-y-2">
-              {referredBusinesses.map((business) => {
+              {referredBusinessesState.map((business) => {
                 const isActive = business.id === activeBusiness.id;
 
                 return (
                   <button
                     key={business.id}
                     type="button"
-                    onClick={() => setActiveBusinessId(business.id)}
+                    onClick={() => setSelectedBusinessId(business.id)}
                     className={`w-full rounded-2xl border p-3 text-left transition ${
                       isActive
                         ? "border-cyan-300/45 bg-cyan-300/14"
@@ -161,7 +163,7 @@ export default function EmbajadorNegociosReferidosPage() {
 
               <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Comentario destacado</p>
-                <p className="mt-2 text-sm text-cyan-100/85">"{activeBusiness.topComment}"</p>
+                <p className="mt-2 text-sm text-cyan-100/85">&quot;{activeBusiness.topComment}&quot;</p>
               </div>
             </article>
 

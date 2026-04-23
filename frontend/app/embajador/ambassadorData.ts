@@ -352,3 +352,213 @@ export const prospectosData: Prospect[] = [
     ],
   },
 ];
+
+export type OnboardingNote = {
+  text: string;
+  date: string;
+};
+
+export type BusinessOnboardingSnapshot = {
+  emailVerified: boolean;
+  basicDataComplete: boolean;
+  profileDescription: string;
+  category: string;
+  location: string;
+  productsCount: number;
+  postsCount: number;
+  evidenceCount: number;
+  promotionCreated: boolean;
+};
+
+export type BusinessOnboardingValidated = {
+  profile: boolean;
+  catalog: boolean;
+  post: boolean;
+  evidence: boolean;
+  promotion: boolean;
+};
+
+export type BusinessOnboardingTracking = {
+  responsible: "Embajador" | "Negocio";
+  nextActionDate: string;
+  lastAction: string;
+};
+
+export type BusinessOnboardingMetrics = {
+  startedAt: string;
+  activatedAt?: string;
+  daysToActivate?: number;
+  leadsAfterActivation?: number;
+};
+
+export type BusinessOnboarding = {
+  id: string;
+  businessId: ReferredBusiness["id"];
+  isActive: boolean;
+  progress: number;
+  currentStep: string;
+  completedSteps: string[];
+  nextAction: string;
+  alerts: string[];
+  lastUpdate: string;
+  snapshot: BusinessOnboardingSnapshot;
+  validated: BusinessOnboardingValidated;
+  tracking: BusinessOnboardingTracking;
+  metrics: BusinessOnboardingMetrics;
+  notes: OnboardingNote[];
+};
+
+export const onboardingBusinessData: BusinessOnboarding[] = [
+  {
+    id: "onb-rb-1",
+    businessId: "rb-1",
+    isActive: false,
+    progress: 0,
+    currentStep: "Registro",
+    completedSteps: [],
+    nextAction: "Verificar registro para continuar onboarding",
+    alerts: [],
+    lastUpdate: "2026-04-23",
+    snapshot: {
+      emailVerified: false,
+      basicDataComplete: false,
+      profileDescription: "",
+      category: "",
+      location: "",
+      productsCount: 0,
+      postsCount: 0,
+      evidenceCount: 0,
+      promotionCreated: false,
+    },
+    validated: {
+      profile: false,
+      catalog: false,
+      post: false,
+      evidence: false,
+      promotion: false,
+    },
+    tracking: {
+      responsible: "Embajador",
+      nextActionDate: "25 Abr 2026",
+      lastAction: "Onboarding iniciado",
+    },
+    metrics: {
+      startedAt: "2026-04-23",
+    },
+    notes: [],
+  },
+  {
+    id: "onb-rb-2",
+    businessId: "rb-2",
+    isActive: false,
+    progress: 0,
+    currentStep: "Registro",
+    completedSteps: [],
+    nextAction: "Verificar registro para continuar onboarding",
+    alerts: [],
+    lastUpdate: "2026-04-23",
+    snapshot: {
+      emailVerified: false,
+      basicDataComplete: false,
+      profileDescription: "",
+      category: "",
+      location: "",
+      productsCount: 0,
+      postsCount: 0,
+      evidenceCount: 0,
+      promotionCreated: false,
+    },
+    validated: {
+      profile: false,
+      catalog: false,
+      post: false,
+      evidence: false,
+      promotion: false,
+    },
+    tracking: {
+      responsible: "Embajador",
+      nextActionDate: "25 Abr 2026",
+      lastAction: "Onboarding iniciado",
+    },
+    metrics: {
+      startedAt: "2026-04-23",
+    },
+    notes: [],
+  },
+  {
+    id: "onb-rb-3",
+    businessId: "rb-3",
+    isActive: false,
+    progress: 0,
+    currentStep: "Registro",
+    completedSteps: [],
+    nextAction: "Verificar registro para continuar onboarding",
+    alerts: [],
+    lastUpdate: "2026-04-23",
+    snapshot: {
+      emailVerified: false,
+      basicDataComplete: false,
+      profileDescription: "",
+      category: "",
+      location: "",
+      productsCount: 0,
+      postsCount: 0,
+      evidenceCount: 0,
+      promotionCreated: false,
+    },
+    validated: {
+      profile: false,
+      catalog: false,
+      post: false,
+      evidence: false,
+      promotion: false,
+    },
+    tracking: {
+      responsible: "Embajador",
+      nextActionDate: "24 Abr 2026",
+      lastAction: "Onboarding iniciado",
+    },
+    metrics: {
+      startedAt: "2026-04-23",
+    },
+    notes: [],
+  },
+  {
+    id: "onb-rb-4",
+    businessId: "rb-4",
+    isActive: false,
+    progress: 0,
+    currentStep: "Registro",
+    completedSteps: [],
+    nextAction: "Verificar registro para continuar onboarding",
+    alerts: [],
+    lastUpdate: "2026-04-23",
+    snapshot: {
+      emailVerified: false,
+      basicDataComplete: false,
+      profileDescription: "",
+      category: "",
+      location: "",
+      productsCount: 0,
+      postsCount: 0,
+      evidenceCount: 0,
+      promotionCreated: false,
+    },
+    validated: {
+      profile: false,
+      catalog: false,
+      post: false,
+      evidence: false,
+      promotion: false,
+    },
+    tracking: {
+      responsible: "Embajador",
+      nextActionDate: "24 Abr 2026",
+      lastAction: "Onboarding iniciado",
+    },
+    metrics: {
+      startedAt: "2026-04-23",
+    },
+    notes: [],
+  },
+];
