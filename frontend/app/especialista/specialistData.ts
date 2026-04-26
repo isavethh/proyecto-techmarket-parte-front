@@ -217,6 +217,7 @@ export const specialistNavLinks = [
   { title: "Resumen", href: "/especialista" },
   { title: "Portafolio", href: "/especialista/portafolio" },
   { title: "Servicios", href: "/especialista/servicios" },
+  { title: "Chat", href: "/especialista/chat" },
   { title: "Reputacion", href: "/especialista/reputacion" },
   { title: "Disponibilidad", href: "/especialista/disponibilidad" },
 ];

@@ -186,8 +186,8 @@ export default function ResenasPage() {
         }
       />
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+      <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">MODULO RESENAS</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Voz del cliente</h1>
@@ -197,20 +197,6 @@ export default function ResenasPage() {
           </section>
 
           <CompanySidebar />
-
-          <section className="tech-card">
-            <p className="tech-mono text-xs text-cyan-200/75">TEMAS RECURRENTES</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {topTags.map(([tag, count]) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs text-cyan-100/85"
-                >
-                  {tag} ({count})
-                </span>
-              ))}
-            </div>
-          </section>
         </aside>
 
         <section className="chat-scrollbar space-y-6 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>

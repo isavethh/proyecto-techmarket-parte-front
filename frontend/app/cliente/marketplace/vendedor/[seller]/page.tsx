@@ -14,14 +14,18 @@ import {
   PublicationViewerData,
   PublicationViewerModal,
 } from "../../../../components/PublicationViewerModal";
-import { COMMUNITY_FEED_UPDATED_EVENT, readCommunityFeedPosts } from "../../../../lib/communityFeed";
+import {
+  COMMUNITY_FEED_UPDATED_EVENT,
+  CommunityFeedPost,
+  readCommunityFeedPosts,
+} from "../../../../lib/communityFeed";
 import {
   buildMarketplaceListings,
   createMarketplaceSellerKey,
   marketplaceSeedPosts,
 } from "../../../../lib/marketplaceFeed";
 
-const EMPTY_FEED_SNAPSHOT = [];
+const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
 
 const marketplaceBaseLikesById: Record<string, number> = {
   "market-seed-1": 18,

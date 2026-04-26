@@ -275,8 +275,8 @@ export default function ConsultorIAPage() {
         }
       />
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+      <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">CONSULTORIA IA</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Asistente comercial</h1>
