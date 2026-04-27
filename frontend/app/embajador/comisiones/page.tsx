@@ -136,8 +136,8 @@ export default function ComisionesPage() {
                       <td className="px-4 py-4 text-right font-bold text-cyan-50">Bs {commission.amount}</td>
                       <td className="px-4 py-4 text-center">
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold border ${commission.status === "Pagado"
-                            ? "bg-emerald-400/10 text-emerald-300 border-emerald-400/20"
-                            : "bg-amber-400/10 text-amber-300 border-amber-400/20"
+                          ? "bg-emerald-400/10 text-emerald-300 border-emerald-400/20"
+                          : "bg-amber-400/10 text-amber-300 border-amber-400/20"
                           }`}>
                           {commission.status}
                         </span>
@@ -175,8 +175,8 @@ export default function ComisionesPage() {
                 <h3 className="mt-2 text-2xl font-bold text-cyan-50">Bs {selectedCommission.amount}</h3>
               </div>
               <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold border ${selectedCommission.status === "Pagado"
-                  ? "bg-emerald-400/10 text-emerald-300 border-emerald-400/20"
-                  : "bg-amber-400/10 text-amber-300 border-amber-400/20"
+                ? "bg-emerald-400/10 text-emerald-300 border-emerald-400/20"
+                : "bg-amber-400/10 text-amber-300 border-amber-400/20"
                 }`}>
                 {selectedCommission.status}
               </span>
