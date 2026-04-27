@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { ambassadorProfile, referredBusinesses } from "../ambassadorData";
+import { useMemo, useState } from "react";
+import { EmbajadorSidebar } from "../page";
+import { ambassadorProfile } from "../ambassadorData";
+import { useReferredBusinessesState } from "../businessStore";
 
 const scoreTone = (score: number) => {
   if (score >= 85) {
@@ -20,22 +22,23 @@ const scoreTone = (score: number) => {
 export default function EmbajadorNegociosReferidosPage() {
   const searchParams = useSearchParams();
   const requestedBusinessId = searchParams.get("business") ?? "";
-  const [activeBusinessId, setActiveBusinessId] = useState(referredBusinesses[0]?.id ?? "");
-
-  useEffect(() => {
-    if (!requestedBusinessId) {
-      return;
+  const referredBusinessesState = useReferredBusinessesState();
+  const [selectedBusinessId, setSelectedBusinessId] = useState("");
+  const activeBusinessId = useMemo(() => {
+    if (requestedBusinessId && referredBusinessesState.some((business) => business.id === requestedBusinessId)) {
+      return requestedBusinessId;
     }
 
-    const exists = referredBusinesses.some((business) => business.id === requestedBusinessId);
-    if (exists) {
-      setActiveBusinessId(requestedBusinessId);
+    if (selectedBusinessId && referredBusinessesState.some((business) => business.id === selectedBusinessId)) {
+      return selectedBusinessId;
     }
-  }, [requestedBusinessId]);
+
+    return referredBusinessesState[0]?.id ?? "";
+  }, [requestedBusinessId, selectedBusinessId, referredBusinessesState]);
 
   const activeBusiness = useMemo(
-    () => referredBusinesses.find((business) => business.id === activeBusinessId) ?? referredBusinesses[0],
-    [activeBusinessId],
+    () => referredBusinessesState.find((business) => business.id === activeBusinessId) ?? referredBusinessesState[0],
+    [activeBusinessId, referredBusinessesState],
   );
 
   if (!activeBusiness) {
@@ -71,38 +74,7 @@ export default function EmbajadorNegociosReferidosPage() {
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:px-6">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <section className="tech-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                {ambassadorProfile.initials}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">Mi panel</p>
-                <p className="text-xs text-cyan-100/75">Embajador Nivel {ambassadorProfile.level}</p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2">
-              <Link href="/embajador#resumen" className="auth-action">
-                Resumen
-              </Link>
-              <Link href="/embajador/negocios-referidos" className="auth-action active">
-                Negocios referidos
-              </Link>
-              <Link href="/embajador#usuarios" className="auth-action">
-                Vision de usuarios
-              </Link>
-              <Link href="/embajador#embajadores-referidos" className="auth-action">
-                Embajadores referidos
-              </Link>
-              <Link href="/embajador" className="auth-action">
-                Referir
-              </Link>
-              <Link href="/auth?mode=login&type=embajador" className="auth-action">
-                Cerrar sesion
-              </Link>
-            </div>
-          </section>
+          <EmbajadorSidebar activeSection="negocios" />
 
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">NEGOCIOS REFERIDOS</p>
@@ -112,14 +84,14 @@ export default function EmbajadorNegociosReferidosPage() {
             </p>
 
             <div className="mt-4 space-y-2">
-              {referredBusinesses.map((business) => {
+              {referredBusinessesState.map((business) => {
                 const isActive = business.id === activeBusiness.id;
 
                 return (
                   <button
                     key={business.id}
                     type="button"
-                    onClick={() => setActiveBusinessId(business.id)}
+                    onClick={() => setSelectedBusinessId(business.id)}
                     className={`w-full rounded-2xl border p-3 text-left transition ${
                       isActive
                         ? "border-cyan-300/45 bg-cyan-300/14"
@@ -191,7 +163,7 @@ export default function EmbajadorNegociosReferidosPage() {
 
               <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Comentario destacado</p>
-                <p className="mt-2 text-sm text-cyan-100/85">"{activeBusiness.topComment}"</p>
+                <p className="mt-2 text-sm text-cyan-100/85">&quot;{activeBusiness.topComment}&quot;</p>
               </div>
             </article>
 

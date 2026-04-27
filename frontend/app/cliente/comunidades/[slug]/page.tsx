@@ -7,7 +7,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { ClientPageHeader, ClientQuickLinksCard } from "../../../components/ClientPageSections";
 import { PublicationActionButton, PublicationCard } from "../../../components/PublicationCard";
 import {
+  CommunityPost,
   CommunityMemberRole,
+  TechCommunity,
   createCommunityPost,
   createCommunityPostReply,
   isCurrentUserMember,

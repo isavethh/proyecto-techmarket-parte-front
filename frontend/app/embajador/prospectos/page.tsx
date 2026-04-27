@@ -1,0 +1,548 @@
+"use client";
+
+import Link from "next/link";
+import { type FormEvent, useMemo, useState } from "react";
+import { EmbajadorSidebar } from "../page";
+import {
+  ambassadorProfile,
+  prospectLeadSources,
+  prospectosData,
+  prospectPipelineStages,
+  type LeadSource,
+  type Prospect,
+  type ProspectStage,
+} from "../ambassadorData";
+
+type ProspectFormState = {
+  businessName: string;
+  category: string;
+  city: string;
+  contactName: string;
+  phone: string;
+  source: LeadSource;
+  notes: string;
+};
+
+const buildDefaultFormState = (): ProspectFormState => ({
+  businessName: "",
+  category: "",
+  city: ambassadorProfile.city,
+  contactName: "",
+  phone: "",
+  source: prospectLeadSources[0],
+  notes: "",
+});
+
+const stageTone: Record<ProspectStage, string> = {
+  Nuevo: "border-slate-200/15 bg-slate-100/10 text-slate-100",
+  Contactado: "border-cyan-200/30 bg-cyan-300/12 text-cyan-50",
+  Interesado: "border-sky-200/30 bg-sky-300/12 text-sky-50",
+  "Demo agendada": "border-violet-200/30 bg-violet-300/12 text-violet-50",
+  "En onboarding": "border-amber-200/30 bg-amber-300/12 text-amber-50",
+  Activo: "border-emerald-200/30 bg-emerald-300/12 text-emerald-50",
+  Perdido: "border-rose-200/30 bg-rose-300/12 text-rose-50",
+};
+
+const sourceTone: Record<LeadSource, string> = {
+  Visita: "border-cyan-100/18 bg-white/5 text-cyan-100/80",
+  Redes: "border-fuchsia-200/25 bg-fuchsia-300/10 text-fuchsia-50",
+  Referido: "border-emerald-200/25 bg-emerald-300/10 text-emerald-50",
+  Evento: "border-amber-200/25 bg-amber-300/10 text-amber-50",
+};
+
+const statusTone = (status: Prospect["status"]) => {
+  return status === "Activo"
+    ? "border-emerald-200/30 bg-emerald-300/12 text-emerald-50"
+    : "border-rose-200/30 bg-rose-300/12 text-rose-50";
+};
+
+const formatDisplayDate = (date: Date) =>
+  new Intl.DateTimeFormat("es-BO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+
+const addDays = (date: Date, days: number) => {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+};
+
+export default function EmbajadorProspectosPage() {
+  const [prospects, setProspects] = useState<Prospect[]>(prospectosData);
+  const [selectedProspectId, setSelectedProspectId] = useState(prospectosData[0]?.id ?? "");
+  const [formState, setFormState] = useState<ProspectFormState>(buildDefaultFormState);
+
+  const selectedProspect = useMemo(
+    () => prospects.find((prospect) => prospect.id === selectedProspectId) ?? prospects[0] ?? null,
+    [prospects, selectedProspectId],
+  );
+
+  const pipelineSummary = useMemo(() => {
+    const activeCount = prospects.filter((prospect) => prospect.status === "Activo").length;
+    const lostCount = prospects.filter((prospect) => prospect.status === "Perdido").length;
+    const warmCount = prospects.filter((prospect) =>
+      ["Interesado", "Demo agendada", "En onboarding"].includes(prospect.currentStage),
+    ).length;
+    const onboardingCount = prospects.filter((prospect) => prospect.currentStage === "En onboarding").length;
+
+    return [
+      { label: "Prospectos totales", value: `${prospects.length}`, helper: "Captados por tu red local" },
+      { label: "Pipeline activo", value: `${activeCount}`, helper: "Leads con seguimiento abierto" },
+      { label: "Calientes", value: `${warmCount}`, helper: "Interes, demo u onboarding" },
+      { label: "En onboarding", value: `${onboardingCount}`, helper: "Listos para activacion" },
+      { label: "Perdidos", value: `${lostCount}`, helper: "Para reactivar luego" },
+    ];
+  }, [prospects]);
+
+  const handleCreateProspect = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const businessName = formState.businessName.trim();
+    const category = formState.category.trim();
+    const city = formState.city.trim();
+    const contactName = formState.contactName.trim();
+    const phone = formState.phone.trim();
+
+    if (!businessName || !category || !city || !contactName || !phone) {
+      return;
+    }
+
+    const now = new Date();
+    const createdAt = formatDisplayDate(now);
+    const nextActionDate = formatDisplayDate(addDays(now, 2));
+    const newProspect: Prospect = {
+      id: `pros-${Date.now()}`,
+      businessName,
+      category,
+      city,
+      contactName,
+      phone,
+      source: formState.source,
+      currentStage: "Nuevo",
+      createdAt,
+      nextAction: "Primer contacto por WhatsApp",
+      nextActionDate,
+      status: "Activo",
+      ambassadorNotes: formState.notes.trim() || "Pendiente registrar notas adicionales del embajador.",
+      actionHistory: [
+        {
+          id: `hist-${Date.now()}`,
+          title: "Prospecto creado manualmente",
+          happenedAt: createdAt,
+          summary: `Lead incorporado desde ${formState.source.toLowerCase()} para seguimiento comercial inicial.`,
+        },
+      ],
+    };
+
+    setProspects((currentProspects) => [newProspect, ...currentProspects]);
+    setSelectedProspectId(newProspect.id);
+    setFormState(buildDefaultFormState());
+  };
+
+  return (
+    <div className="flex-1 pb-10">
+      <header className="tech-top-nav sticky top-0 z-30">
+        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
+          <Link href="/" className="font-semibold text-cyan-100/90">
+            TechMarket
+          </Link>
+
+          <div className="hidden rounded-full border border-cyan-100/15 bg-slate-950/45 px-3 py-1.5 text-xs text-cyan-100/80 md:inline-flex md:items-center md:gap-2">
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.85)]" />
+            Seguimiento de prospectos comerciales
+          </div>
+
+          <span className="hidden rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-cyan-100/80 md:inline-flex">
+            Embajador
+          </span>
+        </div>
+      </header>
+
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
+        <EmbajadorSidebar activeSection="prospectos" />
+
+        <section className="space-y-6">
+          <section className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8">
+            <p className="tech-mono text-xs text-cyan-200/75">PIPELINE DE PROSPECTOS</p>
+            <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-3xl">
+                <h1 className="text-3xl font-bold text-cyan-50 md:text-4xl">Prospectos captados por tu gestion</h1>
+                <p className="mt-3 text-sm leading-7 text-cyan-100/80">
+                  Administra negocios potenciales, registra cada contacto y manten visible la siguiente accion para
+                  convertirlos en cuentas activas dentro de TechMarket.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 px-4 py-3 text-sm text-cyan-100/82">
+                Responsable actual: <strong className="text-cyan-50">{ambassadorProfile.name}</strong>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              {pipelineSummary.map((item) => (
+                <article key={item.label} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/65">{item.label}</p>
+                  <p className="mt-2 text-2xl font-bold text-cyan-50">{item.value}</p>
+                  <p className="mt-1 text-xs text-cyan-100/75">{item.helper}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="tech-mono text-xs text-cyan-200/75">LISTA DE PROSPECTOS</p>
+                <h2 className="mt-2 text-2xl font-semibold text-cyan-50">Embudo visible de punta a punta</h2>
+              </div>
+              <p className="max-w-xl text-sm text-cyan-100/78">
+                Selecciona una fila para abrir su detalle completo, revisar historial y ver la proxima accion sugerida.
+              </p>
+            </div>
+
+            <div className="mt-5 overflow-x-auto">
+              <table className="min-w-[1180px] w-full border-separate border-spacing-y-2 text-left">
+                <thead>
+                  <tr className="text-[11px] uppercase tracking-[0.18em] text-cyan-200/60">
+                    <th className="px-3 py-2 font-medium">Negocio</th>
+                    <th className="px-3 py-2 font-medium">Categoria</th>
+                    <th className="px-3 py-2 font-medium">Ciudad</th>
+                    <th className="px-3 py-2 font-medium">Contacto</th>
+                    <th className="px-3 py-2 font-medium">Telefono</th>
+                    <th className="px-3 py-2 font-medium">Fuente</th>
+                    <th className="px-3 py-2 font-medium">Etapa actual</th>
+                    <th className="px-3 py-2 font-medium">Fecha de creacion</th>
+                    <th className="px-3 py-2 font-medium">Proxima accion</th>
+                    <th className="px-3 py-2 font-medium">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {prospects.map((prospect) => {
+                    const isSelected = selectedProspect?.id === prospect.id;
+
+                    return (
+                      <tr
+                        key={prospect.id}
+                        onClick={() => setSelectedProspectId(prospect.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedProspectId(prospect.id);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className={`cursor-pointer rounded-2xl transition ${
+                          isSelected
+                            ? "bg-cyan-300/10"
+                            : "bg-white/[0.03] hover:bg-cyan-300/[0.06]"
+                        }`}
+                      >
+                        <td className="rounded-l-2xl border-y border-l border-cyan-100/10 px-3 py-3 align-top">
+                          <div>
+                            <p className="text-sm font-semibold text-cyan-50">{prospect.businessName}</p>
+                            <p className="mt-1 text-xs text-cyan-100/72">ID {prospect.id}</p>
+                          </div>
+                        </td>
+                        <td className="border-y border-cyan-100/10 px-3 py-3 text-sm text-cyan-100/82">
+                          {prospect.category}
+                        </td>
+                        <td className="border-y border-cyan-100/10 px-3 py-3 text-sm text-cyan-100/82">
+                          {prospect.city}
+                        </td>
+                        <td className="border-y border-cyan-100/10 px-3 py-3 text-sm text-cyan-100/82">
+                          {prospect.contactName}
+                        </td>
+                        <td className="border-y border-cyan-100/10 px-3 py-3 text-sm text-cyan-100/82">
+                          {prospect.phone}
+                        </td>
+                        <td className="border-y border-cyan-100/10 px-3 py-3">
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs ${sourceTone[prospect.source]}`}>
+                            {prospect.source}
+                          </span>
+                        </td>
+                        <td className="border-y border-cyan-100/10 px-3 py-3">
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs ${stageTone[prospect.currentStage]}`}>
+                            {prospect.currentStage}
+                          </span>
+                        </td>
+                        <td className="border-y border-cyan-100/10 px-3 py-3 text-sm text-cyan-100/82">
+                          {prospect.createdAt}
+                        </td>
+                        <td className="border-y border-cyan-100/10 px-3 py-3">
+                          <p className="text-sm text-cyan-50">{prospect.nextAction}</p>
+                          <p className="mt-1 text-xs text-cyan-100/68">{prospect.nextActionDate}</p>
+                        </td>
+                        <td className="rounded-r-2xl border-y border-r border-cyan-100/10 px-3 py-3">
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs ${statusTone(prospect.status)}`}>
+                            {prospect.status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
+            <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+              <p className="tech-mono text-xs text-cyan-200/75">CREAR PROSPECTO</p>
+              <h2 className="mt-2 text-2xl font-semibold text-cyan-50">Registrar nuevo lead</h2>
+              <p className="mt-2 text-sm text-cyan-100/80">
+                Captura rapidamente la informacion clave para iniciar el seguimiento y no perder contexto comercial.
+              </p>
+
+              <form onSubmit={handleCreateProspect} className="mt-5 grid gap-4">
+                <div>
+                  <label className="auth-label" htmlFor="prospect-business-name">
+                    Nombre del negocio
+                  </label>
+                  <input
+                    id="prospect-business-name"
+                    className="auth-input"
+                    value={formState.businessName}
+                    onChange={(event) =>
+                      setFormState((currentState) => ({ ...currentState, businessName: event.target.value }))
+                    }
+                    placeholder="Ej. TechNova Store"
+                  />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="auth-label" htmlFor="prospect-category">
+                      Categoria
+                    </label>
+                    <input
+                      id="prospect-category"
+                      className="auth-input"
+                      value={formState.category}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({ ...currentState, category: event.target.value }))
+                      }
+                      placeholder="Servicio tecnico, tienda, software..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="auth-label" htmlFor="prospect-city">
+                      Ciudad
+                    </label>
+                    <input
+                      id="prospect-city"
+                      className="auth-input"
+                      value={formState.city}
+                      onChange={(event) => setFormState((currentState) => ({ ...currentState, city: event.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="auth-label" htmlFor="prospect-contact-name">
+                      Contacto
+                    </label>
+                    <input
+                      id="prospect-contact-name"
+                      className="auth-input"
+                      value={formState.contactName}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({ ...currentState, contactName: event.target.value }))
+                      }
+                      placeholder="Nombre de la persona contacto"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="auth-label" htmlFor="prospect-phone">
+                      Telefono / WhatsApp
+                    </label>
+                    <input
+                      id="prospect-phone"
+                      className="auth-input"
+                      value={formState.phone}
+                      onChange={(event) => setFormState((currentState) => ({ ...currentState, phone: event.target.value }))}
+                      placeholder="+591 ..."
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="auth-label" htmlFor="prospect-source">
+                    Fuente
+                  </label>
+                  <select
+                    id="prospect-source"
+                    className="auth-select"
+                    value={formState.source}
+                    onChange={(event) =>
+                      setFormState((currentState) => ({
+                        ...currentState,
+                        source: event.target.value as LeadSource,
+                      }))
+                    }
+                  >
+                    {prospectLeadSources.map((source) => (
+                      <option key={source} value={source}>
+                        {source}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="auth-label" htmlFor="prospect-notes">
+                    Notas
+                  </label>
+                  <textarea
+                    id="prospect-notes"
+                    className="auth-input min-h-[120px] resize-y"
+                    value={formState.notes}
+                    onChange={(event) => setFormState((currentState) => ({ ...currentState, notes: event.target.value }))}
+                    placeholder="Contexto inicial, objeciones, intereses o promesas de seguimiento..."
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-100/10 bg-white/5 p-3">
+                  <p className="text-sm text-cyan-100/75">
+                    El prospecto se crea en etapa <strong className="text-cyan-50">Nuevo</strong> con una primera
+                    accion sugerida.
+                  </p>
+                  <button type="submit" className="tech-button tech-button-primary px-4 py-2 text-sm">
+                    Guardar prospecto
+                  </button>
+                </div>
+              </form>
+            </article>
+
+            <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+              <p className="tech-mono text-xs text-cyan-200/75">DETALLE</p>
+              <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-semibold text-cyan-50">
+                    {selectedProspect ? selectedProspect.businessName : "Sin prospecto seleccionado"}
+                  </h2>
+                  <p className="mt-2 text-sm text-cyan-100/80">
+                    {selectedProspect
+                      ? `${selectedProspect.category} · ${selectedProspect.city}`
+                      : "Selecciona un prospecto de la lista para ver su informacion general."}
+                  </p>
+                </div>
+
+                {selectedProspect ? (
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`inline-flex rounded-full border px-3 py-1 text-xs ${stageTone[selectedProspect.currentStage]}`}>
+                      {selectedProspect.currentStage}
+                    </span>
+                    <span className={`inline-flex rounded-full border px-3 py-1 text-xs ${statusTone(selectedProspect.status)}`}>
+                      {selectedProspect.status}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+
+              {selectedProspect ? (
+                <>
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <section className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                      <h3 className="text-lg font-semibold text-cyan-50">Info general</h3>
+                      <div className="mt-4 grid gap-3 text-sm text-cyan-100/82">
+                        <div className="flex items-start justify-between gap-3">
+                          <span>Contacto</span>
+                          <strong className="text-right text-cyan-50">{selectedProspect.contactName}</strong>
+                        </div>
+                        <div className="flex items-start justify-between gap-3">
+                          <span>Telefono / WhatsApp</span>
+                          <strong className="text-right text-cyan-50">{selectedProspect.phone}</strong>
+                        </div>
+                        <div className="flex items-start justify-between gap-3">
+                          <span>Fuente del lead</span>
+                          <strong className="text-right text-cyan-50">{selectedProspect.source}</strong>
+                        </div>
+                        <div className="flex items-start justify-between gap-3">
+                          <span>Fecha de creacion</span>
+                          <strong className="text-right text-cyan-50">{selectedProspect.createdAt}</strong>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                      <h3 className="text-lg font-semibold text-cyan-50">Siguiente movimiento</h3>
+                      <p className="mt-3 text-sm text-cyan-100/82">{selectedProspect.nextAction}</p>
+                      <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
+                        <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/70">Fecha proxima accion</p>
+                        <p className="mt-2 text-lg font-semibold text-cyan-50">{selectedProspect.nextActionDate}</p>
+                      </div>
+                    </section>
+                  </div>
+
+                  <section className="mt-4 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                    <h3 className="text-lg font-semibold text-cyan-50">Etapas</h3>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {prospectPipelineStages.map((stage) => {
+                        const currentIndex = prospectPipelineStages.indexOf(selectedProspect.currentStage);
+                        const stageIndex = prospectPipelineStages.indexOf(stage);
+                        const isCurrent = stage === selectedProspect.currentStage;
+                        const isReached = stageIndex < currentIndex;
+
+                        return (
+                          <span
+                            key={stage}
+                            className={`inline-flex rounded-full border px-3 py-1 text-xs ${
+                              isCurrent
+                                ? stageTone[stage]
+                                : isReached
+                                  ? "border-cyan-100/18 bg-cyan-300/10 text-cyan-50"
+                                  : "border-cyan-100/10 bg-slate-950/35 text-cyan-100/70"
+                            }`}
+                          >
+                            {stage}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </section>
+
+                  <section className="mt-4 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+                    <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                      <h3 className="text-lg font-semibold text-cyan-50">Historial de acciones</h3>
+                      <div className="mt-4 space-y-3">
+                        {selectedProspect.actionHistory.map((entry) => (
+                          <article key={entry.id} className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-sm font-semibold text-cyan-50">{entry.title}</p>
+                              <span className="text-xs text-cyan-100/68">{entry.happenedAt}</span>
+                            </div>
+                            <p className="mt-2 text-sm text-cyan-100/78">{entry.summary}</p>
+                          </article>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                      <h3 className="text-lg font-semibold text-cyan-50">Notas del embajador</h3>
+                      <p className="mt-4 text-sm leading-7 text-cyan-100/82">{selectedProspect.ambassadorNotes}</p>
+
+                      <div className="mt-5 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
+                        <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/70">Etapa actual</p>
+                        <p className="mt-2 text-lg font-semibold text-cyan-50">{selectedProspect.currentStage}</p>
+                      </div>
+                    </div>
+                  </section>
+                </>
+              ) : (
+                <div className="mt-6 rounded-2xl border border-dashed border-cyan-100/15 bg-white/5 p-5 text-sm text-cyan-100/76">
+                  Aun no hay prospectos registrados.
+                </div>
+              )}
+            </article>
+          </section>
+        </section>
+      </main>
+    </div>
+  );
+}

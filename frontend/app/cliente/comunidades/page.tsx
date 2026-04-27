@@ -6,8 +6,10 @@ import { ChangeEvent, FormEvent, useMemo, useState, useSyncExternalStore } from 
 import { AnimatePresence, motion } from "motion/react";
 import { ClientPageHeader, ClientQuickLinksCard } from "../../components/ClientPageSections";
 import {
-  createCommunity,
+  CommunityPost,
   CURRENT_CLIENT_USER,
+  TechCommunity,
+  createCommunity,
   isCurrentUserMember,
   joinCommunity,
   readCommunityCatalog,

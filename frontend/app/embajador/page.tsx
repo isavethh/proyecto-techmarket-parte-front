@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ambassadorProfile,
   referredAmbassadors,
-  referredBusinesses,
 } from "./ambassadorData";
+import { useReferredBusinessesState } from "./businessStore";
 
 const referralLinkString = "https://techmarket.bo/auth?mode=register&type=empresa&ref=SV-EMB-0426";
 
@@ -35,39 +35,160 @@ const levelRuleDescription = nextLevel
   ? `Como embajador Nivel ${currentLevel}, puedes referir embajadores Nivel ${nextLevel}.`
   : "Como embajador Nivel 3, ya no puedes referir nuevos niveles de embajadores.";
 
-const totalReferredBusinesses = referredBusinesses.length;
-const activeBusinesses = referredBusinesses.filter((business) => business.status === "Activo").length;
-const averageRating = (
-  referredBusinesses.reduce((acc, business) => acc + business.rating, 0) / totalReferredBusinesses
-).toFixed(1);
-const averageUserScore = Math.round(
-  referredBusinesses.reduce((acc, business) => acc + business.userScore, 0) / totalReferredBusinesses,
-);
-const averageConversion = Math.round(
-  referredBusinesses.reduce((acc, business) => acc + business.conversionRate, 0) / totalReferredBusinesses,
-);
-const totalCommissionGenerated = referredBusinesses.reduce(
-  (acc, business) => acc + business.commissionGenerated,
-  0,
-);
+export type EmbajadorSidebarSection =
+  | "resumen"
+  | "negocios"
+  | "usuarios"
+  | "embajadores"
+  | "prospectos"
+  | "onboarding"
+  | "comisiones";
 
-const ambassadorKpis = [
-  { label: "Nivel de embajador", value: `Nivel ${ambassadorProfile.level}`, helper: "Rango actual" },
-  { label: "Negocios referidos", value: `${totalReferredBusinesses}`, helper: "Cuentas en tu red" },
-  { label: "Negocios activos", value: `${activeBusinesses}`, helper: "Operando este mes" },
-  { label: "Percepcion usuario", value: `${averageUserScore}/100`, helper: "Promedio de confianza" },
-  { label: "Conversion promedio", value: `${averageConversion}%`, helper: "Lead a cierre comercial" },
-  {
-    label: "Comision estimada",
-    value: `Bs ${totalCommissionGenerated.toLocaleString("es-BO")}`,
-    helper: "Acumulado en negocios activos",
-  },
-  { label: "Rating promedio", value: `${averageRating}/5`, helper: "Valoracion de clientes" },
-];
+type EmbajadorSidebarProps = {
+  activeSection?: EmbajadorSidebarSection;
+  onOpenReferralModal?: () => void;
+};
+
+const getSidebarLinkClass = (isActive: boolean) => {
+  return isActive ? "auth-action active" : "auth-action";
+};
+
+export function EmbajadorSidebar({
+  activeSection = "resumen",
+  onOpenReferralModal,
+}: EmbajadorSidebarProps) {
+  return (
+    <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+      <section className="tech-card">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+            {ambassadorProfile.initials}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-cyan-50">{ambassadorProfile.name}</p>
+            <p className="text-xs text-cyan-100/75">{ambassadorProfile.account}</p>
+            <p className="mt-1 inline-flex rounded-full border border-cyan-100/15 bg-cyan-300/12 px-2 py-0.5 text-[11px] font-semibold text-cyan-50">
+              Nivel {ambassadorProfile.level}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3 text-xs text-cyan-100/85">
+          <div className="flex items-center justify-between gap-3">
+            <span>Ciudad</span>
+            <strong className="text-cyan-50">{ambassadorProfile.city}</strong>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span>Residencia</span>
+            <strong className="text-cyan-50">{ambassadorProfile.residenceArea}</strong>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span>Especialidad</span>
+            <strong className="text-cyan-50">Captacion local</strong>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-2">
+          <p className="tech-mono text-[11px] text-cyan-200/70">[ PERFIL EMBJADOR ]</p>
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- PANEL ---</p>
+          <Link href="/embajador/resumen" className={getSidebarLinkClass(activeSection === "resumen")}>
+            Resumen
+          </Link>
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- RED ---</p>
+          <a href="/embajador/negocios-referidos" className={getSidebarLinkClass(activeSection === "negocios")}>
+            Negocios referidos
+          </a>
+          <Link href="/embajador/vision-usuarios" className={getSidebarLinkClass(activeSection === "usuarios")}>
+            Vision de usuarios
+          </Link>
+          <Link
+            href="/embajador/embajadores-referidos"
+            className={getSidebarLinkClass(activeSection === "embajadores")}
+          >
+            Embajadores referidos
+          </Link>
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- CRECIMIENTO ---</p>
+          <Link href="/embajador/prospectos" className={getSidebarLinkClass(activeSection === "prospectos")}>
+            Prospectos
+          </Link>
+          <Link href="/embajador/onboarding" className={getSidebarLinkClass(activeSection === "onboarding")}>
+            Onboarding
+          </Link>
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- MONETIZACION ---</p>
+          <Link href="/embajador/comisiones" className={getSidebarLinkClass(activeSection === "comisiones")}>
+            Comisiones
+          </Link>
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">[ BOTON ]</p>
+          {onOpenReferralModal ? (
+            <button
+              type="button"
+              onClick={onOpenReferralModal}
+              className="auth-action active"
+            >
+              Referir
+            </button>
+          ) : (
+            <Link href="/embajador" className="auth-action active">
+              Referir
+            </Link>
+          )}
+
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- SISTEMA ---</p>
+          <Link href="/auth?mode=login&type=embajador" className="auth-action">
+            Cerrar sesion
+          </Link>
+        </div>
+      </section>
+    </aside>
+  );
+}
 
 export default function EmbajadorPage() {
   const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
   const [didCopyReferralLink, setDidCopyReferralLink] = useState(false);
+  const referredBusinessesState = useReferredBusinessesState();
+
+  const ambassadorKpis = useMemo(() => {
+    const totalReferredBusinesses = referredBusinessesState.length;
+    const activeBusinesses = referredBusinessesState.filter((business) => business.status === "Activo").length;
+    const averageRating = (
+      totalReferredBusinesses
+        ? referredBusinessesState.reduce((acc, business) => acc + business.rating, 0) / totalReferredBusinesses
+        : 0
+    ).toFixed(1);
+    const averageUserScore = Math.round(
+      totalReferredBusinesses
+        ? referredBusinessesState.reduce((acc, business) => acc + business.userScore, 0) / totalReferredBusinesses
+        : 0,
+    );
+    const averageConversion = Math.round(
+      totalReferredBusinesses
+        ? referredBusinessesState.reduce((acc, business) => acc + business.conversionRate, 0) / totalReferredBusinesses
+        : 0,
+    );
+    const totalCommissionGenerated = referredBusinessesState
+      .filter((business) => business.status === "Activo")
+      .reduce((acc, business) => acc + business.commissionGenerated, 0);
+
+    return [
+      { label: "Nivel de embajador", value: `Nivel ${ambassadorProfile.level}`, helper: "Rango actual" },
+      { label: "Negocios referidos", value: `${totalReferredBusinesses}`, helper: "Cuentas en tu red" },
+      { label: "Negocios activos", value: `${activeBusinesses}`, helper: "Operando este mes" },
+      { label: "Percepcion usuario", value: `${averageUserScore}/100`, helper: "Promedio de confianza" },
+      { label: "Conversion promedio", value: `${averageConversion}%`, helper: "Lead a cierre comercial" },
+      {
+        label: "Comision estimada",
+        value: `Bs ${totalCommissionGenerated.toLocaleString("es-BO")}`,
+        helper: "Acumulado en negocios activos",
+      },
+      { label: "Rating promedio", value: `${averageRating}/5`, helper: "Valoracion de clientes" },
+    ];
+  }, [referredBusinessesState]);
 
   useEffect(() => {
     if (!isReferralModalOpen) {
@@ -132,62 +253,10 @@ export default function EmbajadorPage() {
       </header>
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <section className="tech-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                {ambassadorProfile.initials}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">{ambassadorProfile.name}</p>
-                <p className="text-xs text-cyan-100/75">{ambassadorProfile.account}</p>
-                <p className="mt-1 inline-flex rounded-full border border-cyan-100/15 bg-cyan-300/12 px-2 py-0.5 text-[11px] font-semibold text-cyan-50">
-                  Nivel {ambassadorProfile.level}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3 text-xs text-cyan-100/85">
-              <div className="flex items-center justify-between gap-3">
-                <span>Ciudad</span>
-                <strong className="text-cyan-50">{ambassadorProfile.city}</strong>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>Residencia</span>
-                <strong className="text-cyan-50">{ambassadorProfile.residenceArea}</strong>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span>Especialidad</span>
-                <strong className="text-cyan-50">Captacion local</strong>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2">
-              <a href="#resumen" className="auth-action">
-                Resumen
-              </a>
-              <Link href="/embajador/negocios-referidos" className="auth-action">
-                Negocios referidos
-              </Link>
-              <a href="#usuarios" className="auth-action">
-                Vision de usuarios
-              </a>
-              <a href="#embajadores-referidos" className="auth-action">
-                Embajadores referidos
-              </a>
-              <button
-                type="button"
-                onClick={() => setIsReferralModalOpen(true)}
-                className="auth-action active"
-              >
-                Referir
-              </button>
-              <Link href="/auth?mode=login&type=embajador" className="auth-action">
-                Cerrar sesion
-              </Link>
-            </div>
-          </section>
-        </aside>
+        <EmbajadorSidebar
+          activeSection="resumen"
+          onOpenReferralModal={() => setIsReferralModalOpen(true)}
+        />
 
         <section className="space-y-6">
           <section
@@ -245,7 +314,7 @@ export default function EmbajadorPage() {
             </div>
 
             <div className="mt-4 grid gap-4 xl:grid-cols-2">
-              {referredBusinesses.map((business) => (
+              {referredBusinessesState.map((business) => (
                 <article key={business.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -339,7 +408,7 @@ export default function EmbajadorPage() {
             </div>
 
             <div className="mt-4 grid gap-3">
-              {referredBusinesses.map((business) => (
+              {referredBusinessesState.map((business) => (
                 <article key={`${business.id}-users`} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-cyan-50">{business.name}</p>

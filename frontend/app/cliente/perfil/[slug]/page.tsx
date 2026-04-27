@@ -10,6 +10,7 @@ import {
 } from "../../../components/ClientPageSections";
 import {
   COMMUNITY_FEED_UPDATED_EVENT,
+  CommunityFeedPost,
   mergeCommunityFeedPosts,
   readCommunityFeedPosts,
 } from "../../../lib/communityFeed";
@@ -19,7 +20,7 @@ import {
   toClientProfileSlug,
 } from "../../../lib/clientUserProfiles";
 
-const EMPTY_FEED_SNAPSHOT = [];
+const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
 const ACTIVE_CLIENT_SLUG = "camila-mendoza";
 const ACTIVE_CLIENT_PROFILE_STORAGE_KEY = "techmarket.client.profile.camila-mendoza";
 

@@ -14,6 +14,14 @@ import {
   PublicationViewerData,
   PublicationViewerModal,
 } from "../../components/PublicationViewerModal";
+<<<<<<< ours
+=======
+import {
+  COMMUNITY_FEED_UPDATED_EVENT,
+  CommunityFeedPost,
+  readCommunityFeedPosts,
+} from "../../lib/communityFeed";
+>>>>>>> theirs
 import {
   buildMarketplaceListings,
   createMarketplaceSellerKey,
@@ -22,6 +30,7 @@ import {
   marketplaceSeedPosts,
 } from "../../lib/marketplaceFeed";
 
+<<<<<<< ours
 import {
   COMMUNITY_FEED_UPDATED_EVENT,
   CommunityFeedPost,
@@ -39,6 +48,9 @@ const clientMenuItems = [
   { label: "Comunidades", href: "/cliente/comunidades" },
   { label: "Actividad reciente", href: "/cliente" },
 ];
+=======
+const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
+>>>>>>> theirs
 
 type SortMode = "recientes" | "precio-bajo" | "precio-alto";
 
