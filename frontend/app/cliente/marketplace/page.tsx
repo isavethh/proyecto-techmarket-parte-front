@@ -1,11 +1,11 @@
 "use client";
 
+
 import Link from "next/link";
 import { motion } from "motion/react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import {
-  ClientInfoCard,
   ClientPageHeader,
   ClientQuickLinksCard,
 } from "../../components/ClientPageSections";
@@ -14,11 +14,14 @@ import {
   PublicationViewerData,
   PublicationViewerModal,
 } from "../../components/PublicationViewerModal";
+<<<<<<< ours
+=======
 import {
   COMMUNITY_FEED_UPDATED_EVENT,
   CommunityFeedPost,
   readCommunityFeedPosts,
 } from "../../lib/communityFeed";
+>>>>>>> theirs
 import {
   buildMarketplaceListings,
   createMarketplaceSellerKey,
@@ -27,7 +30,27 @@ import {
   marketplaceSeedPosts,
 } from "../../lib/marketplaceFeed";
 
+<<<<<<< ours
+import {
+  COMMUNITY_FEED_UPDATED_EVENT,
+  CommunityFeedPost,
+  readCommunityFeedPosts,
+} from "../../lib/communityFeed";
+
 const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
+
+const clientMenuItems = [
+  { label: "Explorar marketplace", href: "/cliente/marketplace" },
+  { label: "Mis chats", href: "/cliente/chat" },
+  { label: "Buscar servicios", href: "/cliente/servicios" },
+  { label: "Versus de productos", href: "/cliente/versus" },
+  { label: "Explorar empresas", href: "/cliente/empresas" },
+  { label: "Comunidades", href: "/cliente/comunidades" },
+  { label: "Actividad reciente", href: "/cliente" },
+];
+=======
+const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
+>>>>>>> theirs
 
 type SortMode = "recientes" | "precio-bajo" | "precio-alto";
 
@@ -102,6 +125,7 @@ const parsePriceToNumber = (priceLabel: string): number => {
 
 export default function ClienteMarketplacePage() {
   const router = useRouter();
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<MarketplaceCategory>("Todos");
   const [selectedCity, setSelectedCity] = useState("Todas");
@@ -210,87 +234,132 @@ export default function ClienteMarketplacePage() {
     <div className="flex-1 pb-10">
       <ClientPageHeader sectionLabel="Marketplace" />
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <ClientInfoCard
-            eyebrow="MARKETPLACE"
-            title="Compra y vende en una sola vista"
-            description="Solo aparecen publicaciones de productos en venta. Puedes encontrar multiples anuncios de un mismo vendedor."
-          />
-
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:px-6">
+        <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
-            <p className="text-sm font-semibold text-cyan-50">Filtros rapidos</p>
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                CM
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
+                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
+              </div>
+            </div>
 
-            <div className="mt-3 space-y-3">
-              <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-search">
-                Buscar en marketplace
-              </label>
-              <input
-                id="marketplace-search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Ej: laptop, monitor, teclado"
-                className="auth-input"
-              />
+            <div className="mt-4 grid gap-2">
+              {clientMenuItems.map((item) => {
+                const isActive =
+                  item.href === "/cliente"
+                    ? pathname === "/cliente"
+                    : pathname.startsWith(item.href);
 
-              <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-category">
-                Categoria
-              </label>
-              <select
-                id="marketplace-category"
-                value={selectedCategory}
-                onChange={(event) => setSelectedCategory(event.target.value as MarketplaceCategory)}
-                className="auth-select"
-              >
-                {marketplaceCategoryOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-
-              <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-city">
-                Ciudad
-              </label>
-              <select
-                id="marketplace-city"
-                value={selectedCity}
-                onChange={(event) => setSelectedCity(event.target.value)}
-                className="auth-select"
-              >
-                {cityOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-
-              <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-sort">
-                Ordenar por
-              </label>
-              <select
-                id="marketplace-sort"
-                value={sortMode}
-                onChange={(event) => setSortMode(event.target.value as SortMode)}
-                className="auth-select"
-              >
-                <option value="recientes">Recientes</option>
-                <option value="precio-bajo">Precio: menor a mayor</option>
-                <option value="precio-alto">Precio: mayor a menor</option>
-              </select>
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`auth-action ${isActive ? "active" : ""}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </div>
           </section>
 
-          <ClientQuickLinksCard
-            links={[
-              { href: "/cliente", label: "Volver al feed" },
-              { href: "/cliente/empresas", label: "Explorar empresas" },
-              { href: "/cliente/comunidades", label: "Ir a comunidades" },
-            ]}
-          />
+          <section className="tech-card mt-4">
+            <p className="tech-mono text-xs text-cyan-200/75">MARKETPLACE</p>
+            <h3 className="mt-2 text-xl font-semibold text-cyan-50">Exploracion comercial</h3>
+            <p className="mt-3 text-sm leading-7 text-cyan-100/80">
+              Descubre productos, ofertas y servicios publicados por empresas y tecnicos en TechMarket.
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["Marketplace", "Ofertas", "Productos", "Servicios"].map((chip) => (
+                <span
+                  key={chip}
+                  className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs text-cyan-100/85"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+          </section>
+          <div className="space-y-4">
+            <section className="tech-card">
+              <p className="text-sm font-semibold text-cyan-50">Filtros rapidos</p>
+
+              <div className="mt-3 space-y-3">
+                <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-search">
+                  Buscar en marketplace
+                </label>
+                <input
+                  id="marketplace-search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Ej: laptop, monitor, teclado"
+                  className="auth-input"
+                />
+
+                <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-category">
+                  Categoria
+                </label>
+                <select
+                  id="marketplace-category"
+                  value={selectedCategory}
+                  onChange={(event) => setSelectedCategory(event.target.value as MarketplaceCategory)}
+                  className="auth-select"
+                >
+                  {marketplaceCategoryOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-city">
+                  Ciudad
+                </label>
+                <select
+                  id="marketplace-city"
+                  value={selectedCity}
+                  onChange={(event) => setSelectedCity(event.target.value)}
+                  className="auth-select"
+                >
+                  {cityOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-sort">
+                  Ordenar por
+                </label>
+                <select
+                  id="marketplace-sort"
+                  value={sortMode}
+                  onChange={(event) => setSortMode(event.target.value as SortMode)}
+                  className="auth-select"
+                >
+                  <option value="recientes">Recientes</option>
+                  <option value="precio-bajo">Precio: menor a mayor</option>
+                  <option value="precio-alto">Precio: mayor a menor</option>
+                </select>
+              </div>
+            </section>
+
+            <ClientQuickLinksCard
+              links={[
+                { href: "/cliente", label: "Volver al feed" },
+                { href: "/cliente/empresas", label: "Explorar empresas" },
+                { href: "/cliente/comunidades", label: "Ir a comunidades" },
+              ]}
+            />
+          </div>
         </aside>
 
-        <section className="space-y-4">
+        <section className="chat-scrollbar space-y-4 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
           <section className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(130deg,rgba(7,29,50,0.96),rgba(8,58,87,0.9),rgba(6,23,43,0.95))] p-5 shadow-xl shadow-slate-950/30 md:p-6">
             <p className="tech-mono text-xs text-cyan-200/80">EXPLORAR MARKETPLACE</p>
             <h1 className="mt-2 text-2xl font-semibold text-cyan-50 md:text-3xl">Anuncios activos de productos en venta</h1>

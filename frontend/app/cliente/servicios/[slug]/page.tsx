@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getServicePublication, servicePublications } from "../../../lib/servicePublications";
-import { ClientPageHeader } from "../../../components/ClientPageSections";
-
+import { ClientPageHeader, ClientQuickLinksCard } from "../../../components/ClientPageSections";
 type Review = {
   user: string;
   date: string;
@@ -30,6 +29,16 @@ const REVIEWS: Review[] = [
   },
 ];
 
+const clientMenuItems = [
+  { label: "Explorar marketplace", href: "/cliente/marketplace" },
+  { label: "Mis chats", href: "/cliente/chat" },
+  { label: "Buscar servicios", href: "/cliente/servicios" },
+  { label: "Versus de productos", href: "/cliente/versus" },
+  { label: "Explorar empresas", href: "/cliente/empresas" },
+  { label: "Comunidades", href: "/cliente/comunidades" },
+  { label: "Actividad reciente", href: "/cliente" },
+];
+
 export default async function ServicioPage({
   params,
 }: {
@@ -42,11 +51,10 @@ export default async function ServicioPage({
     .slice(0, 2);
 
   return (
-    <div className="flex-1 pb-12">
+    <div className="flex-1 pb-6 xl:pb-0">
       <ClientPageHeader
         sectionLabel="Detalle de servicio"
         brandHref="/"
-        sticky={false}
         rightSlot={(
           <Link href="/cliente" className="text-sm text-cyan-200/80">
             Volver a cliente
@@ -54,8 +62,66 @@ export default async function ServicioPage({
         )}
       />
 
-      <main className="tech-shell mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_360px] lg:items-start">
-        <section className="space-y-5">
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 xl:grid-cols-[280px_minmax(0,1fr)_360px] xl:h-[calc(100vh-140px)] xl:items-start xl:px-6">
+        <aside className="chat-scrollbar space-y-4 xl:sticky xl:top-24 xl:self-start xl:h-[calc(100vh-140px)] xl:overflow-y-auto xl:pr-2">
+          <section className="tech-card">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                CM
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
+                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-2">
+              {clientMenuItems.map((item) => {
+                const isActive = item.href === "/cliente/servicios";
+
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`auth-action ${isActive ? "active" : ""}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="tech-card mt-4">
+            <p className="tech-mono text-xs text-cyan-200/75">DETALLE DE SERVICIO</p>
+            <h3 className="mt-2 text-xl font-semibold text-cyan-50">Vista detallada</h3>
+            <p className="mt-3 text-sm leading-7 text-cyan-100/80">
+              Revisa descripcion, cobertura, valoracion y servicios relacionados antes de contactar.
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["Servicio", "Detalle", "Cobertura", "Reputacion"].map((chip) => (
+                <span
+                  key={chip}
+                  className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs text-cyan-100/85"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <div className="space-y-4">
+            <ClientQuickLinksCard
+              links={[
+                { href: "/cliente", label: "Volver al feed" },
+                { href: "/cliente/servicios", label: "Ver mas servicios" },
+                { href: "/cliente/chat", label: "Ir a chat" },
+              ]}
+            />
+          </div>
+        </aside>
+        <section className="chat-scrollbar space-y-5 overflow-y-auto xl:h-[calc(100vh-140px)] xl:pr-4">
           <article className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(160deg,rgba(12,39,68,0.95),rgba(6,23,43,0.96))] shadow-xl shadow-slate-950/35">
             <img src={service.image} alt={service.title} className="h-52 w-full object-cover md:h-64" loading="lazy" />
             <div className="p-5 md:p-7">
@@ -107,7 +173,7 @@ export default async function ServicioPage({
           </section>
         </section>
 
-        <aside className="space-y-4 lg:sticky lg:top-24">
+        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">RESUMEN RAPIDO</p>
             <div className="mt-3 space-y-3 text-sm text-cyan-100/85">

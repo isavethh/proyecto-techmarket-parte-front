@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChangeEvent, FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ClientPageHeader } from "../../../components/ClientPageSections";
+import { ClientPageHeader, ClientQuickLinksCard } from "../../../components/ClientPageSections";
 import { PublicationActionButton, PublicationCard } from "../../../components/PublicationCard";
 import {
   CommunityPost,
@@ -21,8 +21,12 @@ import {
   toggleCommunityPostLike,
 } from "../../../lib/communities";
 
-const EMPTY_COMMUNITIES: TechCommunity[] = [];
-const EMPTY_POSTS: CommunityPost[] = [];
+type CommunityItem = ReturnType<typeof readCommunityCatalog>[number];
+type CommunityPostItem = ReturnType<typeof readCommunityPosts>[number];
+type CommunityMember = CommunityItem["members"][number];
+
+const EMPTY_COMMUNITIES: CommunityItem[] = [];
+const EMPTY_POSTS: CommunityPostItem[] = [];
 
 const roleLabel: Record<CommunityMemberRole, string> = {
   administrador: "Administrador",
@@ -34,6 +38,22 @@ const roleBadgeClass: Record<CommunityMemberRole, string> = {
   administrador: "border-amber-300/35 bg-amber-300/10 text-amber-100",
   moderador: "border-violet-300/35 bg-violet-300/12 text-violet-100",
   miembro: "border-cyan-100/20 bg-white/5 text-cyan-100/85",
+};
+
+const getRoleLabel = (role?: string) => {
+  if (!role || !(role in roleLabel)) {
+    return roleLabel.miembro;
+  }
+
+  return roleLabel[role as CommunityMemberRole];
+};
+
+const getRoleBadgeClass = (role?: string) => {
+  if (!role || !(role in roleBadgeClass)) {
+    return roleBadgeClass.miembro;
+  }
+
+  return roleBadgeClass[role as CommunityMemberRole];
 };
 
 const formatPostDate = (isoDate: string): string => {
@@ -57,6 +77,16 @@ const rolePriority: Record<CommunityMemberRole, number> = {
   moderador: 1,
   miembro: 2,
 };
+
+const clientMenuItems = [
+  { label: "Explorar marketplace", href: "/cliente/marketplace" },
+  { label: "Mis chats", href: "/cliente/chat" },
+  { label: "Buscar servicios", href: "/cliente/servicios" },
+  { label: "Versus de productos", href: "/cliente/versus" },
+  { label: "Explorar empresas", href: "/cliente/empresas" },
+  { label: "Comunidades", href: "/cliente/comunidades" },
+  { label: "Actividad reciente", href: "/cliente" },
+];
 
 export default function CommunityDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -98,12 +128,14 @@ export default function CommunityDetailPage() {
     return !dismissedJoinPrompts.includes(community.slug);
   }, [community, dismissedJoinPrompts, isMember]);
 
-  const orderedMembers = useMemo(() => {
+  const orderedMembers = useMemo<CommunityMember[]>(() => {
     if (!community) {
       return [];
     }
 
-    return [...community.members].sort((a, b) => rolePriority[a.role] - rolePriority[b.role]);
+    return [...community.members].sort(
+      (a, b) => rolePriority[a.role as CommunityMemberRole] - rolePriority[b.role as CommunityMemberRole]
+    );
   }, [community]);
 
   const fullPosts = useMemo(() => {
@@ -259,8 +291,36 @@ export default function CommunityDetailPage() {
     <div className="flex-1 pb-10">
       <ClientPageHeader sectionLabel={community.focus} />
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
         <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
+          <section className="tech-card">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                CM
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
+                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-2">
+              {clientMenuItems.map((item) => {
+                const isActive = item.href === "/cliente/comunidades";
+
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`auth-action ${isActive ? "active" : ""}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">{community.name}</h1>
@@ -273,7 +333,13 @@ export default function CommunityDetailPage() {
               <span className="rounded-full border border-cyan-100/20 bg-white/5 px-3 py-1 text-xs text-cyan-100/85">
                 {community.members.length} miembros
               </span>
-              <span className={`rounded-full border px-3 py-1 text-xs ${isMember ? "border-emerald-300/35 bg-emerald-300/10 text-emerald-100" : "border-cyan-100/20 bg-white/5 text-cyan-100/85"}`}>
+              <span
+                className={`rounded-full border px-3 py-1 text-xs ${
+                  isMember
+                    ? "border-emerald-300/35 bg-emerald-300/10 text-emerald-100"
+                    : "border-cyan-100/20 bg-white/5 text-cyan-100/85"
+                }`}
+              >
                 {isMember ? "Miembro activo" : "Modo visitante"}
               </span>
             </div>
@@ -296,6 +362,7 @@ export default function CommunityDetailPage() {
                 ? "Vista completa de miembros, incluyendo administrador y moderadores."
                 : "Como visitante ves una muestra de miembros. Al ingresar veras la lista completa."}
             </p>
+
             <div className="mt-3 space-y-2">
               {(isMember ? orderedMembers : orderedMembers.slice(0, 4)).map((member) => (
                 <div
@@ -304,7 +371,9 @@ export default function CommunityDetailPage() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold text-cyan-50">{member.name}</p>
-                    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${roleBadgeClass[member.role]}`}>
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${roleBadgeClass[member.role]}`}
+                    >
                       {roleLabel[member.role]}
                     </span>
                   </div>
@@ -314,26 +383,33 @@ export default function CommunityDetailPage() {
             </div>
           </section>
 
-          <section className="tech-card space-y-2">
-            <Link href="/cliente/comunidades" className="auth-action block w-full">
-              Ver todas las comunidades
-            </Link>
-            <Link href="/cliente" className="auth-action block w-full">
-              Volver al feed
-            </Link>
-          </section>
+          <ClientQuickLinksCard
+            links={[
+              { href: "/cliente", label: "Volver al feed" },
+              { href: "/cliente/comunidades", label: "Ver todas las comunidades" },
+              { href: "/cliente/chat", label: "Ir a chat" },
+            ]}
+          />
         </aside>
 
         <section className="space-y-4">
           {community.coverImage ? (
             <article className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(160deg,rgba(12,39,68,0.95),rgba(6,23,43,0.96))] shadow-xl shadow-slate-950/35">
-              <img src={community.coverImage} alt={community.name} className="h-52 w-full object-cover md:h-64" loading="lazy" />
+              <img
+                src={community.coverImage}
+                alt={community.name}
+                className="h-52 w-full object-cover md:h-64"
+                loading="lazy"
+              />
               <div className="p-5 md:p-6">
                 <p className="tech-mono text-xs text-cyan-200/75">ENFOQUE</p>
                 <h2 className="mt-2 text-2xl font-semibold text-cyan-50">{community.focus}</h2>
                 <ul className="mt-4 space-y-2 text-sm text-cyan-100/80">
                   {community.rules.map((rule) => (
-                    <li key={rule} className="rounded-xl border border-cyan-100/10 bg-slate-950/30 px-3 py-2">
+                    <li
+                      key={rule}
+                      className="rounded-xl border border-cyan-100/10 bg-slate-950/30 px-3 py-2"
+                    >
                       {rule}
                     </li>
                   ))}
@@ -375,7 +451,9 @@ export default function CommunityDetailPage() {
                     onChange={handleCommunityImage}
                     className="block w-full text-xs text-cyan-100/80 file:mr-3 file:rounded-full file:border-0 file:bg-cyan-300/15 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-cyan-50"
                   />
-                  {draftImageName ? <p className="mt-2 text-xs text-cyan-100/70">Archivo: {draftImageName}</p> : null}
+                  {draftImageName ? (
+                    <p className="mt-2 text-xs text-cyan-100/70">Archivo: {draftImageName}</p>
+                  ) : null}
                 </div>
 
                 {draftImage ? (
@@ -411,7 +489,9 @@ export default function CommunityDetailPage() {
                         <p className="text-sm font-semibold text-cyan-50">{post.authorName}</p>
                         <p className="text-xs text-cyan-100/70">{formatPostDate(post.createdAt)}</p>
                       </div>
-                      <span className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${roleBadgeClass[post.authorRole]}`}>
+                      <span
+                        className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${roleBadgeClass[post.authorRole]}`}
+                      >
                         {roleLabel[post.authorRole]}
                       </span>
                     </div>
@@ -456,7 +536,7 @@ export default function CommunityDetailPage() {
                             : "border-cyan-100/12 bg-cyan-300/10 text-cyan-100/90 hover:bg-cyan-300/15"
                         }`}
                       >
-                        <span className="pointer-events-none absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_top,rgba(103,232,249,0.3),transparent_70%)]" />
+                        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(103,232,249,0.3),transparent_70%)] opacity-0 transition duration-300 group-hover:opacity-100" />
                         <AnimatePresence>
                           {auraLikePostId === post.id ? (
                             <motion.span
@@ -473,17 +553,17 @@ export default function CommunityDetailPage() {
                         </span>
                       </motion.button>
 
-                      <PublicationActionButton
-                        onClick={() => handleReplyToggle(post.id)}
-                        accent="neutral"
-                      >
+                      <PublicationActionButton onClick={() => handleReplyToggle(post.id)} accent="neutral">
                         Responder ({post.replies?.length ?? 0})
                       </PublicationActionButton>
                     </div>
                   }
                   composer={
                     isMember && activeReplyPostId === post.id ? (
-                      <form onSubmit={(event) => handleReplySubmit(event, post.id)} className="mt-3 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
+                      <form
+                        onSubmit={(event) => handleReplySubmit(event, post.id)}
+                        className="mt-3 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3"
+                      >
                         <textarea
                           value={replyDraftByPostId[post.id] ?? ""}
                           onChange={(event) =>

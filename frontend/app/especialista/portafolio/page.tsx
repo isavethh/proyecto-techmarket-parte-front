@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { SpecialistShell } from "../components/SpecialistShell";
 import { PortfolioItem, portfolioSeedItems } from "../specialistData";
 
@@ -33,7 +34,6 @@ export default function EspecialistaPortafolioPage() {
     serviceType: "",
     workDescription: "",
     result: "",
-    image: "",
     date: "",
   });
 
@@ -77,7 +77,7 @@ export default function EspecialistaPortafolioPage() {
     setPortfolioItems((current) => [
       {
         id: `p-${Date.now()}`,
-        image: uploadedPortfolioImagePreview || portfolioForm.image.trim() || "/productos/laptop-pro-14.jpg",
+        image: uploadedPortfolioImagePreview || "/productos/laptop-pro-14.jpg",
         workDescription,
         serviceType,
         result: portfolioForm.result.trim() || undefined,
@@ -90,7 +90,6 @@ export default function EspecialistaPortafolioPage() {
       serviceType: "",
       workDescription: "",
       result: "",
-      image: "",
       date: "",
     });
     setUploadedPortfolioImagePreview("");
@@ -169,122 +168,170 @@ export default function EspecialistaPortafolioPage() {
             <button
               type="button"
               onClick={() => {
-                setShowPortfolioForm((current) => !current);
+                setShowPortfolioForm(true);
                 setPortfolioMessage("");
                 setUploadedPortfolioImagePreview("");
                 setUploadedPortfolioImageName("");
+                setPortfolioFileInputKey((current) => current + 1);
+                setPortfolioForm({
+                  serviceType: "",
+                  workDescription: "",
+                  result: "",
+                  date: "",
+                });
               }}
               className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
             >
-              {showPortfolioForm ? "Cerrar formulario" : "Anadir trabajo"}
+              Anadir trabajo
             </button>
           </div>
 
-          {showPortfolioForm ? (
-            <form onSubmit={handleAddPortfolioItem} className="mt-4 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-              <div className="grid gap-3 md:grid-cols-2">
-                <label className="space-y-2 text-sm text-cyan-100/85">
-                  <span>Tipo de servicio aplicado</span>
-                  <input
-                    value={portfolioForm.serviceType}
-                    onChange={(event) =>
-                      setPortfolioForm((current) => ({ ...current, serviceType: event.target.value }))
-                    }
-                    placeholder="Ej: Reparacion tecnica"
-                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                  />
-                </label>
-
-                <label className="space-y-2 text-sm text-cyan-100/85">
-                  <span>Fecha (opcional)</span>
-                  <input
-                    value={portfolioForm.date}
-                    onChange={(event) =>
-                      setPortfolioForm((current) => ({ ...current, date: event.target.value }))
-                    }
-                    placeholder="Ej: Abr 2026"
-                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                  />
-                </label>
-
-                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                  <span>Problema o trabajo realizado</span>
-                  <textarea
-                    value={portfolioForm.workDescription}
-                    onChange={(event) =>
-                      setPortfolioForm((current) => ({ ...current, workDescription: event.target.value }))
-                    }
-                    rows={3}
-                    placeholder="Describe que se atendio y que se hizo tecnicamente"
-                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                  />
-                </label>
-
-                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                  <span>Resultado obtenido (opcional)</span>
-                  <textarea
-                    value={portfolioForm.result}
-                    onChange={(event) =>
-                      setPortfolioForm((current) => ({ ...current, result: event.target.value }))
-                    }
-                    rows={2}
-                    placeholder="Ej: equipo estable, menor temperatura, mejor rendimiento"
-                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                  />
-                </label>
-
-                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                  <span>Subir imagen del trabajo (opcional)</span>
-                  <input
-                    key={portfolioFileInputKey}
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePortfolioFileChange}
-                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300/20 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                  />
-                  {uploadedPortfolioImageName ? <p className="text-xs text-cyan-100/70">Archivo: {uploadedPortfolioImageName}</p> : null}
-                </label>
-
-                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                  <span>URL de imagen (opcional)</span>
-                  <input
-                    value={portfolioForm.image}
-                    onChange={(event) =>
-                      setPortfolioForm((current) => ({ ...current, image: event.target.value }))
-                    }
-                    placeholder="/productos/laptop-pro-14.jpg"
-                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                  />
-                </label>
-              </div>
-
-              {uploadedPortfolioImagePreview ? (
-                <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-slate-950/40 p-3">
-                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Vista previa</p>
-                  <img
-                    src={uploadedPortfolioImagePreview}
-                    alt="Vista previa de archivo seleccionado"
-                    className="mt-3 h-40 w-full rounded-2xl object-cover"
-                  />
-                </div>
-              ) : null}
-
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <button
-                  type="submit"
-                  className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+          <AnimatePresence>
+            {showPortfolioForm ? (
+              <motion.div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) {
+                    setShowPortfolioForm(false);
+                  }
+                }}
+              >
+                <motion.form
+                  onSubmit={handleAddPortfolioItem}
+                  className="chat-scrollbar max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+                  initial={{ opacity: 0, y: 28, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 20, scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 320, damping: 28, mass: 0.92 }}
                 >
-                  Guardar trabajo
-                </button>
-                {portfolioMessage ? <p className="text-sm text-cyan-100/80">{portfolioMessage}</p> : null}
-              </div>
-            </form>
-          ) : null}
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-2xl font-bold text-white">Añadir trabajo</h2>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPortfolioForm(false)}
+                      className="rounded-full border border-cyan-100/15 px-5 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-100/10"
+                    >
+                      Cerrar formulario
+                    </button>
+                  </div>
+
+                  <div className="mt-6 grid gap-4 md:grid-cols-2">
+                    <label className="space-y-2 text-sm text-cyan-100/85">
+                      <span>Tipo de servicio aplicado</span>
+                      <input
+                        value={portfolioForm.serviceType}
+                        onChange={(event) =>
+                          setPortfolioForm((current) => ({ ...current, serviceType: event.target.value }))
+                        }
+                        placeholder="Ej: Reparacion tecnica"
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                      />
+                    </label>
+
+                    <label className="space-y-2 text-sm text-cyan-100/85">
+                      <span>Fecha (opcional)</span>
+                      <input
+                        value={portfolioForm.date}
+                        onChange={(event) =>
+                          setPortfolioForm((current) => ({ ...current, date: event.target.value }))
+                        }
+                        placeholder="Ej: Abr 2026"
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                      />
+                    </label>
+
+                    <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                      <span>Problema o trabajo realizado</span>
+                      <textarea
+                        value={portfolioForm.workDescription}
+                        onChange={(event) =>
+                          setPortfolioForm((current) => ({ ...current, workDescription: event.target.value }))
+                        }
+                        rows={3}
+                        placeholder="Describe que se atendio y que se hizo tecnicamente"
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                      />
+                    </label>
+
+                    <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                      <span>Resultado obtenido (opcional)</span>
+                      <textarea
+                        value={portfolioForm.result}
+                        onChange={(event) =>
+                          setPortfolioForm((current) => ({ ...current, result: event.target.value }))
+                        }
+                        rows={2}
+                        placeholder="Ej: equipo estable, menor temperatura, mejor rendimiento"
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                      />
+                    </label>
+
+                    <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                      <span>Subir imagen del trabajo (opcional)</span>
+                      <input
+                        key={portfolioFileInputKey}
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePortfolioFileChange}
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300/20 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                      />
+                      {uploadedPortfolioImageName ? (
+                        <p className="text-xs text-cyan-100/70">Archivo: {uploadedPortfolioImageName}</p>
+                      ) : null}
+                    </label>
+                  </div>
+
+                  {uploadedPortfolioImagePreview ? (
+                    <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-slate-950/40 p-3">
+                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Vista previa</p>
+                      <img
+                        src={uploadedPortfolioImagePreview}
+                        alt="Vista previa del trabajo"
+                        className="mt-3 h-44 w-full rounded-2xl object-contain bg-slate-100"
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <button
+                      type="submit"
+                      className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                    >
+                      Guardar trabajo
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPortfolioForm(false)}
+                      className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                    >
+                      Cancelar
+                    </button>
+
+                    {portfolioMessage ? <p className="text-sm text-cyan-100/80">{portfolioMessage}</p> : null}
+                  </div>
+                </motion.form>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+
 
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
             {portfolioItems.map((item) => (
               <article key={item.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-white/5">
-                <img src={item.image} alt={item.serviceType} className="h-44 w-full object-cover" loading="lazy" />
+                <div className="flex h-56 w-full items-center justify-center bg-slate-100">
+                  <img
+                    src={item.image}
+                    alt={item.serviceType}
+                    className="h-full w-full object-contain object-center"
+                    loading="lazy"
+                  />
+                </div>
                 <div className="space-y-4 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100">

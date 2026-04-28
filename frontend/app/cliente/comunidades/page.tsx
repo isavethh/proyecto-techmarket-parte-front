@@ -1,14 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useMemo, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import {
-  ClientInfoCard,
-  ClientPageHeader,
-  ClientQuickLinksCard,
-} from "../../components/ClientPageSections";
+import { ClientPageHeader, ClientQuickLinksCard } from "../../components/ClientPageSections";
 import {
   CommunityPost,
   CURRENT_CLIENT_USER,
@@ -21,8 +17,8 @@ import {
   subscribeCommunityStore,
 } from "../../lib/communities";
 
-const EMPTY_COMMUNITIES: TechCommunity[] = [];
-const EMPTY_POSTS: CommunityPost[] = [];
+const EMPTY_COMMUNITIES: ReturnType<typeof readCommunityCatalog> = [];
+const EMPTY_POSTS: ReturnType<typeof readCommunityPosts> = [];
 
 const communityFocusOptions = [
   "PC Building",
@@ -33,6 +29,16 @@ const communityFocusOptions = [
   "Redes",
   "Seguridad",
   "Productividad",
+];
+
+const clientMenuItems = [
+  { label: "Explorar marketplace", href: "/cliente/marketplace" },
+  { label: "Mis chats", href: "/cliente/chat" },
+  { label: "Buscar servicios", href: "/cliente/servicios" },
+  { label: "Versus de productos", href: "/cliente/versus" },
+  { label: "Explorar empresas", href: "/cliente/empresas" },
+  { label: "Comunidades", href: "/cliente/comunidades" },
+  { label: "Actividad reciente", href: "/cliente" },
 ];
 
 const formatDateTime = (iso: string) => {
@@ -53,6 +59,7 @@ const formatDateTime = (iso: string) => {
 
 export default function ComunidadesPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const communities = useSyncExternalStore(
     subscribeCommunityStore,
     readCommunityCatalog,
@@ -146,44 +153,92 @@ export default function ComunidadesPage() {
     <div className="flex-1 pb-10">
       <ClientPageHeader sectionLabel="Comunidades" />
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <ClientInfoCard
-            eyebrow="COMUNIDADES"
-            title="Encuentra tu grupo tech ideal"
-            description="Unete a comunidades enfocadas en temas especificos como PC Building, iPhones, Android, comparaciones y mas."
-          >
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-              className="mt-4 w-full rounded-xl border border-cyan-100/15 bg-cyan-300/12 px-3 py-2 text-sm font-semibold text-cyan-50 transition hover:border-cyan-300/45 hover:bg-cyan-300/20"
-            >
-              Crear nueva comunidad
-            </button>
-          </ClientInfoCard>
-
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:px-6">
+        <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
-            <p className="text-sm font-semibold text-cyan-50">Tu estado</p>
-            <div className="mt-3 rounded-2xl border border-cyan-100/15 bg-slate-950/30 p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cliente actual</p>
-              <p className="mt-2 text-base font-semibold text-cyan-50">{CURRENT_CLIENT_USER.name}</p>
-              <p className="mt-1 text-sm text-cyan-100/75">{CURRENT_CLIENT_USER.city}</p>
-              <p className="mt-3 text-xs text-cyan-100/70">
-                Puedes crear comunidades y unirte a otras para publicar en ellas.
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                CM
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
+                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-2">
+              {clientMenuItems.map((item) => {
+                const isActive =
+                  item.href === "/cliente"
+                    ? pathname === "/cliente"
+                    : pathname.startsWith(item.href);
+
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`auth-action ${isActive ? "active" : ""}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </div>
           </section>
 
-          <ClientQuickLinksCard
-            links={[
-              { href: "/cliente", label: "Volver al feed" },
-              { href: "/cliente/servicios", label: "Ir a servicios" },
-              { href: "/cliente/empresas", label: "Explorar empresas" },
-            ]}
-          />
+          <section className="tech-card mt-4">
+            <p className="tech-mono text-xs text-cyan-200/75">COMUNIDADES</p>
+            <h3 className="mt-2 text-xl font-semibold text-cyan-50">Encuentra tu grupo tech ideal</h3>
+            <p className="mt-3 text-sm leading-7 text-cyan-100/80">
+              Explora comunidades enfocadas en PC Building, iPhones, Android, comparaciones, gaming y mas dentro de TechMarket.
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["Comunidades", "Debate", "Descubrimiento", "Participacion"].map((chip) => (
+                <span
+                  key={chip}
+                  className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs text-cyan-100/85"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <div className="space-y-4">
+            <section className="tech-card">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className="w-full rounded-2xl border border-cyan-200/25 bg-cyan-300/15 px-4 py-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/22"
+              >
+                Crear nueva comunidad
+              </button>
+            </section>
+
+            <section className="tech-card">
+              <p className="text-sm font-semibold text-cyan-50">Tu estado</p>
+              <div className="mt-4 rounded-2xl border border-cyan-100/12 bg-slate-950/30 p-4">
+                <p className="tech-mono text-xs text-cyan-200/70">CLIENTE ACTUAL</p>
+                <p className="mt-2 text-base font-semibold text-cyan-50">{CURRENT_CLIENT_USER.name}</p>
+                <p className="mt-1 text-sm text-cyan-100/75">{CURRENT_CLIENT_USER.city}</p>
+                <p className="mt-3 text-sm leading-6 text-cyan-100/75">
+                  Puedes crear comunidades y unirte a otras para publicar en ellas.
+                </p>
+              </div>
+            </section>
+
+            <ClientQuickLinksCard
+              links={[
+                { href: "/cliente", label: "Volver al feed" },
+                { href: "/cliente/servicios", label: "Ir a servicios" },
+                { href: "/cliente/empresas", label: "Explorar empresas" },
+              ]}
+            />
+          </div>
         </aside>
 
-        <section className="space-y-4">
+        <section className="chat-scrollbar space-y-4 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">DESCUBRIMIENTO</p>
             <h2 className="mt-2 text-2xl font-semibold text-cyan-50">Comunidades activas</h2>
