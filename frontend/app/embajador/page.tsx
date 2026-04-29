@@ -42,7 +42,8 @@ export type EmbajadorSidebarSection =
   | "embajadores"
   | "prospectos"
   | "onboarding"
-  | "comisiones";
+  | "comisiones"
+  | "guia";
 
 type EmbajadorSidebarProps = {
   activeSection?: EmbajadorSidebarSection;
@@ -139,6 +140,9 @@ export function EmbajadorSidebar({
           )}
 
           <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- SISTEMA ---</p>
+          <Link href="/embajador/guia" className={getSidebarLinkClass(activeSection === "guia")}>
+            Guia de uso
+          </Link>
           <Link href="/auth?mode=login&type=embajador" className="auth-action">
             Cerrar sesion
           </Link>
