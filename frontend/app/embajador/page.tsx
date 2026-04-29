@@ -59,7 +59,7 @@ export function EmbajadorSidebar({
   onOpenReferralModal,
 }: EmbajadorSidebarProps) {
   return (
-    <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+    <aside className="space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-scroll lg:pr-2 chat-scrollbar">
       <section className="tech-card">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
