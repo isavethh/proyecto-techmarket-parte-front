@@ -15,30 +15,39 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="tech-shell mt-8 space-y-6 md:mt-10">
-        <section className="tech-hero fade-rise p-6 md:p-9" id="propuesta">
+      <main className="tech-shell mt-8 flex min-h-[calc(100vh-5.5rem)] items-center justify-center md:mt-10">
+        <section className="tech-hero fade-rise mx-auto w-full max-w-4xl p-6 text-center md:p-10" id="propuesta">
           <span className="tech-chip">Ecosistema especializado</span>
-          <h1 className="mt-5 max-w-3xl text-3xl font-bold leading-tight text-cyan-50 md:text-5xl">
+          <h1 className="mx-auto mt-5 max-w-3xl text-3xl font-bold leading-tight text-cyan-50 md:text-5xl">
             TechMarket
           </h1>
-          <p className="mt-3 max-w-2xl text-sm text-cyan-100/80 md:text-base">
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-cyan-100/80 md:text-base">
             Busqueda inteligente de productos tecnologicos
           </p>
-          <div className="mt-7 grid gap-3 md:max-w-xl">
+          <div className="mx-auto mt-7 grid max-w-2xl gap-3">
             <p className="text-sm text-cyan-100/80">Tienes una cuenta?</p>
-            <div className="flex flex-wrap gap-3">
-              <Link className="tech-button tech-button-primary" href="/auth?mode=login&type=cliente">
+            <div className="grid gap-3 md:grid-cols-3">
+              <Link
+                className="tech-button tech-button-primary min-h-[56px] whitespace-nowrap px-6"
+                href="/auth?mode=login&type=cliente"
+              >
                 Ingresar como cliente
               </Link>
-              <Link className="tech-button tech-button-secondary" href="/auth?mode=login&type=empresa">
+              <Link
+                className="tech-button tech-button-secondary min-h-[56px] whitespace-nowrap px-6"
+                href="/auth?mode=login&type=empresa"
+              >
                 Ingresar como empresa
               </Link>
-              <Link className="tech-button tech-button-secondary" href="/auth?mode=login&type=embajador">
+              <Link
+                className="tech-button tech-button-secondary min-h-[56px] whitespace-nowrap px-6"
+                href="/auth?mode=login&type=embajador"
+              >
                 Ingresar como embajador
               </Link>
             </div>
             <p className="mt-2 text-sm text-cyan-100/80">No tienes una cuenta?</p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap justify-center gap-3">
               <Link className="tech-button tech-button-primary" href="/auth?mode=register&type=cliente">
                 Crear cuenta cliente
               </Link>
