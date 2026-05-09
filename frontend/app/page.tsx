@@ -22,37 +22,22 @@ export default function Home() {
             TechMarket
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-cyan-100/80 md:text-base">
-            Busqueda inteligente de productos tecnologicos
+            Ecosistema digital especializado en tecnología
           </p>
-          <div className="mx-auto mt-7 grid max-w-2xl gap-3">
-            <p className="text-sm text-cyan-100/80">Tienes una cuenta?</p>
-            <div className="grid gap-3 md:grid-cols-3">
+
+          <div className="mx-auto mt-7 max-w-md">
+            <div className="grid gap-3">
               <Link
                 className="tech-button tech-button-primary min-h-[56px] whitespace-nowrap px-6"
-                href="/auth?mode=login&type=cliente"
+                href="/auth?mode=login"
               >
-                Ingresar como cliente
+                Iniciar sesión
               </Link>
               <Link
                 className="tech-button tech-button-secondary min-h-[56px] whitespace-nowrap px-6"
-                href="/auth?mode=login&type=empresa"
+                href="/auth?mode=register"
               >
-                Ingresar como empresa
-              </Link>
-              <Link
-                className="tech-button tech-button-secondary min-h-[56px] whitespace-nowrap px-6"
-                href="/auth?mode=login&type=embajador"
-              >
-                Ingresar como embajador
-              </Link>
-            </div>
-            <p className="mt-2 text-sm text-cyan-100/80">No tienes una cuenta?</p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link className="tech-button tech-button-primary" href="/auth?mode=register&type=cliente">
-                Crear cuenta cliente
-              </Link>
-              <Link className="tech-button tech-button-secondary" href="/auth?mode=register&type=empresa">
-                Crear cuenta empresa
+                Crear cuenta
               </Link>
             </div>
           </div>
