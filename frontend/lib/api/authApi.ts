@@ -7,6 +7,7 @@ export type AuthUser = {
   username: string;
   roles: string[];
   scopes: string[];
+  user?: unknown;
 };
 
 export type AuthSession = AuthUser;
@@ -91,6 +92,19 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
+function isLoginResponse(candidate: unknown): candidate is { token: string; refreshToken: string; user?: unknown; expiresIn?: number } {
+  if (!candidate || typeof candidate !== "object") {
+    return false;
+  }
+
+  const response = candidate as Partial<{ token: string; refreshToken: string; user?: unknown; expiresIn?: number }>;
+
+  return (
+    typeof response.token === "string" &&
+    typeof response.refreshToken === "string"
+  );
+}
+
 function isAuthSession(candidate: unknown): candidate is AuthSession {
   if (!candidate || typeof candidate !== "object") {
     return false;
@@ -123,10 +137,12 @@ export async function login(credentials: LoginCredentials): Promise<AuthSession>
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-Tenant-Id": "00000000-0000-0000-0000-000000000000",
     },
     body: JSON.stringify({
       email: credentials.email,
       password: credentials.password,
+      tenantId: "00000000-0000-0000-0000-000000000000",
     }),
   });
 
@@ -136,12 +152,22 @@ export async function login(credentials: LoginCredentials): Promise<AuthSession>
     throw new Error(resolveErrorMessage(responseBody, "No se pudo iniciar sesión."));
   }
 
-  if (!isAuthSession(responseBody)) {
-    throw new Error("La respuesta de login no incluye accessToken, refreshToken y user.");
+  if (!isLoginResponse(responseBody)) {
+    throw new Error("La respuesta de login no incluye token y refreshToken.");
   }
 
-  storeAuthSession(responseBody);
-  return responseBody;
+  const session: AuthSession = {
+    accessToken: responseBody.token,
+    refreshToken: responseBody.refreshToken,
+    user: responseBody.user,
+    userId: "",
+    username: "",
+    roles: [],
+    scopes: [],
+  };
+
+  storeAuthSession(session);
+  return session;
 }
 
 export async function register(payload: RegisterPayload): Promise<RegisterResponse> {
