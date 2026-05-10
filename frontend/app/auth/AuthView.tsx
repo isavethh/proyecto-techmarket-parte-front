@@ -64,8 +64,24 @@ export default function AuthView({
       const session = await login({ email, password });
       setFeedback("Sesión iniciada correctamente.");
 
+      console.log("[AuthView - handleLogin] Session recibida:", session);
+      console.log("[AuthView - handleLogin] session.user:", session.user);
+      console.log("[AuthView - handleLogin] session.user?.tipo:", session.user?.tipo);
+
       const redirectPath = getRedirectPathByUserType(session.user?.tipo);
-      router.push(redirectPath);
+      console.log("[AuthView - handleLogin] Ruta calculada:", redirectPath);
+      console.log("NAVEGANDO A:", redirectPath);
+
+      try {
+        // Await por si `router.replace` devuelve una promise en esta versión de next
+        await router.replace(redirectPath as string);
+        console.log("[AuthView - handleLogin] router.replace ejecutado");
+      } catch (navErr) {
+        console.warn("[AuthView - handleLogin] router.replace falló:", navErr);
+        console.log("[AuthView - handleLogin] Intentando fallback: window.location.href");
+        // Fallback directo para confirmar que la ruta es correcta
+        window.location.href = String(redirectPath);
+      }
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "No se pudo iniciar sesión.");
     }
@@ -105,7 +121,13 @@ export default function AuthView({
       });
       setFeedback("Registro completado correctamente.");
 
+      console.log("[AuthView - handleRegister] Session recibida:", session);
+      console.log("[AuthView - handleRegister] session.user:", session.user);
+      console.log("[AuthView - handleRegister] session.user?.tipo:", session.user?.tipo);
+
       const redirectPath = getRedirectPathByUserType(session.user?.tipo);
+      console.log("[AuthView - handleRegister] Ruta calculada:", redirectPath);
+      
       router.push(redirectPath);
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "No se pudo completar el registro.");

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { logout } from "@/lib/auth/authGuard";
+import { getUser, getToken } from "@/lib/auth/tokenStore";
 import { specialistNavLinks, specialistProfile } from "../specialistData";
 
 type SpecialistShellProps = {
@@ -209,6 +210,16 @@ function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProp
 export function SpecialistShell({ sectionLabel, statusMessage, children }: SpecialistShellProps) {
   const pathname = usePathname();
   const sidebarSummary = specialistSidebarSummaries[sectionLabel];
+
+  useEffect(() => {
+    try {
+      console.log("[SpecialistShell] mount - getToken():", getToken());
+      console.log("[SpecialistShell] mount - getUser():", getUser());
+      console.log("[SpecialistShell] mount - document.cookie:", typeof document !== 'undefined' ? document.cookie : 'no-document');
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   return (
     <div className="flex-1">

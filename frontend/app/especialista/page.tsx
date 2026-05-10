@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { SpecialistShell } from "./components/SpecialistShell";
 import { SpecialistAiAssistant } from "./components/SpecialistAiAssistant";
 import { requireAuth } from "@/lib/auth/authGuard";
+import { getUser, getToken } from "@/lib/auth/tokenStore";
 import {
   portfolioSeedItems,
   recentActivity,
@@ -19,6 +20,10 @@ export default function EspecialistaCorePage() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log("[Especialista page] Ejecutando requireAuth desde page.tsx");
+    console.log("[Especialista page] document.cookie:", typeof document !== 'undefined' ? document.cookie : 'no-document');
+    console.log("[Especialista page] getToken():", getToken());
+    console.log("[Especialista page] getUser():", getUser());
     requireAuth(router);
   }, [router]);
 

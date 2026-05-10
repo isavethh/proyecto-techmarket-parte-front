@@ -139,12 +139,58 @@ function storeAuthSession(session: AuthSession): void {
   setToken(session.accessToken);
   window.localStorage.setItem("refreshToken", session.refreshToken);
   setUser(session.user);
+  // Sincronizamos la cookie que usa la middleware para rutas protegidas server-side
+  setRoleCookieFromUser(session.user);
+}
+
+/**
+ * Mapea el `tipo` de usuario a la cookie `techmarket_role` que usa la middleware.
+ */
+function mapTipoToRoleCookie(tipo: unknown): string | null {
+  if (typeof tipo !== "string") return null;
+
+  const t = tipo.toLowerCase().trim();
+
+  switch (t) {
+    case "cliente":
+      return "cliente";
+    case "empresa":
+      return "empresa";
+    case "especialista":
+      // La middleware espera 'empresa_tecnico' para especialistas
+      return "empresa_tecnico";
+    case "embajador":
+      return "embajador";
+    default:
+      return null;
+  }
+}
+
+/**
+ * Establece la cookie `techmarket_role` en el cliente con path=/ y max-age de 1 día.
+ */
+function setRoleCookieFromUser(user: AuthProfile | null | undefined): void {
+  if (typeof window === "undefined") return;
+  try {
+    const tipo = user?.tipo;
+    const role = mapTipoToRoleCookie(tipo);
+    if (role) {
+      // 86400 = 24h en segundos
+      document.cookie = `techmarket_role=${role}; Max-Age=86400; path=/`;
+      console.log("[setRoleCookieFromUser] cookie establecida:", role);
+    } else {
+      console.log("[setRoleCookieFromUser] tipo no mapeable, no se establece cookie", tipo);
+    }
+  } catch (e) {
+    console.warn("[setRoleCookieFromUser] fallo al establecer cookie:", e);
+  }
 }
 
 function buildUserFromResponse(responseBody: Record<string, unknown>): AuthProfile | null {
   const rawUser = responseBody.usuario;
 
   if (!rawUser || typeof rawUser !== "object") {
+    console.warn("[buildUserFromResponse] rawUser no está disponible", responseBody);
     return null;
   }
 
@@ -156,14 +202,18 @@ function buildUserFromResponse(responseBody: Record<string, unknown>): AuthProfi
     estado: (rawUser as Record<string, unknown>).estado,
   };
 
+  console.log("[buildUserFromResponse] Usuario extraído:", user);
+
   if (
     (typeof user.id === "string" || typeof user.id === "number") &&
     typeof user.nombre === "string" &&
     typeof user.tipo === "string"
   ) {
+    console.log("[buildUserFromResponse] Usuario válido, tipo:", user.tipo);
     return user as AuthProfile;
   }
 
+  console.warn("[buildUserFromResponse] Validación fallida:", { id: typeof user.id, nombre: typeof user.nombre, tipo: typeof user.tipo });
   return null;
 }
 
@@ -214,6 +264,8 @@ export async function login(credentials: LoginCredentials): Promise<AuthSession>
     refreshToken: responseBody.refreshToken,
     user,
   };
+
+  console.log("[login] Sesión creada:", { user: session.user, tipo: session.user?.tipo });
 
   storeAuthSession(session);
   return session;
@@ -269,4 +321,11 @@ export function clearAuthSession(): void {
   clearToken();
   window.localStorage.removeItem("refreshToken");
   clearUser();
+  try {
+    // eliminar cookie usada por middleware
+    document.cookie = "techmarket_role=; Max-Age=0; path=/";
+    console.log("[clearAuthSession] techmarket_role cookie eliminada");
+  } catch (e) {
+    // ignore
+  }
 }
