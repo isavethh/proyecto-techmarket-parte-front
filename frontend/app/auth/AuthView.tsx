@@ -5,7 +5,7 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 
 type Mode = "login" | "register";
-type AccountType = "cliente" | "empresa" | "embajador";
+type AccountType = "cliente" | "empresa" | "especialista";
 
 type AuthViewProps = {
   initialMode: Mode;
@@ -32,7 +32,16 @@ export default function AuthView({
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const title = useMemo(() => {
-    return mode === "login" ? "Accede a tu espacio TechMarket" : accountType === "empresa" ? "Registra tu empresa en TechMarket" : "Crea tu cuenta de cliente";
+    if (mode === "login") return "Accede a tu espacio TechMarket";
+
+    switch (accountType) {
+      case "empresa":
+        return "Crea tu cuenta de negocio";
+      case "especialista":
+        return "Crea tu cuenta de técnico";
+      default:
+        return "Crea tu cuenta de cliente";
+    }
   }, [accountType, mode]);
 
   const subtitle = useMemo(() => {
@@ -132,25 +141,32 @@ export default function AuthView({
 
             <div className="mt-6 flex flex-col gap-4">
               {mode === "register" && (
-                <div>
-                  <p className="auth-label">Tipo de cuenta</p>
-                  <div className="auth-pill-group">
-                    <button
-                      type="button"
-                      className={`auth-pill ${accountType === "cliente" ? "active" : ""}`}
-                      onClick={() => handleSelectAccountType("cliente")}
-                    >
-                      Cliente
-                    </button>
-                    <button
-                      type="button"
-                      className={`auth-pill ${accountType === "empresa" ? "active" : ""}`}
-                      onClick={() => handleSelectAccountType("empresa")}
-                    >
-                      Empresa
-                    </button>
+                  <div>
+                    <p className="auth-label">Tipo de cuenta</p>
+                    <div className="auth-pill-group">
+                      <button
+                        type="button"
+                        className={`auth-pill ${accountType === "cliente" ? "active" : ""}`}
+                        onClick={() => handleSelectAccountType("cliente")}
+                      >
+                        Cliente
+                      </button>
+                      <button
+                        type="button"
+                        className={`auth-pill ${accountType === "empresa" ? "active" : ""}`}
+                        onClick={() => handleSelectAccountType("empresa")}
+                      >
+                        Negocio
+                      </button>
+                      <button
+                        type="button"
+                        className={`auth-pill ${accountType === "especialista" ? "active" : ""}`}
+                        onClick={() => handleSelectAccountType("especialista")}
+                      >
+                        Técnico
+                      </button>
+                    </div>
                   </div>
-                </div>
               )}
             </div>
 
