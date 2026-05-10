@@ -1,7 +1,6 @@
 "use client";
 
 import { login, register } from "@/lib/api/authApi";
-import { getUser } from "@/lib/auth/tokenStore";
 import { getRedirectPathByUserType } from "@/lib/auth/redirectHelper";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -62,12 +61,10 @@ export default function AuthView({
 
     try {
       setFeedback("Iniciando sesión...");
-      await login({ email, password });
+      const session = await login({ email, password });
       setFeedback("Sesión iniciada correctamente.");
-      
-      // Obtener tipo de usuario desde sesión y redirigir
-      const user = getUser() as Partial<{ tipo?: string }> | null;
-      const redirectPath = getRedirectPathByUserType(user?.tipo);
+
+      const redirectPath = getRedirectPathByUserType(session.user?.tipo);
       router.push(redirectPath);
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "No se pudo iniciar sesión.");
@@ -94,7 +91,7 @@ export default function AuthView({
 
     try {
       setFeedback("Registrando...");
-      await register({
+      const session = await register({
         email: trimmedEmail,
         password,
         confirmPassword,
@@ -107,10 +104,8 @@ export default function AuthView({
         terminos: true,
       });
       setFeedback("Registro completado correctamente.");
-      
-      // Obtener tipo de usuario desde sesión y redirigir
-      const user = getUser() as Partial<{ tipo?: string }> | null;
-      const redirectPath = getRedirectPathByUserType(user?.tipo);
+
+      const redirectPath = getRedirectPathByUserType(session.user?.tipo);
       router.push(redirectPath);
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "No se pudo completar el registro.");

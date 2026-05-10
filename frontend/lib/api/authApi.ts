@@ -1,16 +1,19 @@
-import { clearToken, clearUser, getUser, setToken, setUser } from "@/lib/auth/tokenStore";
+import { clearToken, clearUser, setToken, setUser } from "@/lib/auth/tokenStore";
 
-export type AuthUser = {
-  accessToken: string;
-  refreshToken: string;
-  userId: string | number;
-  username: string;
-  roles: string[];
-  scopes: string[];
-  user?: unknown;
+export type AuthProfile = {
+  id: string | number;
+  nombre: string;
+  email?: string | null;
+  tipo: string;
+  estado?: string;
+  [key: string]: unknown;
 };
 
-export type AuthSession = AuthUser;
+export type AuthSession = {
+  accessToken: string;
+  refreshToken: string;
+  user: AuthProfile;
+};
 
 export type LoginCredentials = {
   email: string;
@@ -88,16 +91,12 @@ function resolveErrorMessage(body: unknown, fallback: string): string {
   return fallback;
 }
 
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
-}
-
-function isLoginResponse(candidate: unknown): candidate is { token: string; refreshToken: string; user?: unknown; expiresIn?: number } {
+function isLoginResponse(candidate: unknown): candidate is { token: string; refreshToken: string; usuario?: unknown; expiresIn?: number } {
   if (!candidate || typeof candidate !== "object") {
     return false;
   }
 
-  const response = candidate as Partial<{ token: string; refreshToken: string; user?: unknown; expiresIn?: number }>;
+  const response = candidate as Partial<{ token: string; refreshToken: string; usuario?: unknown; expiresIn?: number }>;
 
   return (
     typeof response.token === "string" &&
@@ -105,20 +104,30 @@ function isLoginResponse(candidate: unknown): candidate is { token: string; refr
   );
 }
 
-function isAuthSession(candidate: unknown): candidate is AuthSession {
+function isRegisterResponse(candidate: unknown): candidate is {
+  accessToken: string;
+  refreshToken: string;
+  userId: string | number;
+  username: string;
+  roles?: unknown[];
+} {
   if (!candidate || typeof candidate !== "object") {
     return false;
   }
 
-  const session = candidate as Partial<AuthSession>;
+  const response = candidate as Partial<{
+    accessToken: string;
+    refreshToken: string;
+    userId: string | number;
+    username: string;
+    roles?: unknown[];
+  }>;
 
   return (
-    typeof session.accessToken === "string" &&
-    typeof session.refreshToken === "string" &&
-    (typeof session.userId === "string" || typeof session.userId === "number") &&
-    typeof session.username === "string" &&
-    isStringArray(session.roles) &&
-    isStringArray(session.scopes)
+    typeof response.accessToken === "string" &&
+    typeof response.refreshToken === "string" &&
+    (typeof response.userId === "string" || typeof response.userId === "number") &&
+    typeof response.username === "string"
   );
 }
 
@@ -130,6 +139,44 @@ function storeAuthSession(session: AuthSession): void {
   setToken(session.accessToken);
   window.localStorage.setItem("refreshToken", session.refreshToken);
   setUser(session.user);
+}
+
+function buildUserFromResponse(responseBody: Record<string, unknown>): AuthProfile | null {
+  const rawUser = responseBody.usuario;
+
+  if (!rawUser || typeof rawUser !== "object") {
+    return null;
+  }
+
+  const user = {
+    id: (rawUser as Record<string, unknown>).id,
+    nombre: (rawUser as Record<string, unknown>).nombre,
+    email: (rawUser as Record<string, unknown>).email,
+    tipo: (rawUser as Record<string, unknown>).tipo,
+    estado: (rawUser as Record<string, unknown>).estado,
+  };
+
+  if (
+    (typeof user.id === "string" || typeof user.id === "number") &&
+    typeof user.nombre === "string" &&
+    typeof user.tipo === "string"
+  ) {
+    return user as AuthProfile;
+  }
+
+  return null;
+}
+
+function buildUserFromRegisterResponse(
+  responseBody: { userId: string | number; username: string },
+  payload: RegisterPayload,
+): AuthProfile {
+  return {
+    id: String(responseBody.userId),
+    nombre: responseBody.username,
+    email: responseBody.username,
+    tipo: payload.tipo,
+  };
 }
 
 export async function login(credentials: LoginCredentials): Promise<AuthSession> {
@@ -156,14 +203,16 @@ export async function login(credentials: LoginCredentials): Promise<AuthSession>
     throw new Error("La respuesta de login no incluye token y refreshToken.");
   }
 
+  const user = buildUserFromResponse(responseBody as Record<string, unknown>);
+
+  if (!user) {
+    throw new Error("La respuesta de login no incluye un usuario válido.");
+  }
+
   const session: AuthSession = {
     accessToken: responseBody.token,
     refreshToken: responseBody.refreshToken,
-    user: responseBody.user,
-    userId: "",
-    username: "",
-    roles: [],
-    scopes: [],
+    user,
   };
 
   storeAuthSession(session);
@@ -196,12 +245,20 @@ export async function register(payload: RegisterPayload): Promise<RegisterRespon
     throw new Error(resolveErrorMessage(responseBody, "No se pudo completar el registro."));
   }
 
-  if (!isAuthSession(responseBody)) {
-    throw new Error("La respuesta de registro no incluye accessToken, refreshToken, userId, username, roles y scopes.");
+  if (!isRegisterResponse(responseBody)) {
+    throw new Error("La respuesta de registro no incluye accessToken y refreshToken.");
   }
 
-  storeAuthSession(responseBody);
-  return responseBody;
+  const user = buildUserFromRegisterResponse(responseBody, payload);
+
+  const session: AuthSession = {
+    accessToken: responseBody.accessToken,
+    refreshToken: responseBody.refreshToken,
+    user,
+  };
+
+  storeAuthSession(session);
+  return session;
 }
 
 export function clearAuthSession(): void {
