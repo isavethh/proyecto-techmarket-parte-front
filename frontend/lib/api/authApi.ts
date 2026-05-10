@@ -1,4 +1,4 @@
-import { clearToken, setToken } from "@/lib/auth/tokenStore";
+import { clearToken, clearUser, getUser, setToken, setUser } from "@/lib/auth/tokenStore";
 
 export type AuthUser = {
   accessToken: string;
@@ -129,7 +129,7 @@ function storeAuthSession(session: AuthSession): void {
 
   setToken(session.accessToken);
   window.localStorage.setItem("refreshToken", session.refreshToken);
-  window.localStorage.setItem("user", JSON.stringify(session.user));
+  setUser(session.user);
 }
 
 export async function login(credentials: LoginCredentials): Promise<AuthSession> {
@@ -211,5 +211,5 @@ export function clearAuthSession(): void {
 
   clearToken();
   window.localStorage.removeItem("refreshToken");
-  window.localStorage.removeItem("user");
+  clearUser();
 }
