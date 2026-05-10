@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
+import { requireAuth } from "@/lib/auth/authGuard";
 import {
   COMMUNITY_FEED_UPDATED_EVENT,
   CommunityFeedPost,
@@ -478,6 +480,12 @@ const getFeedSaleMeta = (
 };
 
 export default function ClientePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    requireAuth(router);
+  }, [router]);
+
   const [topView, setTopView] = useState<TopView>("feed");
   const [searchMode, setSearchMode] = useState<SearchMode>("normal");
   const [query, setQuery] = useState<string>("");

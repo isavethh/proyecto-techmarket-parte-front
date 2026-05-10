@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
+import { logout } from "@/lib/auth/authGuard";
 import { specialistNavLinks, specialistProfile } from "../specialistData";
 
 type SpecialistShellProps = {
@@ -191,13 +192,13 @@ function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProp
               );
             })}
 
-            <Link
-              href="/auth"
-              onClick={() => setIsProfileMenuOpen(false)}
-              className="auth-action block w-full"
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="auth-action block w-full text-left"
             >
               Cerrar sesion
-            </Link>
+            </button>
           </div>
         </div>
       ) : null}

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { EmbajadorSidebar } from "../page";
+import { logout } from "@/lib/auth/authGuard";
 
 const mainFunctions = [
   {
@@ -45,6 +47,12 @@ const usefulTips = [
 ];
 
 export default function EmbajadorGuiaPage() {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout(router);
+  };
+
   return (
     <div className="flex-1 pb-10">
       <header className="tech-top-nav sticky top-0 z-30">
@@ -58,12 +66,13 @@ export default function EmbajadorGuiaPage() {
             Guia de uso para embajadores
           </div>
 
-          <Link
-            href="/auth?mode=login&type=embajador"
+          <button
+            type="button"
+            onClick={handleLogout}
             className="rounded-xl border border-cyan-100/20 bg-cyan-300/12 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
           >
             Cerrar sesion
-          </Link>
+          </button>
         </div>
       </header>
 

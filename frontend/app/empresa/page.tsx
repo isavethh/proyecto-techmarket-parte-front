@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { requireAuth } from "@/lib/auth/authGuard";
 import { CompanyPageHeader } from "../components/CompanyPageSections";
 import { CompanySidebar } from "./CompanySidebar";
 
@@ -234,6 +236,12 @@ function buildAiInsight(question: string): AiBusinessInsight {
 }
 
 export default function EmpresaPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    requireAuth(router);
+  }, [router]);
+
   const [aiQuestion, setAiQuestion] = useState("");
   const [lastAiQuestion, setLastAiQuestion] = useState("");
   const [aiInsight, setAiInsight] = useState<AiBusinessInsight | null>(null);

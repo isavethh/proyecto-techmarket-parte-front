@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { SpecialistShell } from "./components/SpecialistShell";
 import { SpecialistAiAssistant } from "./components/SpecialistAiAssistant";
+import { requireAuth } from "@/lib/auth/authGuard";
 import {
   portfolioSeedItems,
   recentActivity,
@@ -11,6 +16,12 @@ import {
 } from "./specialistData";
 
 export default function EspecialistaCorePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    requireAuth(router);
+  }, [router]);
+
   const featuredServices = specialistServices.filter((service) => service.featured).length;
 
   return (
