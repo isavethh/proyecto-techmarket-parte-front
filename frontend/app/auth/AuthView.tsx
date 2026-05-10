@@ -1,5 +1,6 @@
 "use client";
 
+import { login, register } from "@/lib/api/authApi";
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 
@@ -24,7 +25,8 @@ export default function AuthView({
   const [password, setPassword] = useState("");
 
   // Register fields
-  const [name, setName] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -34,22 +36,62 @@ export default function AuthView({
   }, [accountType, mode]);
 
   const subtitle = useMemo(() => {
-    return mode === "login" ? "Accede con tu cuenta y retoma tu espacio personalizado." : "Completa los datos para crear tu cuenta. (Interfaz, sin backend).";
+    return mode === "login" ? "Accede con tu cuenta y retoma tu espacio personalizado." : "Completa los datos para crear tu cuenta.";
   }, [mode]);
 
   const handleLogin = async () => {
-    // placeholder: integrar API de autenticación aquí
-    setFeedback("Iniciando sesión... (funcionalidad pendiente)");
-    console.log("handleLogin", { identifier, password });
-    // Simular resultado de placeholder
-    setTimeout(() => setFeedback("Login procesado (interfaz). Conectar API para funcionamiento real."), 600);
+    const email = identifier.trim();
+
+    if (!email || !password) {
+      setFeedback("Completa correo y contraseña.");
+      return;
+    }
+
+    try {
+      setFeedback("Iniciando sesión...");
+      await login({ email, password });
+      setFeedback("Sesión iniciada correctamente.");
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "No se pudo iniciar sesión.");
+    }
   };
 
   const handleRegister = async () => {
-    // placeholder: integrar API de registro aquí
-    setFeedback("Registrando... (interfaz, sin backend)");
-    console.log("handleRegister", { accountType, name, email, phone });
-    setTimeout(() => setFeedback("Registro capturado (interfaz). Conectar API para persistencia."), 600);
+    const trimmedNombre = nombre.trim();
+    const trimmedApellido = apellido.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
+    const trimmedPais = "";
+    const trimmedCiudad = "";
+
+    if (!trimmedNombre || !trimmedApellido || !trimmedEmail || !password) {
+      setFeedback("Completa nombre, apellido, correo y contraseña.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setFeedback("Las contraseñas no coinciden.");
+      return;
+    }
+
+    try {
+      setFeedback("Registrando...");
+      await register({
+        email: trimmedEmail,
+        password,
+        confirmPassword,
+        tipo: accountType,
+        nombre: trimmedNombre,
+        apellido: trimmedApellido,
+        telefono: trimmedPhone,
+        pais: trimmedPais || "Bolivia",
+        ciudad: trimmedCiudad || "Santa Cruz",
+        terminos: true,
+      });
+      setFeedback("Registro completado correctamente.");
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "No se pudo completar el registro.");
+    }
   };
 
   const handleSelectAccountType = (type: AccountType) => {
@@ -116,32 +158,49 @@ export default function AuthView({
               {mode === "register" && (
                 <div className="auth-row two">
                   <div>
-                    <label className="auth-label" htmlFor="name">
-                      {accountType === "empresa" ? "Nombre comercial" : "Nombre completo"}
+                    <label className="auth-label" htmlFor="nombre">
+                      Nombre
                     </label>
                     <input
                       className="auth-input"
-                      id="name"
-                      name="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder={accountType === "empresa" ? "TechMarket Solutions" : "Juan Perez"}
+                      id="nombre"
+                      name="nombre"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      placeholder="Juan"
                       required
                     />
                   </div>
                   <div>
-                    <label className="auth-label" htmlFor="phone">
-                      Teléfono
+                    <label className="auth-label" htmlFor="apellido">
+                      Apellido
                     </label>
                     <input
                       className="auth-input"
-                      id="phone"
-                      name="phone"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+57 300 000 0000"
+                      id="apellido"
+                      name="apellido"
+                      value={apellido}
+                      onChange={(e) => setApellido(e.target.value)}
+                      placeholder="Perez"
+                      required
                     />
                   </div>
+                </div>
+              )}
+
+              {mode === "register" && (
+                <div>
+                  <label className="auth-label" htmlFor="phone">
+                    Teléfono
+                  </label>
+                  <input
+                    className="auth-input"
+                    id="phone"
+                    name="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+57 300 000 0000"
+                  />
                 </div>
               )}
 
