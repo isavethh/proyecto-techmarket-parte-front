@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { clientCompanyProfiles } from "../../lib/clientCompanyProfiles";
 import {
   ClientPageHeader,
   ClientQuickLinksCard,
 } from "../../components/ClientPageSections";
+import { getCompanies } from "@/lib/api/marketplace";
+import type { ApiCompany } from "@/lib/api/types";
 
 const clientMenuItems = [
   { label: "Explorar marketplace", href: "/cliente/marketplace" },
@@ -18,8 +20,27 @@ const clientMenuItems = [
   { label: "Actividad reciente", href: "/cliente" },
 ];
 
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((t) => t[0]?.toUpperCase() ?? "")
+    .join("") || "EM";
+}
+
 export default function ClienteEmpresasPage() {
   const pathname = usePathname();
+  const [companies, setCompanies] = useState<ApiCompany[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    getCompanies()
+      .then(setCompanies)
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="flex-1 pb-10">
@@ -93,56 +114,60 @@ export default function ClienteEmpresasPage() {
           style={{ maxHeight: "calc(100vh - 140px)" }}
         >
           <section className="tech-card">
-            <p className="tech-mono text-xs text-cyan-200/75">CARD GRID</p>
+            <p className="tech-mono text-xs text-cyan-200/75">GET /api/marketplace/companies</p>
             <h2 className="mt-2 text-2xl font-semibold text-cyan-50">Empresas destacadas</h2>
             <p className="mt-3 text-sm text-cyan-100/80">
               Pulsa una tarjeta para ver el perfil de la empresa dentro de TechMarket.
             </p>
           </section>
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {clientCompanyProfiles.map((profile) => (
-              <Link
-                key={profile.slug}
-                href={`/cliente/empresa/${profile.slug}`}
-                className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(155deg,rgba(17,45,80,0.95),rgba(7,24,44,0.96))] shadow-xl shadow-slate-950/25 transition hover:-translate-y-1 hover:border-cyan-300/40"
-              >
-                <div className="p-5">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-lg font-bold text-slate-950">
-                      {profile.logo}
+          {loading ? (
+            <section className="tech-card">
+              <p className="text-sm text-cyan-100/80">Cargando empresas...</p>
+            </section>
+          ) : error ? (
+            <section className="tech-card">
+              <p className="text-sm text-cyan-100/80">
+                No se pudo conectar con{" "}
+                <span className="font-mono text-cyan-200">GET /api/marketplace/companies</span>.
+              </p>
+            </section>
+          ) : companies.length === 0 ? (
+            <section className="tech-card">
+              <p className="text-sm text-cyan-100/80">No hay empresas registradas.</p>
+            </section>
+          ) : (
+            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {companies.map((company) => (
+                <Link
+                  key={company.id}
+                  href={`/cliente/empresa/${company.id}`}
+                  className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(155deg,rgba(17,45,80,0.95),rgba(7,24,44,0.96))] shadow-xl shadow-slate-950/25 transition hover:-translate-y-1 hover:border-cyan-300/40"
+                >
+                  <div className="p-5">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-lg font-bold text-slate-950">
+                        {company.logo ? (
+                          <img src={company.logo} alt={company.nombre} className="h-full w-full rounded-2xl object-cover" />
+                        ) : (
+                          getInitials(company.nombre)
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-base font-semibold text-cyan-50">{company.nombre}</p>
+                        <p className="font-mono text-[11px] text-cyan-200/55">{company.id}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-base font-semibold text-cyan-50">{profile.name}</p>
-                      <p className="truncate text-xs text-cyan-200/70">
-                        {profile.city} · {profile.category}
-                      </p>
+
+                    <div className="mt-5 flex items-center justify-between border-t border-cyan-100/10 pt-4 text-xs text-cyan-200/75">
+                      <span>Calificacion {company.calificacion.toFixed(1)}</span>
+                      <span className="font-mono text-cyan-300/60">Ver perfil →</span>
                     </div>
                   </div>
-
-                  <p className="mt-4 text-sm leading-6 text-cyan-100/80">
-                    {profile.description}
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {profile.specialties.slice(0, 3).map((item) => (
-                      <span
-                        key={item}
-                        className="rounded-full border border-cyan-100/10 bg-white/5 px-3 py-1 text-xs text-cyan-100/80"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="mt-5 flex items-center justify-between border-t border-cyan-100/10 pt-4 text-xs text-cyan-200/75">
-                    <span>Valoracion {profile.rating.toFixed(1)}</span>
-                    <span>{profile.reviewCount} opiniones</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </section>
+                </Link>
+              ))}
+            </section>
+          )}
         </section>
       </main>
     </div>
