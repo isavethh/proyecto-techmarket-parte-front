@@ -384,6 +384,16 @@ export type SpecialistTransaction = {
   currency?: string;
 };
 
+export type CreateSpecialistWithdrawalInput = {
+  monto: number;
+};
+
+export type SpecialistWithdrawalResponse = {
+  monto?: string;
+  mensaje?: string;
+  fechaEstimada?: string;
+};
+
 export type SpecialistReview = {
   id?: string;
   reviewId?: string;
@@ -771,6 +781,19 @@ export async function getSpecialistWallet(token: string, userId: string) {
   return apiRequest<SpecialistWallet>("/api/specialists/wallet", {
     token,
     userId,
+  });
+}
+
+export async function requestSpecialistWithdrawal(
+  token: string,
+  userId: string,
+  body: CreateSpecialistWithdrawalInput,
+) {
+  return apiRequest<SpecialistWithdrawalResponse>("/api/specialists/wallet/withdraw", {
+    method: "POST",
+    token,
+    userId,
+    body,
   });
 }
 

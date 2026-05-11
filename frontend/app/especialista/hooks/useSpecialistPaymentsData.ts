@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getSpecialistEarningsSummary,
   getSpecialistTransactions,
   getSpecialistWallet,
   loginTechMarket,
+  requestSpecialistWithdrawal,
+  type CreateSpecialistWithdrawalInput,
   type SpecialistEarningsSummary,
   type SpecialistTransaction,
   type SpecialistWallet,
@@ -109,77 +111,79 @@ export function useSpecialistPaymentsData() {
   const [wallet, setWallet] = useState<SpecialistWalletItem>(emptyWallet);
   const [earnings, setEarnings] = useState<SpecialistEarningsSummaryItem>(emptyEarnings);
   const [transactions, setTransactions] = useState<SpecialistTransactionItem[]>([]);
+  const [auth, setAuth] = useState<{ token: string; userId: string } | null>(null);
   const [walletSource, setWalletSource] = useState<DatasetSource>("empty");
   const [earningsSource, setEarningsSource] = useState<DatasetSource>("empty");
   const [transactionsSource, setTransactionsSource] = useState<DatasetSource>("empty");
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  const refreshPaymentsData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const currentAuth = auth ?? (await loginTechMarket().then((login) => ({ token: login.accessToken, userId: login.userId })));
+      const [walletResult, earningsResult, transactionsResult] = await Promise.allSettled([
+        getSpecialistWallet(currentAuth.token, currentAuth.userId),
+        getSpecialistEarningsSummary(currentAuth.token, currentAuth.userId),
+        getSpecialistTransactions(currentAuth.token, currentAuth.userId),
+      ]);
+
+      debugSpecialistResult("[specialist wallet]", walletResult);
+      debugSpecialistResult("[specialist earnings]", earningsResult);
+      debugSpecialistResult("[specialist transactions]", transactionsResult);
+
+      setAuth(currentAuth);
+
+      if (walletResult.status === "fulfilled") {
+        const hasWallet = hasObjectData(walletResult.value);
+        setWallet(hasWallet ? mapBackendWalletToUiWallet(walletResult.value) : emptyWallet);
+        setWalletSource(hasWallet ? "backend" : "empty");
+      } else {
+        setWallet(specialistWallet);
+        setWalletSource("fallback");
+      }
+
+      if (earningsResult.status === "fulfilled") {
+        const hasEarnings = hasObjectData(earningsResult.value);
+        setEarnings(hasEarnings ? mapBackendEarningsToUiEarnings(earningsResult.value) : emptyEarnings);
+        setEarningsSource(hasEarnings ? "backend" : "empty");
+      } else {
+        setEarnings(specialistEarningsSummary);
+        setEarningsSource("fallback");
+      }
+
+      if (transactionsResult.status === "fulfilled") {
+        const backendTransactions = normalizeBackendList<SpecialistTransaction>(transactionsResult.value);
+        setTransactions(backendTransactions.map(mapBackendTransactionToUiTransaction));
+        setTransactionsSource(getDatasetSource(backendTransactions));
+      } else {
+        setTransactions(specialistTransactions);
+        setTransactionsSource("fallback");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error desconocido al cargar pagos e ingresos");
+      setWallet(specialistWallet);
+      setEarnings(specialistEarningsSummary);
+      setTransactions(specialistTransactions);
+      setWalletSource("fallback");
+      setEarningsSource("fallback");
+      setTransactionsSource("fallback");
+    } finally {
+      setLoading(false);
+    }
+  }, [auth]);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadPaymentsData() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const login = await loginTechMarket();
-        const [walletResult, earningsResult, transactionsResult] = await Promise.allSettled([
-          getSpecialistWallet(login.accessToken, login.userId),
-          getSpecialistEarningsSummary(login.accessToken, login.userId),
-          getSpecialistTransactions(login.accessToken, login.userId),
-        ]);
-
-        if (!isMounted) {
-          return;
-        }
-
-        debugSpecialistResult("[specialist wallet]", walletResult);
-        debugSpecialistResult("[specialist earnings]", earningsResult);
-        debugSpecialistResult("[specialist transactions]", transactionsResult);
-
-        if (walletResult.status === "fulfilled") {
-          const hasWallet = hasObjectData(walletResult.value);
-          setWallet(hasWallet ? mapBackendWalletToUiWallet(walletResult.value) : emptyWallet);
-          setWalletSource(hasWallet ? "backend" : "empty");
-        } else {
-          setWallet(specialistWallet);
-          setWalletSource("fallback");
-        }
-
-        if (earningsResult.status === "fulfilled") {
-          const hasEarnings = hasObjectData(earningsResult.value);
-          setEarnings(hasEarnings ? mapBackendEarningsToUiEarnings(earningsResult.value) : emptyEarnings);
-          setEarningsSource(hasEarnings ? "backend" : "empty");
-        } else {
-          setEarnings(specialistEarningsSummary);
-          setEarningsSource("fallback");
-        }
-
-        if (transactionsResult.status === "fulfilled") {
-          const backendTransactions = normalizeBackendList<SpecialistTransaction>(transactionsResult.value);
-          setTransactions(backendTransactions.map(mapBackendTransactionToUiTransaction));
-          setTransactionsSource(getDatasetSource(backendTransactions));
-        } else {
-          setTransactions(specialistTransactions);
-          setTransactionsSource("fallback");
-        }
-      } catch (err) {
-        if (!isMounted) {
-          return;
-        }
-
-        setError(err instanceof Error ? err.message : "Error desconocido al cargar pagos e ingresos");
-        setWallet(specialistWallet);
-        setEarnings(specialistEarningsSummary);
-        setTransactions(specialistTransactions);
-        setWalletSource("fallback");
-        setEarningsSource("fallback");
-        setTransactionsSource("fallback");
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      if (isMounted) {
+        await refreshPaymentsData();
       }
     }
 
@@ -188,10 +192,63 @@ export function useSpecialistPaymentsData() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshPaymentsData]);
+
+  const requestWithdrawal = useCallback(
+    async (input: CreateSpecialistWithdrawalInput) => {
+      const currentAuth = auth;
+
+      if (!currentAuth?.token || !currentAuth.userId) {
+        setActionError("No hay sesion activa para solicitar el retiro.");
+        return;
+      }
+
+      try {
+        setActionLoading(true);
+        setActionError(null);
+        setActionSuccess(null);
+        const response = await requestSpecialistWithdrawal(currentAuth.token, currentAuth.userId, input);
+        await refreshPaymentsData();
+        setActionSuccess(response.mensaje ?? "Retiro solicitado correctamente.");
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : "No se pudo solicitar el retiro.");
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [auth, refreshPaymentsData],
+  );
 
   return useMemo(
-    () => ({ wallet, earnings, transactions, walletSource, earningsSource, transactionsSource, loading, error }),
-    [wallet, earnings, transactions, walletSource, earningsSource, transactionsSource, loading, error],
+    () => ({
+      wallet,
+      earnings,
+      transactions,
+      walletSource,
+      earningsSource,
+      transactionsSource,
+      loading,
+      actionLoading,
+      error,
+      actionError,
+      actionSuccess,
+      requestWithdrawal,
+      refreshPaymentsData,
+    }),
+    [
+      wallet,
+      earnings,
+      transactions,
+      walletSource,
+      earningsSource,
+      transactionsSource,
+      loading,
+      actionLoading,
+      error,
+      actionError,
+      actionSuccess,
+      requestWithdrawal,
+      refreshPaymentsData,
+    ],
   );
 }

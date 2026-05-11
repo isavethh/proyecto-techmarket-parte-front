@@ -1,5 +1,6 @@
 "use client";
 
+import { FormEvent, useState } from "react";
 import { SpecialistShell } from "../components/SpecialistShell";
 import { useSpecialistPaymentsData } from "../hooks/useSpecialistPaymentsData";
 
@@ -17,8 +18,50 @@ function getStatusClass(status: string) {
   return "border-cyan-200/25 bg-cyan-300/10 text-cyan-100";
 }
 
+function parseMoneyAmount(value: string) {
+  const normalized = value.replace(/[^\d.,-]/g, "").replace(/,/g, "");
+  const amount = Number(normalized);
+
+  return Number.isFinite(amount) ? amount : undefined;
+}
+
 export default function EspecialistaPagosPage() {
-  const { wallet, earnings, transactions } = useSpecialistPaymentsData();
+  const { wallet, earnings, transactions, actionError, actionLoading, actionSuccess, requestWithdrawal } = useSpecialistPaymentsData();
+  const [isWithdrawalFormOpen, setIsWithdrawalFormOpen] = useState(false);
+  const [withdrawalAmount, setWithdrawalAmount] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const availableBalance = parseMoneyAmount(wallet.availableBalance);
+
+  async function handleRequestWithdrawal(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const monto = Number(withdrawalAmount.trim());
+
+    if (!withdrawalAmount.trim()) {
+      setFormError("Ingresa el monto a retirar.");
+      return;
+    }
+
+    if (!Number.isFinite(monto)) {
+      setFormError("Ingresa un monto numerico valido.");
+      return;
+    }
+
+    if (monto <= 0) {
+      setFormError("El monto debe ser mayor a 0.");
+      return;
+    }
+
+    if (availableBalance !== undefined && monto > availableBalance) {
+      setFormError("El monto no puede ser mayor al saldo disponible.");
+      return;
+    }
+
+    setFormError(null);
+    await requestWithdrawal({ monto });
+    setWithdrawalAmount("");
+    setIsWithdrawalFormOpen(false);
+  }
 
   return (
     <SpecialistShell sectionLabel="Pagos e ingresos" statusMessage="Billetera e ingresos del especialista">
@@ -34,13 +77,50 @@ export default function EspecialistaPagosPage() {
 
           <button
             type="button"
-            disabled
-            className="cursor-not-allowed self-start rounded-full border border-cyan-300/35 bg-cyan-300/10 px-5 py-2.5 text-sm font-semibold text-cyan-100/70 opacity-70"
+            disabled={actionLoading}
+            onClick={() => {
+              setIsWithdrawalFormOpen((current) => !current);
+              setFormError(null);
+            }}
+            className="self-start rounded-full border border-cyan-300/35 bg-cyan-300/10 px-5 py-2.5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Solicitar retiro
+            {isWithdrawalFormOpen ? "Cerrar retiro" : "Solicitar retiro"}
           </button>
         </div>
       </section>
+
+      {isWithdrawalFormOpen ? (
+        <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+          <h2 className="text-2xl font-bold text-white">Solicitar retiro</h2>
+          <p className="mt-2 text-sm text-cyan-100/75">Saldo disponible: {wallet.availableBalance}</p>
+          <form onSubmit={handleRequestWithdrawal} className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <input
+              value={withdrawalAmount}
+              onChange={(event) => setWithdrawalAmount(event.target.value)}
+              placeholder="Monto a retirar"
+              disabled={actionLoading}
+              inputMode="decimal"
+              className="flex-1 rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+            />
+            <button
+              type="submit"
+              disabled={actionLoading || !withdrawalAmount.trim()}
+              className="rounded-full border border-cyan-300/35 bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {actionLoading ? "Solicitando..." : "Solicitar retiro"}
+            </button>
+          </form>
+          {formError || actionError ? (
+            <p className="mt-3 text-sm text-rose-200">{formError ?? actionError}</p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {actionSuccess ? (
+        <p className="rounded-2xl border border-emerald-300/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+          {actionSuccess}
+        </p>
+      ) : null}
 
       <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
@@ -99,8 +179,8 @@ export default function EspecialistaPagosPage() {
         </article>
         <article className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Modo</p>
-          <p className="mt-2 text-sm font-semibold text-cyan-50">Solo lectura</p>
-          <p className="mt-1 text-xs text-cyan-100/70">Retiro pendiente</p>
+          <p className="mt-2 text-sm font-semibold text-cyan-50">Conectado</p>
+          <p className="mt-1 text-xs text-cyan-100/70">Retiro real habilitado</p>
         </article>
       </section>
 
