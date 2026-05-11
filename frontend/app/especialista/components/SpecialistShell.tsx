@@ -61,6 +61,28 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
       "Acceso directo al chat",
     ],
   },
+  Solicitudes: {
+    eyebrow: "SOLICITUDES ACTIVAS",
+    title: "Pedidos por revisar",
+    description:
+      "Esta vista concentra solicitudes entrantes para evaluar cliente, servicio, propuesta y estado antes de responder.",
+    points: [
+      "Clientes interesados",
+      "Propuestas en revision",
+      "Respuesta pendiente",
+    ],
+  },
+  Proyectos: {
+    eyebrow: "PROYECTOS ACTIVOS",
+    title: "Seguimiento tecnico",
+    description:
+      "Aqui se revisan trabajos activos, fechas, progreso e historial operativo del especialista dentro de TechMarket.",
+    points: [
+      "Estado del trabajo",
+      "Progreso visible",
+      "Historial tecnico",
+    ],
+  },
   Chat: {
     eyebrow: "ATENCION DIRECTA",
     title: "Conversaciones activas",

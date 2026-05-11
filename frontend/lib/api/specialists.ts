@@ -79,6 +79,66 @@ export type SpecialistCalendarItem = {
   type?: string;
 };
 
+export type SpecialistRequest = {
+  id?: string;
+  requestId?: string;
+  cliente?: string;
+  customer?: string;
+  clientName?: string;
+  servicio?: string;
+  service?: string;
+  propuesta?: string;
+  proposal?: string;
+  mensaje?: string;
+  message?: string;
+  estado?: string;
+  status?: string;
+  fecha?: string;
+  date?: string;
+  createdAt?: string;
+};
+
+export type SpecialistProject = {
+  id?: string;
+  projectId?: string;
+  cliente?: string;
+  customer?: string;
+  clientName?: string;
+  nombre?: string;
+  name?: string;
+  titulo?: string;
+  title?: string;
+  servicio?: string;
+  service?: string;
+  estado?: string;
+  status?: string;
+  fechaInicio?: string;
+  startDate?: string;
+  fechaFin?: string;
+  endDate?: string;
+  progreso?: number | string;
+  progress?: number | string;
+};
+
+export type SpecialistProjectHistory = {
+  id?: string;
+  historyId?: string;
+  projectId?: string;
+  proyecto?: string;
+  project?: string;
+  titulo?: string;
+  title?: string;
+  detalle?: string;
+  detail?: string;
+  descripcion?: string;
+  description?: string;
+  estado?: string;
+  status?: string;
+  fecha?: string;
+  date?: string;
+  createdAt?: string;
+};
+
 type ListResponse<T> = {
   value: T[];
   Count: number;
@@ -135,4 +195,33 @@ export async function getSpecialistCalendar(token: string, userId: string) {
       userId,
     }
   );
+}
+
+export async function getSpecialistRequests(token: string, userId: string) {
+  return apiRequest<SpecialistRequest[] | ListResponse<SpecialistRequest> | { data: SpecialistRequest[] }>(
+    "/api/specialists/requests",
+    {
+      token,
+      userId,
+    }
+  );
+}
+
+export async function getSpecialistProjects(token: string, userId: string) {
+  return apiRequest<SpecialistProject[] | ListResponse<SpecialistProject> | { data: SpecialistProject[] }>(
+    "/api/specialists/projects",
+    {
+      token,
+      userId,
+    }
+  );
+}
+
+export async function getSpecialistProjectsHistory(token: string, userId: string) {
+  return apiRequest<
+    SpecialistProjectHistory[] | ListResponse<SpecialistProjectHistory> | { data: SpecialistProjectHistory[] }
+  >("/api/specialists/projects/history", {
+    token,
+    userId,
+  });
 }

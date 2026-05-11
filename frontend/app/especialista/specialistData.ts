@@ -42,6 +42,34 @@ export type AvailabilityCard = {
   tone: "positive" | "neutral";
 };
 
+export type SpecialistRequestItem = {
+  id: string;
+  customer: string;
+  service: string;
+  message: string;
+  status: string;
+  date: string;
+};
+
+export type SpecialistProjectItem = {
+  id: string;
+  customer: string;
+  title: string;
+  service: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  progress?: number;
+};
+
+export type SpecialistProjectHistoryItem = {
+  id: string;
+  project: string;
+  detail: string;
+  status: string;
+  date: string;
+};
+
 export const specialistProfile = {
   name: "Alejandro Torres",
   avatar: "AT",
@@ -213,10 +241,86 @@ export const specialistAvailabilityCards: AvailabilityCard[] = [
   },
 ];
 
+export const specialistRequests: SpecialistRequestItem[] = [
+  {
+    id: "req-1",
+    customer: "Carlos M.",
+    service: "Reparacion de laptops",
+    message: "Necesito diagnostico por sobrecalentamiento y posible cambio de pasta termica.",
+    status: "Pendiente",
+    date: "Hoy",
+  },
+  {
+    id: "req-2",
+    customer: "Laura P.",
+    service: "Mantenimiento preventivo",
+    message: "Busco mantenimiento para dos equipos esta semana con revision de rendimiento.",
+    status: "En revision",
+    date: "Ayer",
+  },
+  {
+    id: "req-3",
+    customer: "Andres T.",
+    service: "Instalacion y configuracion de redes",
+    message: "Requiero propuesta para mejorar la red de una oficina pequena.",
+    status: "Pendiente",
+    date: "Hace 2 dias",
+  },
+];
+
+export const specialistProjects: SpecialistProjectItem[] = [
+  {
+    id: "proj-1",
+    customer: "Sofia R.",
+    title: "Optimizacion de laptop de trabajo",
+    service: "Mantenimiento preventivo",
+    status: "En progreso",
+    startDate: "May 2026",
+    endDate: "Por definir",
+    progress: 65,
+  },
+  {
+    id: "proj-2",
+    customer: "Empresa Norte",
+    title: "Configuracion de red local",
+    service: "Instalacion y configuracion de redes",
+    status: "Planificado",
+    startDate: "May 2026",
+    endDate: "May 2026",
+    progress: 25,
+  },
+];
+
+export const specialistProjectHistory: SpecialistProjectHistoryItem[] = [
+  {
+    id: "hist-1",
+    project: "Optimizacion de laptop de trabajo",
+    detail: "Diagnostico inicial completado y piezas validadas.",
+    status: "En progreso",
+    date: "Hoy",
+  },
+  {
+    id: "hist-2",
+    project: "Configuracion de red local",
+    detail: "Relevamiento de equipos y cobertura realizado.",
+    status: "Planificado",
+    date: "Ayer",
+  },
+  {
+    id: "hist-3",
+    project: "Soporte remoto software",
+    detail: "Caso cerrado con validacion del cliente.",
+    status: "Finalizado",
+    date: "Hace 1 semana",
+  },
+];
+
 export const specialistNavLinks = [
   { title: "Resumen", href: "/especialista" },
   { title: "Portafolio", href: "/especialista/portafolio" },
   { title: "Servicios", href: "/especialista/servicios" },
+  { title: "Solicitudes", href: "/especialista/solicitudes" },
+  { title: "Proyectos", href: "/especialista/proyectos" },
   { title: "Chat", href: "/especialista/chat" },
   { title: "Reputacion", href: "/especialista/reputacion" },
   { title: "Disponibilidad", href: "/especialista/disponibilidad" },
