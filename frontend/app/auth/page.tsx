@@ -8,7 +8,12 @@ type SearchParams = {
   type?: string;
 };
 
-const accountTypes = new Set<string>(["cliente", "empresa", "especialista", "embajador"]);
+const accountTypes = new Set<string>([
+  "cliente",
+  "empresa",
+  "especialista",
+  "embajador",
+]);
 
 export default async function AuthPage({
   searchParams,
