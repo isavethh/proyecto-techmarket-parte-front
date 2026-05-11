@@ -36,6 +36,49 @@ export type SpecialistPortfolioItem = {
   fecha: string;
 };
 
+export type SpecialistAvailability = {
+  id?: string;
+  estado?: string;
+  status?: string;
+  diasAtencion?: string;
+  dias?: string;
+  workingDays?: string;
+  horario?: string | TimeRange;
+  horarios?: string | TimeRange;
+  hours?: string | TimeRange;
+  modalidad?: string;
+  mode?: string;
+  cobertura?: string;
+  coverage?: string;
+  tiempoRespuesta?: string;
+  responseTime?: string;
+  detalle?: string;
+  detail?: string;
+};
+
+export type TimeRange = {
+  inicio?: string;
+  fin?: string;
+  start?: string;
+  end?: string;
+};
+
+export type SpecialistCalendarItem = {
+  id?: string;
+  titulo?: string;
+  title?: string;
+  descripcion?: string;
+  description?: string;
+  detalle?: string;
+  detail?: string;
+  fecha?: string;
+  date?: string;
+  hora?: string;
+  time?: string;
+  tipo?: string;
+  type?: string;
+};
+
 type ListResponse<T> = {
   value: T[];
   Count: number;
@@ -75,4 +118,21 @@ export async function getSpecialistPortfolio(token: string, userId: string) {
     token,
     userId,
   });
+}
+
+export async function getSpecialistAvailability(token: string, userId: string) {
+  return apiRequest<SpecialistAvailability>("/api/specialists/availability", {
+    token,
+    userId,
+  });
+}
+
+export async function getSpecialistCalendar(token: string, userId: string) {
+  return apiRequest<SpecialistCalendarItem[] | ListResponse<SpecialistCalendarItem>>(
+    "/api/specialists/calendar",
+    {
+      token,
+      userId,
+    }
+  );
 }
