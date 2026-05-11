@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  createSpecialistCalendarBlock,
   getSpecialistAvailability,
   getSpecialistCalendar,
   loginTechMarket,
+  updateSpecialistAvailability,
   type SpecialistAvailability,
+  type SpecialistAvailabilityInput,
+  type SpecialistCalendarBlockInput,
   type SpecialistCalendarItem,
 } from "@/lib/api/specialists";
 import {
@@ -51,6 +55,10 @@ function formatTimeRange(value: unknown, fallback = "Horario no definido") {
 }
 
 function formatText(value: unknown, fallback: string) {
+  if (Array.isArray(value)) {
+    return value.filter((item) => typeof item === "string" && item.trim()).join(", ") || fallback;
+  }
+
   if (typeof value === "string") {
     return value.trim() || fallback;
   }
@@ -121,77 +129,149 @@ export function mapBackendCalendarToActivity(items: SpecialistCalendarItem[]): A
 }
 
 export function useSpecialistAvailabilityData() {
+  const [availabilityDetail, setAvailabilityDetail] = useState<SpecialistAvailability | null>(null);
+  const [calendarDetail, setCalendarDetail] = useState<SpecialistCalendarItem[]>([]);
   const [availability, setAvailability] = useState<AvailabilityCard[]>([]);
   const [calendar, setCalendar] = useState<ActivityItem[]>([]);
   const [availabilitySource, setAvailabilitySource] = useState<DatasetSource>("empty");
   const [calendarSource, setCalendarSource] = useState<DatasetSource>("empty");
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [auth, setAuth] = useState<{ token: string; userId: string } | null>(null);
+
+  const loadAvailabilityData = useCallback(async (isMounted: () => boolean = () => true) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const login = await loginTechMarket();
+      setAuth({ token: login.accessToken, userId: login.userId });
+      const [availabilityResult, calendarResult] = await Promise.allSettled([
+        getSpecialistAvailability(login.accessToken, login.userId),
+        getSpecialistCalendar(login.accessToken, login.userId),
+      ]);
+
+      if (!isMounted()) {
+        return;
+      }
+
+      debugSpecialistResult("[specialist availability]", availabilityResult);
+      debugSpecialistResult("[specialist calendar]", calendarResult);
+
+      if (availabilityResult.status === "fulfilled") {
+        const availabilityCards = mapBackendAvailabilityToCards(availabilityResult.value);
+        setAvailabilityDetail(availabilityResult.value);
+        setAvailability(availabilityCards);
+        setAvailabilitySource(getDatasetSource(availabilityCards));
+      } else {
+        setAvailabilityDetail(null);
+        setAvailability(specialistAvailabilityCards);
+        setAvailabilitySource("fallback");
+      }
+
+      if (calendarResult.status === "fulfilled") {
+        const calendarItems = normalizeBackendList<SpecialistCalendarItem>(calendarResult.value);
+        setCalendarDetail(calendarItems);
+        setCalendar(mapBackendCalendarToActivity(calendarItems));
+        setCalendarSource(getDatasetSource(calendarItems));
+      } else {
+        setCalendarDetail([]);
+        setCalendar(recentActivity);
+        setCalendarSource("fallback");
+      }
+    } catch (err) {
+      if (!isMounted()) {
+        return;
+      }
+
+      setError(err instanceof Error ? err.message : "Error desconocido al cargar disponibilidad");
+      setAvailabilityDetail(null);
+      setCalendarDetail([]);
+      setAvailability(specialistAvailabilityCards);
+      setCalendar(recentActivity);
+      setAvailabilitySource("fallback");
+      setCalendarSource("fallback");
+    } finally {
+      if (isMounted()) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  const ensureAuth = useCallback(async () => {
+    if (auth) {
+      return auth;
+    }
+
+    const login = await loginTechMarket();
+    const nextAuth = { token: login.accessToken, userId: login.userId };
+    setAuth(nextAuth);
+    return nextAuth;
+  }, [auth]);
+
+  const refreshAvailabilityData = useCallback(async () => {
+    await loadAvailabilityData(() => true);
+  }, [loadAvailabilityData]);
+
+  const updateAvailability = useCallback(async (input: SpecialistAvailabilityInput) => {
+    try {
+      setActionLoading(true);
+      setActionError(null);
+      const currentAuth = await ensureAuth();
+      await updateSpecialistAvailability(currentAuth.token, currentAuth.userId, input);
+      await refreshAvailabilityData();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo actualizar disponibilidad";
+      setActionError(message);
+      throw err;
+    } finally {
+      setActionLoading(false);
+    }
+  }, [ensureAuth, refreshAvailabilityData]);
+
+  const createCalendarBlock = useCallback(async (input: SpecialistCalendarBlockInput) => {
+    try {
+      setActionLoading(true);
+      setActionError(null);
+      const currentAuth = await ensureAuth();
+      await createSpecialistCalendarBlock(currentAuth.token, currentAuth.userId, input);
+      await refreshAvailabilityData();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo crear bloque de calendario";
+      setActionError(message);
+      throw err;
+    } finally {
+      setActionLoading(false);
+    }
+  }, [ensureAuth, refreshAvailabilityData]);
 
   useEffect(() => {
     let isMounted = true;
-
-    async function loadAvailabilityData() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const login = await loginTechMarket();
-        const [availabilityResult, calendarResult] = await Promise.allSettled([
-          getSpecialistAvailability(login.accessToken, login.userId),
-          getSpecialistCalendar(login.accessToken, login.userId),
-        ]);
-
-        if (!isMounted) {
-          return;
-        }
-
-        debugSpecialistResult("[specialist availability]", availabilityResult);
-        debugSpecialistResult("[specialist calendar]", calendarResult);
-
-        if (availabilityResult.status === "fulfilled") {
-          const availabilityCards = mapBackendAvailabilityToCards(availabilityResult.value);
-          setAvailability(availabilityCards);
-          setAvailabilitySource(getDatasetSource(availabilityCards));
-        } else {
-          setAvailability(specialistAvailabilityCards);
-          setAvailabilitySource("fallback");
-        }
-
-        if (calendarResult.status === "fulfilled") {
-          const calendarItems = normalizeBackendList<SpecialistCalendarItem>(calendarResult.value);
-          setCalendar(mapBackendCalendarToActivity(calendarItems));
-          setCalendarSource(getDatasetSource(calendarItems));
-        } else {
-          setCalendar(recentActivity);
-          setCalendarSource("fallback");
-        }
-      } catch (err) {
-        if (!isMounted) {
-          return;
-        }
-
-        setError(err instanceof Error ? err.message : "Error desconocido al cargar disponibilidad");
-        setAvailability(specialistAvailabilityCards);
-        setCalendar(recentActivity);
-        setAvailabilitySource("fallback");
-        setCalendarSource("fallback");
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadAvailabilityData();
+    loadAvailabilityData(() => isMounted);
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [loadAvailabilityData]);
 
   return useMemo(
-    () => ({ availability, calendar, availabilitySource, calendarSource, loading, error }),
-    [availability, calendar, availabilitySource, calendarSource, loading, error],
+    () => ({
+      availability,
+      availabilityDetail,
+      calendar,
+      calendarDetail,
+      availabilitySource,
+      calendarSource,
+      loading,
+      actionLoading,
+      error,
+      actionError,
+      updateAvailability,
+      createCalendarBlock,
+      refreshAvailabilityData,
+    }),
+    [availability, availabilityDetail, calendar, calendarDetail, availabilitySource, calendarSource, loading, actionLoading, error, actionError, updateAvailability, createCalendarBlock, refreshAvailabilityData],
   );
 }

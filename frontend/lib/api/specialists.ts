@@ -71,13 +71,13 @@ export type SpecialistAvailability = {
   id?: string;
   estado?: string;
   status?: string;
-  diasAtencion?: string;
-  dias?: string;
-  workingDays?: string;
+  diasAtencion?: string | string[];
+  dias?: string | string[];
+  workingDays?: string | string[];
   horario?: string | TimeRange;
   horarios?: string | TimeRange;
   hours?: string | TimeRange;
-  modalidad?: string;
+  modalidad?: string | string[];
   mode?: string;
   cobertura?: string;
   coverage?: string;
@@ -85,6 +85,16 @@ export type SpecialistAvailability = {
   responseTime?: string;
   detalle?: string;
   detail?: string;
+};
+
+export type SpecialistAvailabilityInput = {
+  estado?: string;
+  dias?: string[];
+  inicio?: string;
+  fin?: string;
+  modalidad?: string[];
+  cobertura?: string;
+  tiempoRespuesta?: string;
 };
 
 export type TimeRange = {
@@ -108,6 +118,13 @@ export type SpecialistCalendarItem = {
   time?: string;
   tipo?: string;
   type?: string;
+};
+
+export type SpecialistCalendarBlockInput = {
+  fecha: string;
+  hora: string;
+  fin?: string;
+  motivo?: string;
 };
 
 export type SpecialistRequest = {
@@ -516,6 +533,34 @@ export async function getSpecialistAvailability(token: string, userId: string) {
   });
 }
 
+export async function updateSpecialistAvailability(
+  token: string,
+  userId: string,
+  body: SpecialistAvailabilityInput,
+) {
+  const { tiempoRespuesta, ...availabilityBody } = body;
+  const response = await apiRequest<MessageResponse>("/api/specialists/availability", {
+    method: "PUT",
+    token,
+    userId,
+    body: availabilityBody,
+  });
+
+  if (tiempoRespuesta !== undefined && body.estado) {
+    await apiRequest("/api/specialists/availability/status", {
+      method: "PATCH",
+      token,
+      userId,
+      body: {
+        estado: body.estado,
+        tiempoRespuesta,
+      },
+    });
+  }
+
+  return response;
+}
+
 export async function getSpecialistCalendar(token: string, userId: string) {
   return apiRequest<SpecialistCalendarItem[] | ListResponse<SpecialistCalendarItem>>(
     "/api/specialists/calendar",
@@ -524,6 +569,19 @@ export async function getSpecialistCalendar(token: string, userId: string) {
       userId,
     }
   );
+}
+
+export async function createSpecialistCalendarBlock(
+  token: string,
+  userId: string,
+  body: SpecialistCalendarBlockInput,
+) {
+  return apiRequest<MessageResponse>("/api/specialists/calendar/blocks", {
+    method: "POST",
+    token,
+    userId,
+    body,
+  });
 }
 
 export async function getSpecialistRequests(token: string, userId: string) {
