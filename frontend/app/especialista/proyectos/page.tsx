@@ -1,7 +1,15 @@
 "use client";
 
+import { useState } from "react";
+
 import { SpecialistShell } from "../components/SpecialistShell";
 import { useSpecialistRequestsProjectsData } from "../hooks/useSpecialistRequestsProjectsData";
+
+const projectStatuses = [
+  { label: "En progreso", value: "en_progreso" },
+  { label: "Completado", value: "completado" },
+  { label: "Cancelado", value: "cancelado" },
+] as const;
 
 function getStatusClass(status: string) {
   const normalized = status.toLowerCase();
@@ -18,7 +26,19 @@ function getStatusClass(status: string) {
 }
 
 export default function EspecialistaProyectosPage() {
-  const { projects, history } = useSpecialistRequestsProjectsData();
+  const { projects, history, loading, error, updateProjectStatus } = useSpecialistRequestsProjectsData();
+  const [processingProjectId, setProcessingProjectId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  async function handleUpdateProjectStatus(projectId: string, status: (typeof projectStatuses)[number]["value"]) {
+    setProcessingProjectId(projectId);
+    setSuccessMessage(null);
+
+    await updateProjectStatus(projectId, status);
+
+    setSuccessMessage("Estado del proyecto actualizado correctamente.");
+    setProcessingProjectId(null);
+  }
 
   return (
     <SpecialistShell sectionLabel="Proyectos" statusMessage="Proyectos tecnicos activos e historial">
@@ -41,10 +61,22 @@ export default function EspecialistaProyectosPage() {
         </article>
         <article className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Modo</p>
-          <p className="mt-2 text-sm font-semibold text-cyan-50">Solo lectura</p>
-          <p className="mt-1 text-xs text-cyan-100/70">Actualizacion de estado pendiente</p>
+          <p className="mt-2 text-sm font-semibold text-cyan-50">Conectado</p>
+          <p className="mt-1 text-xs text-cyan-100/70">Actualizacion de estado activa</p>
         </article>
       </section>
+
+      {successMessage ? (
+        <p className="rounded-2xl border border-emerald-300/25 bg-emerald-400/10 p-4 text-sm font-semibold text-emerald-100">
+          {successMessage}
+        </p>
+      ) : null}
+
+      {error ? (
+        <p className="rounded-2xl border border-rose-300/25 bg-rose-400/10 p-4 text-sm font-semibold text-rose-100">
+          {error}
+        </p>
+      ) : null}
 
       <section className="grid gap-4 lg:grid-cols-2">
         {projects.length === 0 ? (
@@ -52,61 +84,74 @@ export default function EspecialistaProyectosPage() {
             No hay proyectos activos todavía.
           </article>
         ) : null}
-        {projects.map((project) => (
-          <article key={project.id} className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Proyecto</p>
-                <h2 className="mt-2 text-2xl font-bold text-white">{project.title}</h2>
-              </div>
-              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getStatusClass(project.status)}`}>
-                {project.status}
-              </span>
-            </div>
+        {projects.map((project) => {
+          const isProcessing = loading || processingProjectId === project.id;
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cliente</p>
-                <p className="mt-2 text-sm font-semibold text-cyan-50">{project.customer}</p>
-              </article>
-              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Servicio</p>
-                <p className="mt-2 text-sm font-semibold text-cyan-50">{project.service}</p>
-              </article>
-              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Inicio</p>
-                <p className="mt-2 text-sm text-cyan-100/85">{project.startDate}</p>
-              </article>
-              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Fin estimado</p>
-                <p className="mt-2 text-sm text-cyan-100/85">{project.endDate}</p>
-              </article>
-            </div>
-
-            {typeof project.progress === "number" ? (
-              <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
-                <div className="flex items-center justify-between gap-3 text-xs text-cyan-100/75">
-                  <span>Progreso</span>
-                  <span>{project.progress}%</span>
+          return (
+            <article key={project.id} className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Proyecto</p>
+                  <h2 className="mt-2 text-2xl font-bold text-white">{project.title}</h2>
                 </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full border border-cyan-100/12 bg-slate-950/55">
-                  <div
-                    className="h-full rounded-full bg-[linear-gradient(90deg,rgba(6,182,212,0.45),rgba(34,211,238,0.95))]"
-                    style={{ width: `${Math.min(Math.max(project.progress, 0), 100)}%` }}
-                  />
+                <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getStatusClass(project.status)}`}>
+                  {project.status}
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cliente</p>
+                  <p className="mt-2 text-sm font-semibold text-cyan-50">{project.customer}</p>
+                </article>
+                <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Servicio</p>
+                  <p className="mt-2 text-sm font-semibold text-cyan-50">{project.service}</p>
+                </article>
+                <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Inicio</p>
+                  <p className="mt-2 text-sm text-cyan-100/85">{project.startDate}</p>
+                </article>
+                <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Fin estimado</p>
+                  <p className="mt-2 text-sm text-cyan-100/85">{project.endDate}</p>
+                </article>
+              </div>
+
+              {typeof project.progress === "number" ? (
+                <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
+                  <div className="flex items-center justify-between gap-3 text-xs text-cyan-100/75">
+                    <span>Progreso</span>
+                    <span>{project.progress}%</span>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full border border-cyan-100/12 bg-slate-950/55">
+                    <div
+                      className="h-full rounded-full bg-[linear-gradient(90deg,rgba(6,182,212,0.45),rgba(34,211,238,0.95))]"
+                      style={{ width: `${Math.min(Math.max(project.progress, 0), 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="mt-5 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Actualizar estado</p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {projectStatuses.map((status) => (
+                    <button
+                      key={status.value}
+                      type="button"
+                      disabled={isProcessing}
+                      onClick={() => handleUpdateProjectStatus(project.id, status.value)}
+                      className="rounded-full border border-cyan-300/35 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/60 hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {status.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-            ) : null}
-
-            <button
-              type="button"
-              disabled
-              className="mt-5 cursor-not-allowed rounded-full border border-cyan-300/35 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100/70 opacity-70"
-            >
-              Actualizar estado
-            </button>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </section>
 
       <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">

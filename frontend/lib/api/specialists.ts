@@ -146,6 +146,17 @@ export type SpecialistRequest = {
   createdAt?: string;
 };
 
+export type SpecialistRequestAction = "aceptar" | "rechazar";
+
+export type RespondSpecialistRequestInput = {
+  accion: SpecialistRequestAction;
+};
+
+export type SpecialistRequestActionResponse = {
+  accion: string;
+  mensaje: string;
+};
+
 export type SpecialistProject = {
   id?: string;
   projectId?: string;
@@ -166,6 +177,17 @@ export type SpecialistProject = {
   endDate?: string;
   progreso?: number | string;
   progress?: number | string;
+};
+
+export type SpecialistProjectStatus = "en_progreso" | "completado" | "cancelado";
+
+export type UpdateSpecialistProjectStatusInput = {
+  estado: SpecialistProjectStatus;
+};
+
+export type SpecialistProjectStatusResponse = {
+  estado: string;
+  mensaje: string;
 };
 
 export type SpecialistProjectHistory = {
@@ -594,6 +616,20 @@ export async function getSpecialistRequests(token: string, userId: string) {
   );
 }
 
+export async function respondSpecialistRequest(
+  token: string,
+  userId: string,
+  requestId: string,
+  body: RespondSpecialistRequestInput,
+) {
+  return apiRequest<SpecialistRequestActionResponse>(`/api/specialists/requests/${requestId}/respond`, {
+    method: "PATCH",
+    token,
+    userId,
+    body,
+  });
+}
+
 export async function getSpecialistProjects(token: string, userId: string) {
   return apiRequest<SpecialistProject[] | ListResponse<SpecialistProject> | { data: SpecialistProject[] }>(
     "/api/specialists/projects",
@@ -602,6 +638,20 @@ export async function getSpecialistProjects(token: string, userId: string) {
       userId,
     }
   );
+}
+
+export async function updateSpecialistProjectStatus(
+  token: string,
+  userId: string,
+  projectId: string,
+  body: UpdateSpecialistProjectStatusInput,
+) {
+  return apiRequest<SpecialistProjectStatusResponse>(`/api/specialists/projects/${projectId}/status`, {
+    method: "PATCH",
+    token,
+    userId,
+    body,
+  });
 }
 
 export async function getSpecialistProjectsHistory(token: string, userId: string) {
