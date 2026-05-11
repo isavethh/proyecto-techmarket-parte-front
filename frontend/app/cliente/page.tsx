@@ -22,7 +22,7 @@ import {
   PublicationViewerModal,
 } from "../components/PublicationViewerModal";
 import { buildClientProfileHref } from "../lib/clientUserProfiles";
-import { getCompanies, getProducts } from "../lib/api/marketplace";
+import { getCompanies, getProducts } from "@/lib/api/marketplace";
 import {
   getClientProfile,
   getChats,
@@ -30,14 +30,14 @@ import {
   sendMessage,
   markChatRead,
   getFavoriteProducts,
-} from "../lib/api/clientApi";
+} from "@/lib/api/clientApi";
 import type {
   ApiCompany,
   ApiClientProfile,
   ApiChat,
   ApiMessage,
   ApiFavoriteProduct,
-} from "../lib/api/types";
+} from "@/lib/api/types";
 
 type SearchMode = "normal" | "ia";
 type TopView = "feed" | "seguimiento";

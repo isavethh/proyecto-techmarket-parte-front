@@ -16,8 +16,8 @@ import {
   clientProfileSeedPosts,
   toClientProfileSlug,
 } from "../../../lib/clientUserProfiles";
-import { getClientProfile, updateClientProfile } from "../../../lib/api/clientApi";
-import type { ApiClientProfile } from "../../../lib/api/types";
+import { getClientProfile, updateClientProfile } from "@/lib/api/clientApi";
+import type { ApiClientProfile } from "@/lib/api/types";
 
 const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
 

@@ -95,9 +95,14 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
 
 function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleLogout = () => {
+    logout(router);
+  };
 
   useEffect(() => {
     if (!isProfileMenuOpen) {

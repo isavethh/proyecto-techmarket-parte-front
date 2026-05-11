@@ -5,14 +5,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ClientPageHeader } from "../../components/ClientPageSections";
-import {
-  getChats,
-  getChatMessages,
-  sendMessage,
-  markChatRead,
-  startChat,
-} from "../../lib/api/clientApi";
-import type { ApiChat, ApiMessage } from "../../lib/api/types";
 
 
 
@@ -171,30 +163,120 @@ const formatHour = (isoDate: string): string => {
 };
 const REFERENCE_NOW = Date.parse("2026-04-19T10:30:00.000Z");
 
-function formatRelativeTime(isoDate: string): string {
+const formatRelativeTime = (isoDate: string): string => {
   const parsed = Date.parse(isoDate);
-  if (Number.isNaN(parsed)) return "Reciente";
+
+  if (Number.isNaN(parsed)) {
+    return "Reciente";
+  }
 
   const diffMs = REFERENCE_NOW - parsed;
   const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
 
-  if (diffMinutes < 1) return "Ahora";
-  if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `Hace ${diffHours} h`;
-  return `Hace ${Math.floor(diffHours / 24)} d`;
-}
+  if (diffMinutes < 1) {
+    return "Ahora";
+  }
 
-function getInitials(name: string): string {
-  return (
-    name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((t) => t[0]?.toUpperCase() ?? "")
-      .join("") || "CH"
+  if (diffMinutes < 60) {
+    return `Hace ${diffMinutes} min`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+
+  if (diffHours < 24) {
+    return `Hace ${diffHours} h`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `Hace ${diffDays} d`;
+};
+
+const readStoredThreads = (): ChatThread[] => {
+  if (typeof window === "undefined") {
+    return sortThreadsByRecent(seedThreads);
+  }
+
+  const storedValue = window.localStorage.getItem(CHAT_STORAGE_KEY);
+
+  if (!storedValue) {
+    return sortThreadsByRecent(seedThreads);
+  }
+
+  try {
+    const parsedValue = JSON.parse(storedValue);
+
+    if (!Array.isArray(parsedValue)) {
+      return sortThreadsByRecent(seedThreads);
+    }
+
+    return sortThreadsByRecent(parsedValue as ChatThread[]);
+  } catch {
+    return sortThreadsByRecent(seedThreads);
+  }
+};
+
+const writeStoredThreads = (threads: ChatThread[]) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(sortThreadsByRecent(threads)));
+};
+
+const upsertThreadFromMarketplace = (
+  currentThreads: ChatThread[],
+  intent: MarketplaceChatIntent,
+): { threads: ChatThread[]; threadId: string } => {
+  const nowIso = new Date().toISOString();
+  const sellerId = createSellerId(intent.seller || intent.company);
+  const fallbackSellerName = intent.seller || intent.company;
+  const existingThread = currentThreads.find(
+    (thread) => thread.sellerId === sellerId || thread.company.toLowerCase() === intent.company.toLowerCase(),
   );
-}
+
+  if (existingThread) {
+    const updatedThread: ChatThread = {
+      ...existingThread,
+      product: intent.product || existingThread.product,
+      unread: 0,
+      updatedAt: nowIso,
+    };
+
+    const nextThreads = currentThreads.map((thread) =>
+      thread.id === existingThread.id ? updatedThread : thread,
+    );
+
+    return {
+      threads: sortThreadsByRecent(nextThreads),
+      threadId: existingThread.id,
+    };
+  }
+
+  const nextThread: ChatThread = {
+    id: `chat-${sellerId}`,
+    sellerId,
+    sellerName: fallbackSellerName,
+    company: intent.company || fallbackSellerName,
+    product: intent.product || "Publicacion de marketplace",
+    avatar: createAvatar(intent.company || fallbackSellerName),
+    unread: 0,
+    online: true,
+    updatedAt: nowIso,
+    messages: [
+      {
+        id: `chat-${sellerId}-intro`,
+        author: "empresa",
+        text: `Hola, soy ${fallbackSellerName}. Gracias por contactar a ${intent.company || fallbackSellerName}.`,
+        createdAt: nowIso,
+      },
+    ],
+  };
+
+  return {
+    threads: sortThreadsByRecent([nextThread, ...currentThreads]),
+    threadId: nextThread.id,
+  };
+};
 
 export default function ClienteChatPage() {
   const searchParams = useSearchParams();
@@ -245,131 +327,125 @@ export default function ClienteChatPage() {
     return upsertThreadFromMarketplace(initialThreads, marketplaceIntent).threadId;
   });
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const [apiError, setApiError] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [draftMessage, setDraftMessage] = useState(() => marketplaceIntent?.message ?? "");
 
   const messageListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    async function loadChats() {
-      setLoading(true);
-      const result = await getChats();
-      if (!result) {
-        setApiError(true);
-      } else {
-        setChats(result);
-        if (result.length > 0) {
-          setActiveChatId(result[0].id);
-        }
-      }
-      setLoading(false);
+    writeStoredThreads(threads);
+  }, [threads]);
+
+  const activeThread = useMemo(() => {
+    if (!threads.length) {
+      return null;
     }
 
-    loadChats();
-  }, []);
-
-  useEffect(() => {
-    const empresaIdParam = searchParams.get("empresa");
-    const asuntoParam = searchParams.get("asunto") ?? "Consulta general";
-
-    if (!empresaIdParam) return;
-
-    async function openOrCreateChat() {
-      const result = await startChat(empresaIdParam!, asuntoParam);
-      if (result) {
-        const refreshed = await getChats();
-        if (refreshed) {
-          setChats(refreshed);
-          setActiveChatId(result.chatId);
-        }
-      }
+    if (!activeThreadId) {
+      return threads[0];
     }
 
-    openOrCreateChat();
-  }, [searchParams]);
+    return threads.find((thread) => thread.id === activeThreadId) ?? threads[0];
+  }, [activeThreadId, threads]);
 
-  useEffect(() => {
-    if (!activeChatId) return;
+  const filteredThreads = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    async function loadMessages() {
-      setLoadingMessages(true);
-      const result = await getChatMessages(activeChatId!);
-      if (result) setMessages(result);
-      setLoadingMessages(false);
-      await markChatRead(activeChatId!);
-      setChats((prev) =>
-        prev.map((c) =>
-          c.id === activeChatId ? { ...c, mensajesSinLeer: 0 } : c,
-        ),
-      );
+    if (!normalizedQuery) {
+      return sortThreadsByRecent(threads);
     }
 
-    loadMessages();
-  }, [activeChatId]);
+    return sortThreadsByRecent(threads).filter((thread) => {
+      const lastMessage = thread.messages[thread.messages.length - 1]?.text ?? "";
+      const bucket = `${thread.company} ${thread.sellerName} ${thread.product} ${lastMessage}`.toLowerCase();
+      return bucket.includes(normalizedQuery);
+    });
+  }, [searchQuery, threads]);
 
   useEffect(() => {
+    if (!activeThread) {
+      return;
+    }
+
     messageListRef.current?.scrollTo({
       top: messageListRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [messages]);
+  }, [activeThread]);
 
-  const handleSelectChat = (chatId: string) => {
-    setActiveChatId(chatId);
-    setMessages([]);
+  const handleSelectThread = (threadId: string) => {
+    setActiveThreadId(threadId);
+
+    setThreads((current) =>
+      current.map((thread) =>
+        thread.id === threadId
+          ? {
+              ...thread,
+              unread: 0,
+            }
+          : thread,
+      ),
+    );
   };
 
-  const handleSendMessage = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSendMessage = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!activeChatId || draftMessage.trim().length < 2) return;
 
-    setSending(true);
-    const result = await sendMessage(activeChatId, draftMessage.trim());
-
-    if (result) {
-      setMessages((prev) => [...prev, result]);
-      setChats((prev) =>
-        prev.map((c) =>
-          c.id === activeChatId
-            ? { ...c, ultimoMensaje: result.contenido }
-            : c,
-        ),
-      );
+    if (!activeThread) {
+      return;
     }
 
+    const normalizedMessage = draftMessage.trim();
+
+    if (normalizedMessage.length < 2) {
+      return;
+    }
+
+    const nowIso = new Date().toISOString();
+
+    setThreads((current) => {
+      const nextThreads = current.map((thread) => {
+        if (thread.id !== activeThread.id) {
+          return thread;
+        }
+
+        const nextMessage: ChatMessage = {
+          id: `${thread.id}-m-${Date.now()}`,
+          author: "cliente",
+          text: normalizedMessage,
+          createdAt: nowIso,
+        };
+
+        return {
+          ...thread,
+          messages: [...thread.messages, nextMessage],
+          unread: 0,
+          updatedAt: nowIso,
+        };
+      });
+
+      return sortThreadsByRecent(nextThreads);
+    });
+
     setDraftMessage("");
-    setSending(false);
   };
 
-  const activeChat = chats.find((c) => c.id === activeChatId) ?? null;
-
-  const filteredChats = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return chats;
-    return chats.filter((c) =>
-      `${c.empresa.nombre} ${c.ultimoMensaje}`.toLowerCase().includes(q),
-    );
-  }, [chats, searchQuery]);
-
   const totalUnread = useMemo(
-    () => chats.reduce((acc, c) => acc + (c.mensajesSinLeer ?? 0), 0),
-    [chats],
+    () => threads.reduce((accumulator, thread) => accumulator + (thread.unread ?? 0), 0),
+    [threads],
   );
 
   return (
     <div className="flex-1 pb-0">
       <ClientPageHeader
         sectionLabel="Chats cliente"
-        middleSlot={
+        middleSlot={(
           <input
             className="auth-input"
-            placeholder="Buscar conversaciones..."
+            placeholder="Buscar conversaciones, vendedor o producto..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(event) => setSearchQuery(event.target.value)}
           />
-        }
+        )}
       />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:h-[calc(100vh-120px)] lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:px-6">
@@ -407,15 +483,15 @@ export default function ClienteChatPage() {
 
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">BANDEJA DE CHATS</p>
-            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Conversaciones</h1>
-            <p className="mt-2 text-xs text-cyan-200/60 font-mono">
-              GET /api/clients/chats
+            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Conversaciones ordenadas</h1>
+            <p className="mt-2 text-sm text-cyan-100/75">
+              Vista completa para revisar todos tus chats, abrir cada hilo y responder rapido.
             </p>
 
             <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
               <div className="rounded-xl border border-cyan-100/12 bg-slate-950/35 p-3">
                 <p className="text-cyan-200/70">Chats</p>
-                <p className="mt-1 text-lg font-semibold text-cyan-50">{chats.length}</p>
+                <p className="mt-1 text-lg font-semibold text-cyan-50">{threads.length}</p>
               </div>
               <div className="rounded-xl border border-cyan-100/12 bg-slate-950/35 p-3">
                 <p className="text-cyan-200/70">Sin leer</p>
@@ -439,45 +515,50 @@ export default function ClienteChatPage() {
                 const isActive = thread.id === activeThread?.id;
                 const lastMessage = thread.messages[thread.messages.length - 1];
 
-                  return (
-                    <button
-                      key={chat.id}
-                      type="button"
-                      onClick={() => handleSelectChat(chat.id)}
-                      className={`w-full rounded-2xl border p-3 text-left transition ${
-                        isActive
-                          ? "border-cyan-300/40 bg-cyan-300/14"
-                          : "border-cyan-100/12 bg-slate-950/35 hover:border-cyan-200/30 hover:bg-slate-900/45"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
-                            {initials}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-cyan-50">
-                              {chat.empresa.nombre}
-                            </p>
-                            <p className="font-mono text-[10px] text-cyan-200/55">{chat.id}</p>
-                          </div>
+                return (
+                  <button
+                    key={thread.id}
+                    type="button"
+                    onClick={() => handleSelectThread(thread.id)}
+                    className={`w-full rounded-2xl border p-3 text-left transition ${
+                      isActive
+                        ? "border-cyan-300/40 bg-cyan-300/14"
+                        : "border-cyan-100/12 bg-slate-950/35 hover:border-cyan-200/30 hover:bg-slate-900/45"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                          {thread.avatar}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-cyan-50">{thread.company}</p>
+                          <p className="truncate text-xs text-cyan-200/75">{thread.sellerName}</p>
                         </div>
-
-                        {chat.mensajesSinLeer > 0 && (
-                          <span className="mt-1 inline-flex rounded-full border border-cyan-100/15 bg-cyan-300/20 px-2 py-0.5 text-[10px] text-cyan-50">
-                            {chat.mensajesSinLeer}
-                          </span>
-                        )}
                       </div>
 
-                      <p className="mt-2 truncate text-xs text-cyan-100/70">
-                        {chat.ultimoMensaje}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                      <div className="text-right text-[11px] text-cyan-200/65">
+                        <p>{formatRelativeTime(thread.updatedAt)}</p>
+                        {thread.unread > 0 ? (
+                          <span className="mt-1 inline-flex rounded-full border border-cyan-100/15 bg-cyan-300/20 px-2 py-0.5 text-[10px] text-cyan-50">
+                            {thread.unread}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <p className="mt-2 truncate text-xs text-cyan-100/75">{thread.product}</p>
+                    <p className="mt-1 truncate text-xs text-cyan-100/70">{lastMessage?.text ?? "Sin mensajes"}</p>
+                  </button>
+                );
+              })}
+
+              {filteredThreads.length === 0 ? (
+                <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-4 text-sm text-cyan-100/75">
+                  No encontramos chats para esa busqueda.
+                </div>
+              ) : null}
+            </div>
           </section>
         </aside>
 
@@ -488,16 +569,18 @@ export default function ClienteChatPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
-                      {getInitials(activeChat.empresa.nombre)}
+                      {activeThread.avatar}
                     </span>
                     <div>
-                      <p className="text-base font-semibold text-cyan-50">
-                        {activeChat.empresa.nombre}
-                      </p>
-                      <p className="font-mono text-[11px] text-cyan-200/55">
-                        GET /api/clients/chats/{activeChat.id}/messages
-                      </p>
+                      <p className="text-base font-semibold text-cyan-50">{activeThread.company}</p>
+                      <p className="text-xs text-cyan-200/75">{activeThread.sellerName}</p>
+                      <p className="text-[11px] text-cyan-100/65">Consulta: {activeThread.product}</p>
                     </div>
+                  </div>
+
+                  <div className="text-right text-xs text-cyan-200/70">
+                    <p>{activeThread.online ? "Activo ahora" : "Ultima conexion reciente"}</p>
+                    <p className="mt-1">{formatRelativeTime(activeThread.updatedAt)}</p>
                   </div>
                 </div>
               </div>
@@ -506,67 +589,51 @@ export default function ClienteChatPage() {
                 ref={messageListRef}
                 className="chat-scrollbar flex-1 min-h-0 space-y-3 overflow-y-auto bg-[linear-gradient(180deg,rgba(4,13,24,0.3),rgba(4,11,20,0.58))] px-5 py-4"
               >
-                {loadingMessages ? (
-                  <p className="text-sm text-cyan-100/70">Cargando mensajes...</p>
-                ) : messages.length === 0 ? (
-                  <p className="text-sm text-cyan-100/70">
-                    No hay mensajes en esta conversacion todavia.
-                  </p>
-                ) : (
-                  messages.map((msg, index) => {
-                    const isClient = msg.remitente === "cliente";
-
-                    return (
-                      <motion.div
-                        key={msg.id}
-                        initial={{ opacity: 0, y: 8, x: isClient ? 8 : -8 }}
-                        animate={{ opacity: 1, y: 0, x: 0 }}
-                        transition={{ duration: 0.18, delay: index * 0.02 }}
-                        className={`flex ${isClient ? "justify-end" : "justify-start"}`}
-                      >
-                        <div
-                          className={`max-w-[85%] rounded-2xl border px-3 py-2 text-sm leading-6 ${
-                            isClient
-                              ? "border-cyan-200/25 bg-cyan-300/16 text-cyan-50"
-                              : "border-cyan-100/10 bg-white/5 text-cyan-100/92"
-                          }`}
-                        >
-                          <p>{msg.contenido}</p>
-                          <p className="mt-2 text-right text-[11px] text-cyan-100/55">
-                            {formatHour(msg.fecha)}
-                          </p>
-                        </div>
-                      </motion.div>
-                    );
-                  })
-                )}
+                {activeThread.messages.map((message, index) => (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 8, x: message.author === "cliente" ? 8 : -8 }}
+                    animate={{ opacity: 1, y: 0, x: 0 }}
+                    transition={{ duration: 0.18, delay: index * 0.02 }}
+                    className={`flex ${message.author === "cliente" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[85%] rounded-2xl border px-3 py-2 text-sm leading-6 ${
+                        message.author === "cliente"
+                          ? "border-cyan-200/25 bg-cyan-300/16 text-cyan-50"
+                          : "border-cyan-100/10 bg-white/5 text-cyan-100/92"
+                      }`}
+                    >
+                      <p>{message.text}</p>
+                      <p className="mt-2 text-right text-[11px] text-cyan-100/55">{formatHour(message.createdAt)}</p>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
 
-              <form
-                onSubmit={handleSendMessage}
-                className="border-t border-cyan-100/10 bg-slate-950/40 px-5 py-4"
-              >
-                <p className="mb-2 font-mono text-[10px] text-cyan-200/45">
-                  POST /api/clients/chats/{activeChat.id}/messages
-                </p>
+              <form onSubmit={handleSendMessage} className="border-t border-cyan-100/10 bg-slate-950/40 px-5 py-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                   <textarea
                     value={draftMessage}
-                    onChange={(e) => setDraftMessage(e.target.value)}
+                    onChange={(event) => setDraftMessage(event.target.value)}
                     placeholder="Escribe tu mensaje..."
                     rows={2}
                     className="w-full resize-none rounded-2xl border border-cyan-100/12 bg-slate-950/45 px-3 py-2 text-sm text-cyan-50 placeholder:text-cyan-100/45 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                   />
                   <button
                     type="submit"
-                    disabled={draftMessage.trim().length < 2 || sending}
+                    disabled={draftMessage.trim().length < 2}
                     className="rounded-2xl border border-cyan-200/25 bg-cyan-400/20 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/25 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {sending ? "Enviando..." : "Enviar"}
+                    Enviar
                   </button>
                 </div>
               </form>
             </>
+          ) : (
+            <div className="flex h-[60vh] items-center justify-center px-5 text-center text-cyan-100/75">
+              Selecciona un chat para ver la conversacion completa.
+            </div>
           )}
         </section>
       </main>
