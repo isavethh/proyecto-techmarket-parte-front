@@ -208,6 +208,58 @@ export type SpecialistFile = {
   url?: string;
 };
 
+export type SpecialistWallet = {
+  id?: string;
+  saldoDisponible?: number | string;
+  availableBalance?: number | string;
+  saldoPendiente?: number | string;
+  pendingBalance?: number | string;
+  moneda?: string;
+  currency?: string;
+  metodoRetiro?: string;
+  withdrawMethod?: string;
+  estado?: string;
+  status?: string;
+};
+
+export type SpecialistEarningsSummary = {
+  ingresosTotales?: number | string;
+  totalEarnings?: number | string;
+  ingresosMes?: number | string;
+  monthlyEarnings?: number | string;
+  pagosPendientes?: number | string;
+  pendingPayments?: number | string;
+  comisiones?: number | string;
+  commissions?: number | string;
+  serviciosPagados?: number | string;
+  paidServices?: number | string;
+};
+
+export type SpecialistTransaction = {
+  id?: string;
+  transactionId?: string;
+  cliente?: string;
+  customer?: string;
+  clientName?: string;
+  proyecto?: string;
+  project?: string;
+  service?: string;
+  servicio?: string;
+  monto?: number | string;
+  amount?: number | string;
+  comision?: number | string;
+  commission?: number | string;
+  estado?: string;
+  status?: string;
+  tipo?: string;
+  type?: string;
+  fecha?: string;
+  date?: string;
+  createdAt?: string;
+  moneda?: string;
+  currency?: string;
+};
+
 type ListResponse<T> = {
   value: T[];
   Count: number;
@@ -315,6 +367,30 @@ export async function getSpecialistChatById(token: string, userId: string, chatI
 export async function getSpecialistFiles(token: string, userId: string) {
   return apiRequest<SpecialistFile[] | ListResponse<SpecialistFile> | { data: SpecialistFile[] }>(
     "/api/specialists/files",
+    {
+      token,
+      userId,
+    }
+  );
+}
+
+export async function getSpecialistWallet(token: string, userId: string) {
+  return apiRequest<SpecialistWallet>("/api/specialists/wallet", {
+    token,
+    userId,
+  });
+}
+
+export async function getSpecialistEarningsSummary(token: string, userId: string) {
+  return apiRequest<SpecialistEarningsSummary>("/api/specialists/earnings/summary", {
+    token,
+    userId,
+  });
+}
+
+export async function getSpecialistTransactions(token: string, userId: string) {
+  return apiRequest<SpecialistTransaction[] | ListResponse<SpecialistTransaction> | { data: SpecialistTransaction[] }>(
+    "/api/specialists/transactions",
     {
       token,
       userId,
