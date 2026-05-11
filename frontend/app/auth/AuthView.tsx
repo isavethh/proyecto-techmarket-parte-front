@@ -1,12 +1,13 @@
 "use client";
 
+import { login, register } from "@/lib/api/authApi";
+import { getRedirectPathByUserType } from "@/lib/auth/redirectHelper";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 
 type Mode = "login" | "register";
-type AccountType = "cliente" | "empresa" | "embajador";
-type EnterpriseType = "tienda" | "servicio_tecnico";
+type AccountType = "cliente" | "empresa" | "especialista";
 
 type AuthViewProps = {
   initialMode: Mode;
@@ -20,107 +21,133 @@ export default function AuthView({
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [accountType, setAccountType] = useState<AccountType>(initialType);
-  const [enterpriseType, setEnterpriseType] =
-    useState<EnterpriseType>("tienda");
   const [feedback, setFeedback] = useState<string>("");
-  const [loginUsername, setLoginUsername] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
+
+  // Login fields
+  const [identifier, setIdentifier] = useState(""); // correo o usuario
+  const [password, setPassword] = useState("");
+
+  // Register fields
+  const [nombre, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const title = useMemo(() => {
-    if (mode === "login") {
-      if (accountType === "embajador") {
-        return "Accede a tu panel de embajador";
-      }
-      return "Accede a tu espacio TechMarket";
+    if (mode === "login") return "Accede a tu espacio TechMarket";
+
+    switch (accountType) {
+      case "empresa":
+        return "Crea tu cuenta de negocio";
+      case "especialista":
+        return "Crea tu cuenta de técnico";
+      default:
+        return "Crea tu cuenta de cliente";
     }
-    if (accountType === "embajador") {
-      return "Postula como embajador de TechMarket";
-    }
-    if (accountType === "empresa") {
-      return "Registra tu empresa en TechMarket";
-    }
-    return "Crea tu cuenta de cliente";
   }, [accountType, mode]);
 
   const subtitle = useMemo(() => {
-    if (mode === "login") {
-      if (accountType === "embajador") {
-        return "Ingresa para gestionar captacion, campanas y crecimiento del ecosistema.";
+    return mode === "login" ? "Accede con tu cuenta y retoma tu espacio personalizado." : "Completa los datos para crear tu cuenta.";
+  }, [mode]);
+
+  const handleLogin = async () => {
+    const email = identifier.trim();
+
+    if (!email || !password) {
+      setFeedback("Completa correo y contraseña.");
+      return;
+    }
+
+    try {
+      setFeedback("Iniciando sesión...");
+      const session = await login({ email, password });
+      setFeedback("Sesión iniciada correctamente.");
+
+      console.log("[AuthView - handleLogin] Session recibida:", session);
+      console.log("[AuthView - handleLogin] session.user:", session.user);
+      console.log("[AuthView - handleLogin] session.user?.tipo:", session.user?.tipo);
+
+      const redirectPath = getRedirectPathByUserType(session.user?.tipo);
+      console.log("[AuthView - handleLogin] Ruta calculada:", redirectPath);
+      console.log("NAVEGANDO A:", redirectPath);
+
+      try {
+        // Await por si `router.replace` devuelve una promise en esta versión de next
+        await router.replace(redirectPath as string);
+        console.log("[AuthView - handleLogin] router.replace ejecutado");
+      } catch (navErr) {
+        console.warn("[AuthView - handleLogin] router.replace falló:", navErr);
+        console.log("[AuthView - handleLogin] Intentando fallback: window.location.href");
+        // Fallback directo para confirmar que la ruta es correcta
+        window.location.href = String(redirectPath);
       }
-      return "Accede con tu cuenta y retoma tu espacio personalizado.";
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "No se pudo iniciar sesión.");
     }
-    if (accountType === "embajador") {
-      return "Comparte tu experiencia y ayuda a crecer la comunidad de negocios tecnologicos.";
+  };
+
+  const handleRegister = async () => {
+    const trimmedNombre = nombre.trim();
+    const trimmedApellido = apellido.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
+    const trimmedPais = "";
+    const trimmedCiudad = "";
+
+    if (!trimmedNombre || !trimmedApellido || !trimmedEmail || !password) {
+      setFeedback("Completa nombre, apellido, correo y contraseña.");
+      return;
     }
-    if (accountType === "empresa") {
-      return "Selecciona si tu empresa opera como tienda o servicio tecnico.";
+
+    if (password !== confirmPassword) {
+      setFeedback("Las contraseñas no coinciden.");
+      return;
     }
-    return "Empieza a descubrir productos y servicios con confianza.";
-  }, [accountType, mode]);
+
+    try {
+      setFeedback("Registrando...");
+      const session = await register({
+        email: trimmedEmail,
+        password,
+        confirmPassword,
+        tipo: accountType,
+        nombre: trimmedNombre,
+        apellido: trimmedApellido,
+        telefono: trimmedPhone,
+        pais: trimmedPais || "Bolivia",
+        ciudad: trimmedCiudad || "Santa Cruz",
+        terminos: true,
+      });
+      setFeedback("Registro completado correctamente.");
+
+      console.log("[AuthView - handleRegister] Session recibida:", session);
+      console.log("[AuthView - handleRegister] session.user:", session.user);
+      console.log("[AuthView - handleRegister] session.user?.tipo:", session.user?.tipo);
+
+      const redirectPath = getRedirectPathByUserType(session.user?.tipo);
+      console.log("[AuthView - handleRegister] Ruta calculada:", redirectPath);
+      
+      router.push(redirectPath);
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "No se pudo completar el registro.");
+    }
+  };
+
+  const handleSelectAccountType = (type: AccountType) => {
+    setAccountType(type);
+  };
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setFeedback("");
 
     if (mode === "login") {
-      const username = loginUsername.trim();
-      const password = loginPassword.trim();
-
-      if (accountType === "cliente") {
-        document.cookie = "techmarket_role=; Max-Age=0; path=/; SameSite=Lax";
-        router.push("/cliente");
-        return;
-      }
-
-      if (accountType === "embajador") {
-        if (username === "embajador" && password === "embajador123") {
-          document.cookie = "techmarket_role=embajador; path=/; SameSite=Lax";
-          router.push("/embajador");
-          return;
-        }
-
-        document.cookie = "techmarket_role=; Max-Age=0; path=/; SameSite=Lax";
-        setFeedback("Credenciales invalidas. Embajador: embajador/embajador123.");
-        return;
-      }
-
-      if (username === "admin" && password === "admin123") {
-        document.cookie = "techmarket_role=empresa_tienda; path=/; SameSite=Lax";
-        router.push("/empresa");
-        return;
-      }
-
-      if (username === "admin1" && password === "admin1") {
-        document.cookie = "techmarket_role=empresa_tecnico; path=/; SameSite=Lax";
-        router.push("/especialista");
-        return;
-      }
-
-      document.cookie = "techmarket_role=; Max-Age=0; path=/; SameSite=Lax";
-      setFeedback(
-        "Credenciales invalidas. Tienda: admin/admin123. Tecnico: admin1/admin1. Embajador: embajador/embajador123.",
-      );
+      handleLogin();
       return;
     }
 
-    if (accountType === "embajador") {
-      setFeedback(
-        "Postulacion de embajador capturada. Siguiente paso: validacion de perfil, zona e impacto comercial.",
-      );
-      return;
-    }
-
-    if (accountType === "empresa") {
-      const label =
-        enterpriseType === "servicio_tecnico" ? "servicio tecnico" : "tienda";
-      setFeedback(
-        `Registro empresa (${label}) capturado. Siguiente paso: guardar en backend y validar correo.`,
-      );
-      return;
-    }
-
-    setFeedback(
-      "Registro cliente capturado. Siguiente paso: persistencia en backend y verificacion de cuenta.",
-    );
+    handleRegister();
   };
 
   return (
@@ -134,35 +161,43 @@ export default function AuthView({
         </div>
       </header>
 
-      <main className="tech-shell mt-8 md:mt-10">
-        <section className="auth-layout">
-          <article className="auth-panel auth-panel-main">
+      <main className="mt-8 md:mt-10 flex items-center justify-center w-full">
+        <div className="flex items-center justify-center min-h-[calc(100vh-9rem)] w-full">
+          <section className="auth-layout w-full max-w-3xl mx-auto" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <article className="auth-panel auth-panel-main mx-auto">
             <div className="auth-orb" aria-hidden="true" />
             <p className="tech-mono text-xs text-cyan-300/80">AUTH GATE</p>
             <h1 className="auth-title mt-2 text-cyan-50">{title}</h1>
             <p className="auth-subtitle">{subtitle}</p>
 
             <div className="mt-6 flex flex-col gap-4">
-              {mode === "register" && accountType === "empresa" && (
-                <div>
-                  <p className="auth-label">Subtipo de empresa</p>
-                  <div className="auth-pill-group">
-                    <button
-                      type="button"
-                      className={`auth-pill ${enterpriseType === "tienda" ? "active" : ""}`}
-                      onClick={() => setEnterpriseType("tienda")}
-                    >
-                      Tienda
-                    </button>
-                    <button
-                      type="button"
-                      className={`auth-pill ${enterpriseType === "servicio_tecnico" ? "active" : ""}`}
-                      onClick={() => setEnterpriseType("servicio_tecnico")}
-                    >
-                      Servicio tecnico
-                    </button>
+              {mode === "register" && (
+                  <div>
+                    <p className="auth-label">Tipo de cuenta</p>
+                    <div className="auth-pill-group">
+                      <button
+                        type="button"
+                        className={`auth-pill ${accountType === "cliente" ? "active" : ""}`}
+                        onClick={() => handleSelectAccountType("cliente")}
+                      >
+                        Cliente
+                      </button>
+                      <button
+                        type="button"
+                        className={`auth-pill ${accountType === "empresa" ? "active" : ""}`}
+                        onClick={() => handleSelectAccountType("empresa")}
+                      >
+                        Negocio
+                      </button>
+                      <button
+                        type="button"
+                        className={`auth-pill ${accountType === "especialista" ? "active" : ""}`}
+                        onClick={() => handleSelectAccountType("especialista")}
+                      >
+                        Técnico
+                      </button>
+                    </div>
                   </div>
-                </div>
               )}
             </div>
 
@@ -170,88 +205,79 @@ export default function AuthView({
               {mode === "register" && (
                 <div className="auth-row two">
                   <div>
-                    <label className="auth-label" htmlFor="name">
-                      {accountType === "empresa" ? "Nombre comercial" : "Nombre completo"}
+                    <label className="auth-label" htmlFor="nombre">
+                      Nombre
                     </label>
                     <input
                       className="auth-input"
-                      id="name"
-                      name="name"
-                      placeholder={
-                        accountType === "empresa" ? "TechMarket Solutions" : "Juan Perez"
-                      }
+                      id="nombre"
+                      name="nombre"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      placeholder="Juan"
                       required
                     />
                   </div>
                   <div>
-                    <label className="auth-label" htmlFor="phone">
-                      Telefono
+                    <label className="auth-label" htmlFor="apellido">
+                      Apellido
                     </label>
                     <input
                       className="auth-input"
-                      id="phone"
-                      name="phone"
-                      placeholder="+57 300 000 0000"
+                      id="apellido"
+                      name="apellido"
+                      value={apellido}
+                      onChange={(e) => setApellido(e.target.value)}
+                      placeholder="Perez"
                       required
                     />
                   </div>
                 </div>
               )}
 
-              {mode === "register" && accountType === "empresa" && (
+              {mode === "register" && (
                 <div>
-                  <label className="auth-label" htmlFor="responsable">
-                    Responsable de cuenta
+                  <label className="auth-label" htmlFor="phone">
+                    Teléfono
                   </label>
                   <input
                     className="auth-input"
-                    id="responsable"
-                    name="responsable"
-                    placeholder="Nombre del encargado"
-                    required
+                    id="phone"
+                    name="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+57 300 000 0000"
                   />
                 </div>
               )}
 
               <div>
-                <label className="auth-label" htmlFor="email">
-                  {mode === "login" && accountType !== "cliente" ? "Usuario" : "Correo"}
+                <label className="auth-label" htmlFor="identifier">
+                  {mode === "login" ? "Correo o usuario" : "Correo"}
                 </label>
                 <input
                   className="auth-input"
-                  id={mode === "login" && accountType !== "cliente" ? "username" : "email"}
-                  name={mode === "login" && accountType !== "cliente" ? "username" : "email"}
-                  type={mode === "login" && accountType !== "cliente" ? "text" : "email"}
-                  value={mode === "login" && accountType !== "cliente" ? loginUsername : undefined}
-                  onChange={
-                    mode === "login" && accountType !== "cliente"
-                      ? (event) => setLoginUsername(event.target.value)
-                      : undefined
-                  }
-                  placeholder={
-                    mode === "login" && accountType !== "cliente"
-                      ? accountType === "embajador"
-                        ? "embajador"
-                        : "admin o admin1"
-                      : "correo@empresa.com"
-                  }
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  value={mode === "login" ? identifier : email}
+                  onChange={(e) => (mode === "login" ? setIdentifier(e.target.value) : setEmail(e.target.value))}
+                  placeholder={mode === "login" ? "correo@o_usuario" : "correo@ejemplo.com"}
                   required
                 />
               </div>
 
               <div>
                 <label className="auth-label" htmlFor="password">
-                  Contrasena
+                  Contraseña
                 </label>
                 <input
                   className="auth-input"
                   id="password"
                   name="password"
                   type="password"
-                  value={mode === "login" ? loginPassword : undefined}
-                  onChange={
-                    mode === "login" ? (event) => setLoginPassword(event.target.value) : undefined
-                  }
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="********"
                   required
                 />
@@ -260,13 +286,15 @@ export default function AuthView({
               {mode === "register" && (
                 <div>
                   <label className="auth-label" htmlFor="confirmPassword">
-                    Confirmar contrasena
+                    Confirmar contraseña
                   </label>
                   <input
                     className="auth-input"
                     id="confirmPassword"
                     name="confirmPassword"
                     type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="********"
                     required
                   />
@@ -280,20 +308,39 @@ export default function AuthView({
                     Recordarme en este dispositivo
                   </label>
                   <button type="button" className="auth-link">
-                    Olvidaste tu contrasena?
+                    Olvidaste tu contraseña?
                   </button>
                 </div>
               )}
 
               <button type="submit" className="tech-button tech-button-primary mt-2">
-                {mode === "login" ? "Iniciar sesion" : "Crear cuenta"}
+                {mode === "login" ? "Ingresar" : "Crear cuenta"}
               </button>
             </form>
+
+            <div className="mt-4 text-sm text-cyan-100/80">
+              {mode === "login" ? (
+                <p>
+                  ¿No tienes cuenta?{' '}
+                  <button className="auth-link" onClick={() => { setMode('register'); setFeedback(''); }}>
+                    Crear cuenta
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  ¿Ya tienes cuenta?{' '}
+                  <button className="auth-link" onClick={() => { setMode('login'); setFeedback(''); }}>
+                    Iniciar sesión
+                  </button>
+                </p>
+              )}
+            </div>
 
             {feedback && <p className="auth-message mt-4">{feedback}</p>}
           </article>
 
-        </section>
+          </section>
+        </div>
       </main>
     </div>
   );

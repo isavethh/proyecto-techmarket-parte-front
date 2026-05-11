@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
+import { logout } from "@/lib/auth/authGuard";
 import {
   ChangeEvent,
   createContext,
@@ -65,12 +66,17 @@ const useClientExperience = (): ClientExperienceContextValue => {
 };
 
 export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps) {
+  const router = useRouter();
   const { openPostModal } = useClientExperience();
   const pathname = usePathname();
   const canCreatePost = isClientCommunityDetailRoute(pathname);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleLogout = () => {
+    logout(router);
+  };
 
   useEffect(() => {
     if (!isProfileMenuOpen) {
@@ -173,9 +179,9 @@ export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps
                 Nueva publicacion
               </button>
             ) : null}
-            <Link href="/auth" onClick={() => setIsProfileMenuOpen(false)} className="auth-action block w-full">
+            <button type="button" onClick={handleLogout} className="auth-action block w-full text-left">
               Cerrar sesion
-            </Link>
+            </button>
           </div>
         </div>
       ) : null}

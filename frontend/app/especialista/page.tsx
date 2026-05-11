@@ -1,6 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { SpecialistShell } from "./components/SpecialistShell";
 import { SpecialistAiAssistant } from "./components/SpecialistAiAssistant";
+import { requireAuth } from "@/lib/auth/authGuard";
+import { getUser, getToken } from "@/lib/auth/tokenStore";
 import {
   portfolioSeedItems,
   recentActivity,
@@ -11,6 +17,16 @@ import {
 } from "./specialistData";
 
 export default function EspecialistaCorePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    console.log("[Especialista page] Ejecutando requireAuth desde page.tsx");
+    console.log("[Especialista page] document.cookie:", typeof document !== 'undefined' ? document.cookie : 'no-document');
+    console.log("[Especialista page] getToken():", getToken());
+    console.log("[Especialista page] getUser():", getUser());
+    requireAuth(router);
+  }, [router]);
+
   const featuredServices = specialistServices.filter((service) => service.featured).length;
 
   return (
@@ -30,8 +46,22 @@ export default function EspecialistaCorePage() {
               </div>
             </div>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">{specialistProfile.bio}</p>
-          </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Valor diferencial</p>
+                <p className="mt-2 text-sm leading-6 text-cyan-100/80">
+                  Perfil tecnico orientado a confianza, soporte claro y evidencia visible para que el cliente decida con mas seguridad.
+                </p>
+              </article>
 
+              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cobertura principal</p>
+                <p className="mt-2 text-sm leading-6 text-cyan-100/80">
+                  Atencion en Santa Cruz con soporte remoto, visitas tecnicas y seguimiento posterior para hogares y pequenos negocios.
+                </p>
+              </article>
+            </div>
+          </div>
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
             <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Trabajos en portafolio</p>
@@ -52,26 +82,34 @@ export default function EspecialistaCorePage() {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Link href="/especialista/portafolio" className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <Link href="/especialista/portafolio" className="flex h-full min-h-[154px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Seccion</p>
-          <h2 className="mt-2 text-xl font-semibold text-white">Portafolio</h2>
-          <p className="mt-2 text-sm text-cyan-100/75">Gestiona trabajos, evidencia y resultados tecnicos.</p>
+          <h2 className="text-xl font-semibold text-white">Portafolio</h2>
+          <p className="mt-2 text-sm leading-6 text-cyan-100/75">Gestiona trabajos, evidencia y resultados tecnicos.</p>
         </Link>
-        <Link href="/especialista/servicios" className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
+        <Link href="/especialista/servicios" className="flex h-full min-h-[154px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Seccion</p>
-          <h2 className="mt-2 text-xl font-semibold text-white">Servicios</h2>
-          <p className="mt-2 text-sm text-cyan-100/75">Revisa el catalogo de servicios y propuesta comercial.</p>
+          <h2 className="text-xl font-semibold text-white">Servicios</h2>
+          <p className="mt-2 text-sm leading-6 text-cyan-100/75">Revisa el catalogo de servicios y propuesta comercial.</p>
         </Link>
-        <Link href="/especialista/reputacion" className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
+        <Link
+          href="/especialista/chat" className="flex h-full min-h-[154px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Seccion</p>
-          <h2 className="mt-2 text-xl font-semibold text-white">Reputacion</h2>
-          <p className="mt-2 text-sm text-cyan-100/75">Analiza calificaciones, comentarios y confianza.</p>
+          <h2 className="text-xl font-semibold text-white">Chat</h2>
+          <p className="mt-2 text-sm leading-6 text-cyan-100/75">
+            Atiende conversaciones activas y responde consultas de clientes.
+          </p>
         </Link>
-        <Link href="/especialista/disponibilidad" className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
+        <Link href="/especialista/reputacion" className="flex h-full min-h-[154px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Seccion</p>
-          <h2 className="mt-2 text-xl font-semibold text-white">Disponibilidad</h2>
-          <p className="mt-2 text-sm text-cyan-100/75">Controla estado operativo y ventanas de atencion.</p>
+          <h2 className="text-xl font-semibold text-white">Reputacion</h2>
+          <p className="mt-2 text-sm leading-6 text-cyan-100/75">Analiza calificaciones, comentarios y confianza.</p>
+        </Link>
+        <Link href="/especialista/disponibilidad" className="flex h-full min-h-[154px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
+          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Seccion</p>
+          <h2 className="text-xl font-semibold text-white">Disponibilidad</h2>
+          <p className="mt-2 text-sm leading-6 text-cyan-100/75">Controla estado operativo y ventanas de atencion.</p>
         </Link>
       </section>
 

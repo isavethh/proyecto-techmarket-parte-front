@@ -113,8 +113,8 @@ export default function ChatPage() {
         }
       />
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+     <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">CHAT COMERCIAL</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Conversaciones de clientes</h1>
@@ -126,20 +126,20 @@ export default function ChatPage() {
           <CompanySidebar />
         </aside>
 
-        <section className="chat-scrollbar space-y-6 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
+        <section className="space-y-6 pr-0 lg:pr-4">
           <section className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/30">
             <div className="p-6 md:p-8">
-              <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
-                <aside className="rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-4">
+              <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
+                <aside className="flex min-h-[500px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-3.5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="tech-mono text-xs text-cyan-200/75">CHATS ACTIVOS</p>
-                      <h1 className="mt-2 text-2xl font-bold text-white">Conversaciones</h1>
+                      <h1 className="mt-1.5 text-xl font-bold text-white">Conversaciones</h1>
                     </div>
                     <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">{chatThreads.length}</span>
                   </div>
 
-                  <div className="chat-scrollbar mt-5 max-h-[calc(100vh-320px)] space-y-3 overflow-y-auto pr-1">
+                  <div className="chat-scrollbar mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
                     {chatThreads.map((chat) => {
                       const isActive = chat.id === activeChatId;
 
@@ -148,14 +148,14 @@ export default function ChatPage() {
                           key={chat.id}
                           type="button"
                           onClick={() => setActiveChatId(chat.id)}
-                          className={`w-full rounded-3xl border p-4 text-left transition ${
+                          className={`w-full rounded-3xl border p-3 text-left transition ${
                             isActive
                               ? "border-cyan-300/50 bg-cyan-300/12"
                               : "border-cyan-100/10 bg-white/5 hover:bg-cyan-100/8"
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
                               {chat.avatar}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -164,7 +164,7 @@ export default function ChatPage() {
                                 <span className="text-xs text-cyan-100/60">{chat.time}</span>
                               </div>
                               <p className="text-xs text-cyan-100/70">{chat.product}</p>
-                              <p className="mt-1 truncate text-sm text-cyan-100/80">{chat.lastMessage}</p>
+                              <p className="mt-1 truncate text-xs text-cyan-100/80">{chat.lastMessage}</p>
                             </div>
                           </div>
                           {chat.unread ? (
@@ -180,25 +180,25 @@ export default function ChatPage() {
                   </div>
                 </aside>
 
-                <section className="flex h-[calc(100vh-190px)] min-h-[560px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-4 md:p-5">
+                <section className="flex h-[calc(100vh-210px)] min-h-[500px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-3.5 md:p-4">
                   <div className="flex items-center justify-between border-b border-cyan-100/10 pb-4">
                     <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
                         {activeChat.avatar}
                       </div>
                       <div>
-                        <p className="text-lg font-semibold text-white">{activeChat.name}</p>
-                        <p className="text-sm text-cyan-100/70">Interesado en {activeChat.product}</p>
+                        <p className="text-base font-semibold text-white">{activeChat.name}</p>
+                        <p className="text-xs text-cyan-100/70">Interesado en {activeChat.product}</p>
                       </div>
                     </div>
                     <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">En linea</span>
                   </div>
 
-                  <div className="chat-scrollbar mt-4 flex-1 space-y-3 overflow-y-auto rounded-3xl bg-slate-950/30 p-4 md:p-5">
+                  <div className="chat-scrollbar mt-3 flex-1 space-y-2.5 overflow-y-auto rounded-3xl bg-slate-950/30 p-3.5 md:p-4">
                     {activeChat.messages.map((message) => (
                       <div key={message.id} className={`flex ${message.author === "empresa" ? "justify-end" : "justify-start"}`}>
                         <div
-                          className={`max-w-[78%] rounded-3xl px-4 py-3 text-sm leading-6 ${
+                          className={`max-w-[72%] rounded-3xl px-3.5 py-2.5 text-sm leading-5 ${
                             message.author === "empresa"
                               ? "bg-cyan-300/15 text-cyan-50"
                               : "bg-white/5 text-cyan-100/90"
@@ -211,16 +211,16 @@ export default function ChatPage() {
                     ))}
                   </div>
 
-                  <div className="mt-4 shrink-0 rounded-3xl border border-cyan-100/10 bg-white/5 p-4">
+                  <div className="mt-3 shrink-0 rounded-3xl border border-cyan-100/10 bg-white/5 p-3.5">
                     <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Responder</p>
                     <div className="mt-3 flex flex-col gap-3 md:flex-row">
                       <input
                         value={draftMessage}
                         onChange={(event) => setDraftMessage(event.target.value)}
                         placeholder="Escribe un mensaje para el cliente..."
-                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-3.5 py-2.5 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                       />
-                      <button className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-5 py-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
+                      <button className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-4 py-2.5 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
                         Enviar
                       </button>
                     </div>

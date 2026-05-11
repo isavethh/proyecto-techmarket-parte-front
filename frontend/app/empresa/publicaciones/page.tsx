@@ -1,28 +1,55 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CommunityFeedPost, upsertCommunityFeedPosts } from "../../lib/communityFeed";
 import { CompanySidebar } from "../CompanySidebar";
 
-type MainFilter = "Productos disponibles" | "Servicios" | "Ofertas y promociones" | "Publicaciones de interacción" | "Publicaciones de texto";
-type InteractionFilter = "Encuestas" | "Publicaciones" | "Lista de usuarios que interactúan";
+type MainFilter =
+  | "Publicaciones"
+  | "Productos disponibles"
+  | "Servicios"
+  | "Ofertas y promociones"
+  | "Publicaciones de interacción"
+  | "Publicaciones de texto";
+type InteractionFilter = "Encuestas" | "Lista de usuarios que interactúan";
+type SurveyFormData = {
+  question: string;
+  option1: string;
+  option2: string;
+  option3: string;
+  option4: string;
+};
 
 const mainFilters: MainFilter[] = [
+  "Publicaciones",
   "Productos disponibles",
+  "Publicaciones de texto",
   "Servicios",
   "Ofertas y promociones",
   "Publicaciones de interacción",
-  "Publicaciones de texto",
 ];
 
 const interactionFilters: InteractionFilter[] = [
   "Encuestas",
-  "Publicaciones",
   "Lista de usuarios que interactúan",
 ];
+
+const mainFilterLabels: Record<MainFilter, string> = {
+  Publicaciones: "Publicaciones",
+  "Productos disponibles": "Productos",
+  "Publicaciones de texto": "Texto",
+  Servicios: "Servicios",
+  "Ofertas y promociones": "Ofertas",
+  "Publicaciones de interacción": "Interacción",
+};
+
+const interactionFilterLabels: Record<InteractionFilter, string> = {
+  Encuestas: "Encuestas",
+  "Lista de usuarios que interactúan": "Usuarios que interactúan",
+};
 
 const company = {
   name: "TechMarket Santa Cruz",
@@ -110,6 +137,8 @@ type PublicationFormData = {
   targetFilter: MainFilter;
   description: string;
   price: string;
+  previousPrice: string;
+  label: "Oferta" | "Promocion";
   image: string;
 };
 
@@ -161,6 +190,68 @@ type PublicationMetric = {
   value: string;
   trend: string;
 };
+
+type CompanyFeedItem = {
+  id: string;
+  kind: "Producto" | "Servicio" | "Oferta" | "Publicacion" | "Encuesta" | "Texto";
+  title: string;
+  description: string;
+  date: string;
+  tag: string;
+  image?: string;
+  price?: string;
+  status?: string;
+  options?: string[];
+  preview: PublicationPreview;
+};
+
+type PublicationComment = {
+  id: string;
+  author: string;
+  text: string;
+  time: string;
+};
+
+type PublicationSocialState = {
+  likes: number;
+  liked: boolean;
+  comments: PublicationComment[];
+};
+
+function createInitialPublicationSocial(
+  item: Pick<CompanyFeedItem, "id" | "title" | "kind">,
+  index = 0,
+): PublicationSocialState {
+  const baseLikes = 8 + (index % 5) * 3;
+
+  const comments: PublicationComment[] = [
+    {
+      id: `comment-${item.id}-1`,
+      author: "Alejandro",
+      text:
+        item.kind === "Producto"
+          ? "Tienen disponibilidad inmediata?"
+          : item.kind === "Servicio"
+            ? "Atienden esta semana?"
+            : item.kind === "Oferta"
+              ? "La promocion sigue activa?"
+              : "Me interesa, podrian darme mas informacion?",
+      time: "Hace 12 min",
+    },
+    {
+      id: `comment-${item.id}-2`,
+      author: "Laura P.",
+      text: "Se ve interesante, me gustaria saber mas detalles.",
+      time: "Hace 1 h",
+    },
+  ];
+
+  return {
+    likes: baseLikes,
+    liked: false,
+    comments,
+  };
+}
 
 function buildPublicationMetrics(publicationId: string): PublicationMetric[] {
   const seed = publicationId
@@ -217,6 +308,46 @@ function SendIcon() {
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 fill-current">
       <path d="M3.4 20.45 20.8 12 3.4 3.55a.75.75 0 0 0-1.05.88l1.97 6.02L15 12l-10.68 1.55-1.97 6.02a.75.75 0 0 0 1.05.88Zm3.68-7.2L18.2 12 7.08 10.75l-.93-2.84L18.2 12 6.15 16.09l.93-2.84Z" />
     </svg>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+      <path d="M12 2.75a4.25 4.25 0 0 0-4.25 4.25v1.02c0 .73-.2 1.45-.58 2.08l-.72 1.19a5.72 5.72 0 0 0-.82 2.96V16c0 .97.78 1.75 1.75 1.75h9.24c.97 0 1.75-.78 1.75-1.75v-1.75c0-1.05-.29-2.08-.82-2.96l-.72-1.19a4.05 4.05 0 0 1-.58-2.08V7A4.25 4.25 0 0 0 12 2.75Zm0 18.5a2.6 2.6 0 0 0 2.45-1.75h-4.9A2.6 2.6 0 0 0 12 21.25Z" />
+    </svg>
+  );
+}
+
+function PublicationActionButton({
+  icon,
+  label,
+  href,
+  primary = false,
+}: {
+  icon?: ReactNode;
+  label: string;
+  href?: string;
+  primary?: boolean;
+}) {
+  const className = primary
+    ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+    : "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-cyan-100/10 bg-slate-950/40 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10";
+
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {icon}
+        {label}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" className={className}>
+      {icon}
+      {label}
+    </button>
   );
 }
 
@@ -426,10 +557,11 @@ const latestInteractionNotification: InteractionNotification = {
 };
 
 export default function PublicacionesPage() {
-  const [activeFilter, setActiveFilter] = useState<MainFilter>("Productos disponibles");
+  const [activeFilter, setActiveFilter] = useState<MainFilter>("Publicaciones");
   const [activeInteractionFilter, setActiveInteractionFilter] = useState<InteractionFilter>("Encuestas");
   const [selectedSurveyOption, setSelectedSurveyOption] = useState<Record<string, string>>({});
-  const [showInteractionNotice, setShowInteractionNotice] = useState(false);
+  const [showInteractionNotice, setShowInteractionNotice] = useState(true);
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [highlightedUserId, setHighlightedUserId] = useState<string | null>(null);
   const [productItems, setProductItems] = useState<ProductCard[]>(products);
   const [serviceItems, setServiceItems] = useState<ServiceCard[]>(services);
@@ -439,6 +571,8 @@ export default function PublicacionesPage() {
   const [showProductEditModal, setShowProductEditModal] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productEditMessage, setProductEditMessage] = useState("");
+  const [productEditImageName, setProductEditImageName] = useState("");
+  const [productEditFileKey, setProductEditFileKey] = useState(0);
   const [productEditForm, setProductEditForm] = useState<ProductEditForm>({
     name: "",
     description: "",
@@ -449,6 +583,8 @@ export default function PublicacionesPage() {
   const [showServiceEditModal, setShowServiceEditModal] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [serviceEditMessage, setServiceEditMessage] = useState("");
+  const [serviceEditImageName, setServiceEditImageName] = useState("");
+  const [serviceEditFileKey, setServiceEditFileKey] = useState(0);
   const [serviceEditForm, setServiceEditForm] = useState<ServiceEditForm>({
     name: "",
     description: "",
@@ -458,6 +594,8 @@ export default function PublicacionesPage() {
   const [showOfferEditModal, setShowOfferEditModal] = useState(false);
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
   const [offerEditMessage, setOfferEditMessage] = useState("");
+  const [offerEditImageName, setOfferEditImageName] = useState("");
+  const [offerEditFileKey, setOfferEditFileKey] = useState(0);
   const [offerEditForm, setOfferEditForm] = useState<OfferEditForm>({
     title: "",
     description: "",
@@ -468,6 +606,8 @@ export default function PublicacionesPage() {
   });
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState<PublicationPreview | null>(null);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [publicationSocial, setPublicationSocial] = useState<Record<string, PublicationSocialState>>({});
   const [publishMessage, setPublishMessage] = useState("");
   const [uploadedImagePreview, setUploadedImagePreview] = useState("");
   const [uploadedImageName, setUploadedImageName] = useState("");
@@ -477,45 +617,313 @@ export default function PublicacionesPage() {
     targetFilter: "Productos disponibles",
     description: "",
     price: "",
+    previousPrice: "",
+    label: "Oferta",
     image: "",
+  });
+  const [surveyItems, setSurveyItems] = useState<SurveyCard[]>(surveys);
+  const [showSurveyCreateModal, setShowSurveyCreateModal] = useState(false);
+  const [surveyCreateMessage, setSurveyCreateMessage] = useState("");
+  const [surveyForm, setSurveyForm] = useState<SurveyFormData>({
+    question: "",
+    option1: "",
+    option2: "",
+    option3: "",
+    option4: "",
   });
   const isServicesView = activeFilter === "Servicios";
   const isTextView = activeFilter === "Publicaciones de texto";
-  const createButtonLabel = isServicesView
-    ? showCreateForm
-      ? "Cerrar formulario de servicio"
-      : "Agregar servicio"
-    : isTextView
+  const isOfferView = activeFilter === "Ofertas y promociones";
+  const createButtonLabel =
+    activeFilter === "Publicaciones"
       ? showCreateForm
-        ? "Cerrar formulario de texto"
-        : "Agregar texto"
-    : showCreateForm
-      ? "Cerrar formulario"
-      : "Agregar publicacion";
-  const createFormTitle = isServicesView ? "Nuevo servicio" : isTextView ? "Nueva publicacion de texto" : "Nueva publicacion";
-  const submitButtonLabel = isServicesView ? "Publicar servicio" : isTextView ? "Publicar texto" : "Publicar";
+        ? "Cerrar formulario"
+        : "Agregar publicacion"
+      : activeFilter === "Publicaciones de interacción"
+        ? activeInteractionFilter === "Encuestas"
+          ? "Agregar encuesta"
+          : ""
+        : activeFilter === "Productos disponibles"
+          ? showCreateForm
+            ? "Cerrar formulario"
+            : "Agregar producto"
+          : isServicesView
+            ? showCreateForm
+              ? "Cerrar formulario de servicio"
+              : "Agregar servicio"
+            : isTextView
+              ? showCreateForm
+                ? "Cerrar formulario de texto"
+                : "Agregar texto"
+              : isOfferView
+                ? showCreateForm
+                  ? "Cerrar formulario de oferta"
+                  : "Agregar oferta"
+                : showCreateForm
+                  ? "Cerrar formulario"
+                  : "Agregar publicacion";
+
+  const createFormTitle = isServicesView
+    ? "Nuevo servicio"
+    : isTextView
+      ? "Nueva publicacion de texto"
+    : isOfferView
+      ? "Nueva oferta o promocion"
+    : "Nueva publicacion";
+
+  const submitButtonLabel = isServicesView
+    ? "Publicar servicio"
+    : isTextView
+      ? "Publicar texto"
+    : isOfferView
+      ? "Publicar oferta o promocion"
+    : "Publicar";
 
   const totalPublicationItems =
-    productItems.length + serviceItems.length + offerItems.length + postItems.length + textPostItems.length;
+    productItems.length +
+    serviceItems.length +
+    offerItems.length +
+    postItems.length +
+    textPostItems.length +
+    surveyItems.length;
+
+  const allFeedItemsCount = totalPublicationItems;
 
   const activeItemsCount =
-    activeFilter === "Productos disponibles"
-      ? productItems.length
-      : activeFilter === "Servicios"
-        ? serviceItems.length
-        : activeFilter === "Ofertas y promociones"
-          ? offerItems.length
-          : activeFilter === "Publicaciones de texto"
-            ? textPostItems.length
-            : activeInteractionFilter === "Encuestas"
-              ? surveys.length
-              : activeInteractionFilter === "Publicaciones"
-                ? postItems.length
+    activeFilter === "Publicaciones"
+      ? allFeedItemsCount
+      : activeFilter === "Productos disponibles"
+        ? productItems.length
+        : activeFilter === "Servicios"
+          ? serviceItems.length
+          : activeFilter === "Ofertas y promociones"
+            ? offerItems.length
+            : activeFilter === "Publicaciones de texto"
+              ? textPostItems.length
+              : activeInteractionFilter === "Encuestas"
+                ? surveyItems.length
                 : users.length;
+      
+  
 
   const openPublicationPreview = (publication: PublicationPreview) => {
-    setSelectedPublication(publication);
+    handleOpenPublicationPreview(publication);
   };
+
+  const companyFeedItems: CompanyFeedItem[] = [
+    ...postItems.map((post) => ({
+      id: post.id,
+      kind: "Publicacion" as const,
+      title: post.title,
+      description: post.message,
+      date: post.date,
+      tag: "Publicacion",
+      image: post.image,
+      preview: {
+        id: post.id,
+        kind: "Publicacion" as const,
+        title: post.title,
+        description: post.message,
+        image: post.image,
+        date: post.date,
+      } as PublicationPreview,
+    })),
+    ...textPostItems.map((post) => ({
+      id: post.id,
+      kind: "Texto" as const,
+      title: post.title,
+      description: post.message,
+      date: post.date,
+      tag: "Texto",
+      image: post.image,
+      preview: {
+        id: post.id,
+        kind: "Publicacion" as const,
+        title: post.title,
+        description: post.message,
+        image: post.image,
+        date: post.date,
+      } as PublicationPreview,
+    })),
+    ...offerItems.map((offer) => ({
+      id: offer.id,
+      kind: "Oferta" as const,
+      title: offer.title,
+      description: offer.description,
+      date: "Hoy",
+      tag: offer.label,
+      image: offer.image,
+      price: offer.currentPrice,
+      status: offer.label,
+      preview: {
+        id: offer.id,
+        kind: "Oferta" as const,
+        title: offer.title,
+        description: offer.description,
+        image: offer.image,
+        price: offer.currentPrice,
+        status: offer.label,
+        date: "Hoy",
+      } as PublicationPreview,
+    })),
+    ...serviceItems.map((service) => ({
+      id: service.id,
+      kind: "Servicio" as const,
+      title: service.name,
+      description: service.description,
+      date: "Hoy",
+      tag: "Servicio",
+      image: service.image,
+      price: service.price,
+      status: "Servicio activo",
+      preview: {
+        id: service.id,
+        kind: "Servicio" as const,
+        title: service.name,
+        description: service.description,
+        image: service.image,
+        price: service.price,
+        status: "Servicio activo",
+        date: "Hoy",
+      } as PublicationPreview,
+    })),
+    ...productItems.map((product) => ({
+      id: product.id,
+      kind: "Producto" as const,
+      title: product.name,
+      description: product.description,
+      date: "Hoy",
+      tag: "Producto",
+      image: product.image,
+      price: product.price ?? "Consultar",
+      status: product.status,
+      preview: {
+        id: product.id,
+        kind: "Producto" as const,
+        title: product.name,
+        description: product.description,
+        image: product.image,
+        price: product.price ?? "Consultar",
+        status: product.status,
+        date: "Hoy",
+      } as PublicationPreview,
+    })),
+    ...surveyItems.map((survey) => ({
+      id: survey.id,
+      kind: "Encuesta" as const,
+      title: survey.question,
+      description: `Opciones: ${survey.options.join(" • ")}`,
+      date: `${survey.votes} participaciones`,
+      tag: "Encuesta",
+      options: survey.options,
+      preview: {
+        id: survey.id,
+        kind: "Publicacion" as const,
+        title: survey.question,
+        description: `Opciones: ${survey.options.join(" • ")}`,
+        date: "Encuesta activa",
+        status: "Encuesta",
+      } as PublicationPreview,
+    })),
+  ];
+
+  useEffect(() => {
+    setPublicationSocial((current) => {
+      const next = { ...current };
+      let changed = false;
+
+      companyFeedItems.forEach((item, index) => {
+        if (!next[item.id]) {
+          next[item.id] = createInitialPublicationSocial(item, index);
+          changed = true;
+        }
+      });
+
+      return changed ? next : current;
+    });
+  }, [companyFeedItems]);
+
+  const getPublicationSocial = (publicationId: string): PublicationSocialState =>
+    publicationSocial[publicationId] ?? {
+      likes: 0,
+      liked: false,
+      comments: [],
+    };
+
+  const togglePublicationLike = (publicationId: string) => {
+    setPublicationSocial((current) => {
+      const entry =
+        current[publicationId] ??
+        {
+          likes: 0,
+          liked: false,
+          comments: [],
+        };
+
+      const nextLiked = !entry.liked;
+
+      return {
+        ...current,
+        [publicationId]: {
+          ...entry,
+          liked: nextLiked,
+          likes: nextLiked ? entry.likes + 1 : Math.max(0, entry.likes - 1),
+        },
+      };
+    });
+  };
+
+  const handleOpenPublicationPreview = (publication: PublicationPreview) => {
+    setSelectedPublication(publication);
+    setCommentDraft("");
+  };
+
+  const handleOpenComments = (publication: PublicationPreview) => {
+    setSelectedPublication(publication);
+    setCommentDraft("");
+  };
+
+  const handleCommentSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    
+
+    if (!selectedPublication) return;
+
+    const text = commentDraft.trim();
+    if (!text) return;
+
+    setPublicationSocial((current) => {
+      const entry =
+        current[selectedPublication.id] ??
+        {
+          likes: 0,
+          liked: false,
+          comments: [],
+        };
+
+      return {
+        ...current,
+        [selectedPublication.id]: {
+          ...entry,
+          comments: [
+            {
+              id: `comment-${selectedPublication.id}-${Date.now()}`,
+              author: company.name,
+              text,
+              time: "Ahora",
+            },
+            ...entry.comments,
+          ],
+        },
+      };
+    });
+
+    setCommentDraft("");
+  };
+
+  const selectedPublicationSocial = selectedPublication
+  ? getPublicationSocial(selectedPublication.id)
+  : null;
 
   const closeProductEditModal = () => {
     setShowProductEditModal(false);
@@ -562,9 +970,93 @@ export default function PublicacionesPage() {
   };
 
   const handleInteractionNotificationClick = () => {
+    setActiveFilter("Publicaciones de interacción");
     setActiveInteractionFilter("Lista de usuarios que interactúan");
     setHighlightedUserId(latestInteractionNotification.userId);
     setShowInteractionNotice(false);
+    setShowNotificationPanel(false);
+  };
+  const openSurveyCreateModal = () => {
+  setSurveyForm({
+    question: "",
+    option1: "",
+    option2: "",
+    option3: "",
+    option4: "",
+  });
+  setSurveyCreateMessage("");
+  setShowSurveyCreateModal(true);
+};
+
+const closeSurveyCreateModal = () => {
+  setShowSurveyCreateModal(false);
+  setSurveyCreateMessage("");
+};
+
+const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
+  event.preventDefault();
+
+  const question = surveyForm.question.trim();
+  const options = [
+    surveyForm.option1.trim(),
+    surveyForm.option2.trim(),
+    surveyForm.option3.trim(),
+    surveyForm.option4.trim(),
+  ].filter(Boolean);
+
+  if (!question) {
+    setSurveyCreateMessage("Escribe la pregunta de la encuesta.");
+    return;
+  }
+
+  if (options.length < 2) {
+    setSurveyCreateMessage("Agrega al menos dos opciones.");
+    return;
+  }
+
+  const newSurvey: SurveyCard = {
+    id: `survey-${Date.now()}`,
+    question,
+    options,
+    votes: 0,
+  };
+
+  setSurveyItems((current) => [newSurvey, ...current]);
+
+  upsertCommunityFeedPosts([
+    buildCommunityFeedPost(
+      newSurvey.id,
+      "Nueva encuesta activa",
+      question,
+      undefined,
+      "Encuesta",
+      new Date().toISOString(),
+    ),
+  ]);
+
+  setShowSurveyCreateModal(false);
+  setSurveyCreateMessage("");
+};
+
+  const handleOpenCreateAction = () => {
+    if (activeFilter === "Publicaciones de interacción" && activeInteractionFilter === "Encuestas") {
+      openSurveyCreateModal();
+      return;
+    }
+
+    setShowCreateForm((current) => !current);
+    setPublishMessage("");
+    setUploadedImagePreview("");
+    setUploadedImageName("");
+    setFormData({
+      title: "",
+      targetFilter: activeFilter,
+      description: "",
+      price: "",
+      previousPrice: "",
+      label: "Oferta",
+      image: "",
+    });
   };
 
   const openProductEditModal = (product: ProductCard) => {
@@ -577,7 +1069,39 @@ export default function PublicacionesPage() {
       image: product.image,
     });
     setProductEditMessage("");
+    setProductEditImageName("");
+    setProductEditFileKey((current) => current + 1);
     setShowProductEditModal(true);
+  };
+
+  const handleProductEditImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      setProductEditImageName("");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setProductEditMessage("Selecciona un archivo de imagen valido.");
+      setProductEditImageName("");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+
+      setProductEditForm((current) => ({
+        ...current,
+        image: result,
+      }));
+
+      setProductEditImageName(file.name);
+      setProductEditMessage("");
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleProductEditSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -624,6 +1148,8 @@ export default function PublicacionesPage() {
       image: service.image ?? "",
     });
     setServiceEditMessage("");
+    setServiceEditImageName("");
+    setServiceEditFileKey((current) => current + 1);
     setShowServiceEditModal(true);
   };
 
@@ -661,6 +1187,36 @@ export default function PublicacionesPage() {
     setServiceEditMessage("");
   };
 
+  const handleServiceEditImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      setServiceEditImageName("");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setServiceEditMessage("Selecciona un archivo de imagen valido.");
+      setServiceEditImageName("");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+
+      setServiceEditForm((current) => ({
+        ...current,
+        image: result,
+      }));
+
+      setServiceEditImageName(file.name);
+      setServiceEditMessage("");
+    };
+
+    reader.readAsDataURL(file);
+  };
+
   const openOfferEditModal = (offer: OfferCard) => {
     setEditingOfferId(offer.id);
     setOfferEditForm({
@@ -672,6 +1228,8 @@ export default function PublicacionesPage() {
       image: offer.image,
     });
     setOfferEditMessage("");
+    setOfferEditImageName("");
+    setOfferEditFileKey((current) => current + 1);
     setShowOfferEditModal(true);
   };
 
@@ -711,6 +1269,36 @@ export default function PublicacionesPage() {
     setOfferEditMessage("");
   };
 
+  const handleOfferEditImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      setOfferEditImageName("");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setOfferEditMessage("Selecciona un archivo de imagen valido.");
+      setOfferEditImageName("");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+
+      setOfferEditForm((current) => ({
+        ...current,
+        image: result,
+      }));
+
+      setOfferEditImageName(file.name);
+      setOfferEditMessage("");
+    };
+
+    reader.readAsDataURL(file);
+  };
+
   const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
@@ -743,10 +1331,8 @@ export default function PublicacionesPage() {
     const title = formData.title.trim();
     const description = formData.description.trim();
     const price = formData.price.trim();
-    const image =
-      formData.targetFilter === "Publicaciones de texto"
-        ? "/productos/charla.png"
-        : uploadedImagePreview || formData.image.trim() || "/productos/laptop-pro-14.jpg";
+    const previousPrice = formData.previousPrice.trim();
+    const image = uploadedImagePreview || formData.image.trim() || "/productos/laptop-pro-14.jpg";
 
     if (!title || !description) {
       setPublishMessage("Completa titulo y descripcion para publicar.");
@@ -755,6 +1341,21 @@ export default function PublicacionesPage() {
 
     const newId = `pub-${Date.now()}`;
     let communityTag = "Publicacion";
+
+    if (formData.targetFilter === "Publicaciones") {
+      setPostItems((current) => [
+        {
+          id: newId,
+          title,
+          message: description,
+          date: "Hoy",
+          image,
+        },
+        ...current,
+      ]);
+      setActiveFilter("Publicaciones");
+      communityTag = "Publicacion";
+    }
 
     if (formData.targetFilter === "Productos disponibles") {
       setProductItems((current) => [
@@ -794,30 +1395,16 @@ export default function PublicacionesPage() {
           title,
           description,
           currentPrice: price || "Consultar",
-          label: "Oferta",
+          previousPrice: previousPrice || undefined,
+          label: formData.label,
           image,
         },
         ...current,
       ]);
       setActiveFilter("Ofertas y promociones");
-      communityTag = "Oferta";
+      communityTag = formData.label;
     }
 
-    if (formData.targetFilter === "Publicaciones de interacción") {
-      setPostItems((current) => [
-        {
-          id: newId,
-          title,
-          message: description,
-          date: "Hoy",
-          image,
-        },
-        ...current,
-      ]);
-      setActiveFilter("Publicaciones de interacción");
-      setActiveInteractionFilter("Publicaciones");
-      communityTag = "Interaccion";
-    }
 
     if (formData.targetFilter === "Publicaciones de texto") {
       setTextPostItems((current) => [
@@ -826,7 +1413,7 @@ export default function PublicacionesPage() {
           title,
           message: description,
           date: "Hoy",
-          image: "/productos/charla.png",
+          image,
         },
         ...current,
       ]);
@@ -837,12 +1424,13 @@ export default function PublicacionesPage() {
     upsertCommunityFeedPosts([
       buildCommunityFeedPost(newId, title, description, image, communityTag, new Date().toISOString()),
     ]);
-
     setFormData({
       title: "",
       targetFilter: formData.targetFilter,
       description: "",
       price: "",
+      previousPrice: "",
+      label: "Oferta",
       image: "",
     });
     setUploadedImagePreview("");
@@ -865,8 +1453,8 @@ export default function PublicacionesPage() {
         }
       />
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+      <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">CENTRO DE PUBLICACIONES</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Gestion comercial</h1>
@@ -877,38 +1465,86 @@ export default function PublicacionesPage() {
 
           <CompanySidebar />
 
-          <section className="tech-card">
-            <p className="text-sm font-semibold text-cyan-50">Resumen rapido</p>
-            <div className="mt-3 grid gap-2">
-              <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-3">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-cyan-200/70">Publicaciones totales</p>
-                <p className="mt-2 text-xl font-semibold text-cyan-50">{totalPublicationItems}</p>
-              </div>
-              <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-3">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-cyan-200/70">Seccion activa</p>
-                <p className="mt-2 text-base font-semibold text-cyan-50">{activeFilter}</p>
-                <p className="mt-1 text-xs text-cyan-100/72">{activeItemsCount} elementos visibles</p>
-              </div>
-            </div>
-          </section>
         </aside>
 
-        <section className="space-y-6 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
-          <section className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/30">
+        <section className="chat-scrollbar space-y-6 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
+          <section className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35 shadow-2xl shadow-slate-950/30">
             <div className="p-6 md:p-8">
               <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
                 <div>
                   <p className="tech-mono text-xs text-cyan-200/75">PUBLICACIONES DE LA EMPRESA</p>
                   <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Publicaciones de la empresa</h1>
                   <p className="mt-4 max-w-2xl text-sm leading-7 text-cyan-100/80 md:text-base">
-                    La empresa publica productos, servicios, ofertas, promociones y contenido de interacción en una sola
-                    vista filtrable, con cards visibles y acción directa para chat.
+                    Administra el feed principal de la empresa y organiza productos, servicios, ofertas, texto, encuestas e
+                    interacción con usuarios desde una sola vista filtrable.
                   </p>
                 </div>
 
                 <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Contenido visible</p>
-                  <h2 className="mt-3 text-2xl font-bold text-white">{activeFilter}</h2>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Contenido visible</p>
+                      <h2 className="mt-3 text-2xl font-bold text-white">{mainFilterLabels[activeFilter]}</h2>
+                    </div>
+
+                    <div className="relative shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setShowNotificationPanel((current) => !current)}
+                        className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-100/10 bg-white/5 text-cyan-100/85 transition hover:bg-cyan-100/10"
+                      >
+                        <BellIcon />
+                        {showInteractionNotice ? (
+                          <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.85)]" />
+                        ) : null}
+                      </button>
+
+                      <AnimatePresence>
+                        {showNotificationPanel ? (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                            transition={{ duration: 0.18, ease: "easeOut" }}
+                            className="absolute right-0 top-14 z-40 w-[320px] overflow-hidden rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/50"
+                          >
+                            <div className="border-b border-cyan-100/10 px-4 py-3">
+                              <p className="text-sm font-semibold text-white">Notificaciones</p>
+                              <p className="mt-1 text-xs text-cyan-100/65">Actividad reciente de usuarios</p>
+                            </div>
+
+                            {showInteractionNotice ? (
+                              <button
+                                type="button"
+                                onClick={handleInteractionNotificationClick}
+                                className="flex w-full items-start gap-3 px-4 py-4 text-left transition hover:bg-cyan-100/5"
+                              >
+                                <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                                  AL
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-semibold text-white">
+                                    Alejandro buscó <span className="text-cyan-200">{latestInteractionNotification.productName}</span>
+                                  </p>
+                                  <p className="mt-1 text-xs text-cyan-100/65">
+                                    Haz clic para ver la lista de usuarios que interactúan.
+                                  </p>
+                                </div>
+
+                                <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-300" />
+                              </button>
+                            ) : (
+                              <div className="px-4 py-6 text-sm text-cyan-100/65">
+                                No tienes notificaciones nuevas.
+                              </div>
+                            )}
+                          </motion.div>
+                        ) : null}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-3">
                       <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">En pantalla</p>
@@ -927,161 +1563,329 @@ export default function PublicacionesPage() {
               </div>
 
               <div className="mt-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-nowrap gap-3 overflow-x-auto pb-1">
                   {mainFilters.map((filter) => (
                     <button
                       key={filter}
                       type="button"
                       onClick={() => handleMainFilterChange(filter)}
-                      className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                      className={`shrink-0 rounded-full border px-6 py-3 text-base font-semibold leading-none transition ${
                         activeFilter === filter
                           ? "border-cyan-300/50 bg-cyan-300/20 text-white"
                           : "border-cyan-100/10 bg-white/5 text-cyan-100/80 hover:bg-cyan-100/10"
                       }`}
                     >
-                      {filter}
+                      {mainFilterLabels[filter]}
                     </button>
                   ))}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateForm((current) => !current);
-                    setPublishMessage("");
-                    setUploadedImagePreview("");
-                    setUploadedImageName("");
-                    setFormData((current) => ({
-                      ...current,
-                      targetFilter: activeFilter,
-                      price: activeFilter === "Publicaciones de texto" ? "" : current.price,
-                    }));
-                  }}
-                  className="self-start rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30 xl:self-auto"
-                >
-                  {createButtonLabel}
-                </button>
+                {createButtonLabel ? (
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateAction}
+                    className="self-start shrink-0 whitespace-nowrap rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30 xl:self-auto"
+                  >
+                    {createButtonLabel}
+                  </button>
+                ) : null}
               </div>
 
-              {showCreateForm ? (
-                <form
-                  onSubmit={handleCreatePublicationSubmit}
-                  className="mt-6 rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5"
-                >
-                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">{createFormTitle}</p>
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <label className="space-y-2 text-sm text-cyan-100/85">
-                      <span>Titulo</span>
-                      <input
-                        value={formData.title}
-                        onChange={(event) => setFormData((current) => ({ ...current, title: event.target.value }))}
-                        placeholder="Ej: Laptop Pro 14 reacondicionada"
-                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                      />
-                    </label>
-
-                    {isServicesView ? (
-                      <div className="space-y-2 text-sm text-cyan-100/85">
-                        <span>Seccion</span>
-                        <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50">
-                          Servicios
+              <AnimatePresence>
+                {showCreateForm ? (
+                  <motion.div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    onClick={(event) => {
+                      if (event.target === event.currentTarget) {
+                        setShowCreateForm(false);
+                      }
+                    }}
+                  >
+                    <motion.form
+                      onSubmit={handleCreatePublicationSubmit}
+                      className="chat-scrollbar max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+                      initial={{ opacity: 0, y: 28, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 20, scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 320, damping: 28, mass: 0.92 }}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">{createFormTitle}</p>
+                          <h2 className="mt-2 text-2xl font-bold text-white">
+                           {activeFilter === "Productos disponibles"
+                            ? "Agregar producto"
+                            : isServicesView
+                              ? "Agregar servicio"
+                              : isTextView
+                                ? "Agregar publicacion de texto"
+                                : isOfferView
+                                  ? "Agregar oferta o promocion"
+                                  : activeFilter === "Publicaciones de interacción"
+                                    ? "Agregar publicacion"
+                                    : "Agregar publicacion"}
+                          </h2>
                         </div>
-                      </div>
-                    ) : (
-                      <label className="space-y-2 text-sm text-cyan-100/85">
-                        <span>Seccion</span>
-                        <select
-                          value={formData.targetFilter}
-                          onChange={(event) =>
-                            setFormData((current) => ({ ...current, targetFilter: event.target.value as MainFilter }))
-                          }
-                          className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                        <button
+                          type="button"
+                          onClick={() => setShowCreateForm(false)}
+                          className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
                         >
-                          {mainFilters.map((filter) => (
-                            <option key={filter} value={filter}>
-                              {filter}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-
-                    <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                      <span>Descripcion</span>
-                      <textarea
-                        value={formData.description}
-                        onChange={(event) => setFormData((current) => ({ ...current, description: event.target.value }))}
-                        placeholder="Describe la publicacion para tus clientes"
-                        rows={4}
-                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                      />
-                    </label>
-
-                    <label className="space-y-2 text-sm text-cyan-100/85">
-                      <span>Precio (opcional)</span>
-                      <input
-                        value={formData.price}
-                        onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
-                        placeholder="Ej: Bs 1.500.000"
-                        disabled={isTextView}
-                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                      />
-                      {isTextView ? <p className="text-xs text-cyan-100/60">Las publicaciones de texto no usan precio.</p> : null}
-                    </label>
-
-                    {isTextView ? (
-                      <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/40 p-4 text-sm text-cyan-100/75 md:col-span-2">
-                        La publicación de texto se publicará con la imagen <span className="font-semibold text-cyan-50">productos/charla.png</span>.
+                          Cerrar
+                        </button>
                       </div>
-                    ) : (
-                      <>
-                        <label className="space-y-2 text-sm text-cyan-100/85">
-                          <span>Subir imagen desde tu PC (opcional)</span>
-                          <input
-                            key={fileInputKey}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageFileChange}
-                            className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300/20 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                          />
-                          {uploadedImageName ? <p className="text-xs text-cyan-100/70">Archivo: {uploadedImageName}</p> : null}
-                        </label>
 
-                        <label className="space-y-2 text-sm text-cyan-100/85">
-                          <span>URL de imagen (opcional)</span>
+                      <div className="mt-6 grid gap-4 md:grid-cols-2">
+                        <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                          <span>Titulo</span>
                           <input
-                            value={formData.image}
-                            onChange={(event) => setFormData((current) => ({ ...current, image: event.target.value }))}
-                            placeholder="/productos/laptop-pro-14.jpg"
+                            value={formData.title}
+                            onChange={(event) => setFormData((current) => ({ ...current, title: event.target.value }))}
+                            placeholder="Ej: Laptop Pro 14 reacondicionada"
                             className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                           />
                         </label>
-                      </>
-                    )}
+
+                        <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                          <span>Descripcion</span>
+                          <textarea
+                            value={formData.description}
+                            onChange={(event) => setFormData((current) => ({ ...current, description: event.target.value }))}
+                            placeholder="Describe la publicacion para tus clientes"
+                            rows={4}
+                            className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                          />
+                        </label>
+
+                        {!isTextView ? (
+                          <label className="space-y-2 text-sm text-cyan-100/85">
+                            <span>{isOfferView ? "Precio actual" : "Precio (opcional)"}</span>
+                            <input
+                              value={formData.price}
+                              onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
+                              placeholder="Ej: Bs 1.500.000"
+                              className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                            />
+                          </label>
+                        ) : null}
+
+                        {isOfferView ? (
+                          <>
+                            <label className="space-y-2 text-sm text-cyan-100/85">
+                              <span>Tipo</span>
+                              <select
+                                value={formData.label}
+                                onChange={(event) =>
+                                  setFormData((current) => ({
+                                    ...current,
+                                    label: event.target.value as "Oferta" | "Promocion",
+                                  }))
+                                }
+                                className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                              >
+                                <option value="Oferta">Oferta</option>
+                                <option value="Promocion">Promocion</option>
+                              </select>
+                            </label>
+
+                            <label className="space-y-2 text-sm text-cyan-100/85">
+                              <span>Precio anterior (opcional)</span>
+                              <input
+                                value={formData.previousPrice}
+                                onChange={(event) => setFormData((current) => ({ ...current, previousPrice: event.target.value }))}
+                                placeholder="Ej: Bs 1.800.000"
+                                className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                              />
+                            </label>
+                          </>
+                        ) : null}
+
+                      <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                        <span>Subir imagen desde tu PC</span>
+                        <input
+                          key={fileInputKey}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageFileChange}
+                          className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300/20 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                        />
+                        {uploadedImageName ? (
+                          <p className="text-xs text-cyan-100/70">Archivo: {uploadedImageName}</p>
+                        ) : null}
+                      </label>
+                      </div>
+
+                      {uploadedImagePreview ? (
+                        <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-slate-950/40 p-3">
+                          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Vista previa</p>
+                          <img
+                            src={uploadedImagePreview}
+                            alt="Vista previa de imagen seleccionada"
+                            className="mt-3 h-40 w-full rounded-2xl object-cover"
+                          />
+                        </div>
+                      ) : null}
+
+                      <div className="mt-6 flex flex-wrap items-center gap-3">
+                        <button
+                          type="submit"
+                          className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                        >
+                          {submitButtonLabel}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowCreateForm(false)}
+                          className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                        >
+                          Cancelar
+                        </button>
+
+                        {publishMessage ? <p className="text-sm text-cyan-100/80">{publishMessage}</p> : null}
+                      </div>
+                    </motion.form>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+
+              {activeFilter === "Publicaciones" && (
+                <div className="mt-8 space-y-5">
+                  <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+                    <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Feed principal</p>
+                    <h3 className="mt-2 text-2xl font-bold text-white">Todas las publicaciones de la empresa</h3>
+                    <p className="mt-3 text-sm leading-7 text-cyan-100/78">
+                      Este feed concentra todo el contenido visible de la empresa en formato continuo, con acciones rápidas de contacto e interacción.
+                    </p>
                   </div>
 
-                  {!isTextView && uploadedImagePreview ? (
-                    <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-slate-950/40 p-3">
-                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Vista previa</p>
-                      <img
-                        src={uploadedImagePreview}
-                        alt="Vista previa de imagen seleccionada"
-                        className="mt-3 h-40 w-full rounded-2xl object-cover"
-                      />
-                    </div>
-                  ) : null}
-
-                  <div className="mt-4 flex flex-wrap items-center gap-3">
-                    <button
-                      type="submit"
-                      className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                  {companyFeedItems.map((item) => (
+                    <article
+                      key={`${item.kind}-${item.id}`}
+                      className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
                     >
-                      {submitButtonLabel}
-                    </button>
-                    {publishMessage ? <p className="text-sm text-cyan-100/80">{publishMessage}</p> : null}
-                  </div>
-                </form>
-              ) : null}
+                      <div className="space-y-4 p-5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center gap-3 text-sm text-cyan-100/75">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                              {company.logo}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-white">{company.name}</p>
+                              <p>{item.date}</p>
+                            </div>
+                          </div>
+
+                          <span className="rounded-full border border-cyan-100/15 bg-slate-950/40 px-3 py-1 text-xs font-semibold text-cyan-100/85">
+                            {item.tag}
+                          </span>
+                        </div>
+
+                        <div className="mt-5">
+                          <h3 className="text-2xl font-bold text-white">{item.title}</h3>
+                          <p className="mt-3 text-base leading-8 text-cyan-100/84">{item.description}</p>
+                        </div>
+
+                        {item.kind === "Encuesta" ? (
+                          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                            {(item.options ?? []).map((option) => (
+                              <button
+                                key={option}
+                                type="button"
+                                className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-cyan-100/90 transition hover:bg-cyan-100/10"
+                              >
+                                {option}
+                              </button>
+                            ))}
+                          </div>
+                        ) : item.image ? (
+                          <button
+                            type="button"
+                            onClick={() => openPublicationPreview(item.preview)}
+                            className="mt-5 block w-full text-left"
+                          >
+                            <div className="flex h-[420px] items-center justify-center overflow-hidden rounded-[28px] bg-white">
+                              <img
+                                src={item.image}
+                                alt={item.title}
+                                className="max-h-full max-w-full object-contain object-center"
+                              />
+                            </div>
+                          </button>
+                        ) : null}
+
+                        {item.price || item.status ? (
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {item.price ? (
+                              <span className="rounded-full border border-cyan-100/15 bg-slate-950/40 px-3 py-1 text-xs font-semibold text-cyan-100/85">
+                                {item.price}
+                              </span>
+                            ) : null}
+                            {item.status ? (
+                              <span className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+                                {item.status}
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        <div className="mt-5 border-t border-cyan-100/10 pt-4">
+                          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                            <Link
+                              href="/empresa/chat"
+                              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                            >
+                              Contactar por chat
+                            </Link>
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPublicationPreview(item.preview)}
+                              className="inline-flex min-h-11 items-center justify-center rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10"
+                            >
+                              Ver publicacion
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => togglePublicationLike(item.id)}
+                              className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                                getPublicationSocial(item.id).liked
+                                  ? "border-rose-300/35 bg-rose-400/10 text-rose-100"
+                                  : "border-cyan-100/10 bg-white/5 text-cyan-100/80 hover:bg-cyan-100/10"
+                              }`}
+                            >
+                              <LikeIcon />
+                              Like {getPublicationSocial(item.id).likes}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenComments(item.preview)}
+                              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                            >
+                              <CommentIcon />
+                              Comentar {getPublicationSocial(item.id).comments.length}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                            >
+                              <SendIcon />
+                              Enviar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
 
               {activeFilter === "Productos disponibles" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -1092,7 +1896,14 @@ export default function PublicacionesPage() {
                       transition={{ duration: 0.22, ease: "easeOut" }}
                       className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
                     >
-                      <img src={product.image} alt={product.name} className="h-44 w-full object-cover" loading="lazy" />
+                      <div className="flex h-44 w-full items-center justify-center bg-white">
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="max-h-full max-w-full object-contain object-center"
+                          loading="lazy"
+                        />
+                      </div>
                       <div className="space-y-4 p-5">
                         <div className="flex items-start justify-between gap-4">
                           <div>
@@ -1160,7 +1971,16 @@ export default function PublicacionesPage() {
                       transition={{ duration: 0.22, ease: "easeOut" }}
                       className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
                     >
-                      {service.image ? <img src={service.image} alt={service.name} className="h-40 w-full object-cover" loading="lazy" /> : null}
+                      {service.image ? (
+                          <div className="flex h-40 w-full items-center justify-center bg-white">
+                            <img
+                              src={service.image}
+                              alt={service.name}
+                              className="max-h-full max-w-full object-contain object-center"
+                              loading="lazy"
+                            />
+                          </div>
+                        ) : null}
                       <div className="space-y-4 p-5">
                         <div className="flex items-center gap-3 text-sm text-cyan-100/75">
                           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
@@ -1220,7 +2040,14 @@ export default function PublicacionesPage() {
                       transition={{ duration: 0.22, ease: "easeOut" }}
                       className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
                     >
-                      <img src={offer.image} alt={offer.title} className="h-44 w-full object-cover" loading="lazy" />
+                      <div className="flex h-44 w-full items-center justify-center bg-white">
+                        <img
+                          src={offer.image}
+                          alt={offer.title}
+                          className="max-h-full max-w-full object-contain object-center"
+                          loading="lazy"
+                        />
+                      </div>
                       <div className="space-y-4 p-5">
                         <div className="flex items-start justify-between gap-4">
                           <div>
@@ -1287,20 +2114,14 @@ export default function PublicacionesPage() {
 
               {activeFilter === "Publicaciones de interacción" && (
                 <div className="mt-8 rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-                  {showInteractionNotice ? (
-                    <button
-                      type="button"
-                      onClick={handleInteractionNotificationClick}
-                      className="mb-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-emerald-300/35 bg-emerald-400/10 px-4 py-3 text-left transition hover:bg-emerald-300/15"
-                    >
-                      <span className="text-sm font-semibold text-emerald-100">
-                        {latestInteractionNotification.userName} busco {latestInteractionNotification.productName}
-                      </span>
-                      <span className="rounded-full border border-emerald-300/35 px-3 py-1 text-xs font-semibold text-emerald-100">
-                        Ver usuario
-                      </span>
-                    </button>
-                  ) : null}
+                  <div className="mb-5">
+                    <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Interacción</p>
+                    <h3 className="mt-2 text-2xl font-bold text-white">Encuestas y usuarios que interactúan</h3>
+                    <p className="mt-2 text-sm leading-7 text-cyan-100/78">
+                      Revisa participación, encuestas activas y actividad reciente de usuarios interesados.
+                    </p>
+                  </div>
+ 
 
                   <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                     <div className="flex flex-wrap gap-3">
@@ -1315,25 +2136,15 @@ export default function PublicacionesPage() {
                               : "border-cyan-100/10 bg-white/5 text-cyan-100/80 hover:bg-cyan-100/10"
                           }`}
                         >
-                          {filter}
+                          {interactionFilterLabels[filter]}
                         </button>
                       ))}
                     </div>
-
-                    {activeInteractionFilter === "Encuestas" ? (
-                      <button
-                        type="button"
-                        onClick={() => setActiveInteractionFilter("Encuestas")}
-                        className="self-start rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30 xl:self-auto"
-                      >
-                        Agregar encuesta
-                      </button>
-                    ) : null}
                   </div>
 
                   <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {activeInteractionFilter === "Encuestas" &&
-                      surveys.map((survey) => (
+                      surveyItems.map((survey) => (
                         <article key={survey.id} className="rounded-3xl border border-cyan-100/10 bg-white/5 p-5">
                           <div className="flex items-center gap-3 text-sm text-cyan-100/75">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
@@ -1365,7 +2176,13 @@ export default function PublicacionesPage() {
                                   onClick={() => setSelectedSurveyOption((current) => ({ ...current, [survey.id]: option }))}
                                   className="w-full text-left"
                                 >
-                                  <div className={`rounded-2xl border px-4 py-3 transition ${isSelected ? "border-cyan-300/50 bg-cyan-300/15" : "border-cyan-100/10 bg-slate-950/30"}`}>
+                                  <div
+                                    className={`rounded-2xl border px-4 py-3 transition ${
+                                      isSelected
+                                        ? "border-cyan-300/50 bg-cyan-300/15"
+                                        : "border-cyan-100/10 bg-slate-950/30"
+                                    }`}
+                                  >
                                     <div className="flex items-center justify-between gap-4 text-sm">
                                       <span className="text-cyan-100/90">{option}</span>
                                       <span className="font-semibold text-white">{percentage}%</span>
@@ -1382,43 +2199,6 @@ export default function PublicacionesPage() {
                             })}
                           </div>
                           <p className="mt-4 text-sm text-cyan-100/75">{survey.votes} participaciones</p>
-                        </article>
-                      ))}
-
-                    {activeInteractionFilter === "Publicaciones" &&
-                      postItems.map((post) => (
-                        <article key={post.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-white/5">
-                          {post.image ? <img src={post.image} alt={post.title} className="h-44 w-full object-cover" loading="lazy" /> : null}
-                          <div className="space-y-4 p-5">
-                            <div className="flex items-center gap-3 text-sm text-cyan-100/75">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                                {company.logo}
-                              </div>
-                              <div>
-                                <p className="font-semibold text-white">{company.name}</p>
-                                <p>{post.date}</p>
-                              </div>
-                            </div>
-                            <h3 className="text-xl font-bold text-white">{post.title}</h3>
-                            <p className="text-sm leading-7 text-cyan-100/80">{post.message}</p>
-                            <div className="flex flex-wrap gap-3 pt-2">
-                              <button className="inline-flex items-center gap-2 rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
-                                Contactar por chat
-                              </button>
-                              <button className="inline-flex items-center gap-2 rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
-                                <LikeIcon />
-                                Like
-                              </button>
-                              <button className="inline-flex items-center gap-2 rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10">
-                                <CommentIcon />
-                                Comentar
-                              </button>
-                              <button className="inline-flex items-center gap-2 rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10">
-                                <SendIcon />
-                                Enviar
-                              </button>
-                            </div>
-                          </div>
                         </article>
                       ))}
 
@@ -1458,8 +2238,15 @@ export default function PublicacionesPage() {
               {activeFilter === "Publicaciones de texto" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {textPostItems.map((post) => (
-                    <article key={post.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-white/5">
-                      <img src={post.image} alt={post.title} className="h-44 w-full object-cover" loading="lazy" />
+                    <article key={post.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35">
+                      <div className="flex h-44 w-full items-center justify-center bg-white">
+                        <img
+                          src={post.image}
+                          alt={post.title}
+                          className="max-h-full max-w-full object-contain object-center"
+                          loading="lazy"
+                        />
+                      </div>
                       <div className="space-y-4 p-5">
                         <div className="flex items-center gap-3 text-sm text-cyan-100/75">
                           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
@@ -1586,6 +2373,89 @@ export default function PublicacionesPage() {
                   </div>
                 </section>
               </div>
+              {selectedPublication && selectedPublicationSocial ? (
+                <div className="mt-5 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+                  <section className="rounded-3xl border border-cyan-100/12 bg-slate-950/40 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Interaccion</p>
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      <Link
+                        href="/empresa/chat"
+                        className="inline-flex min-h-11 items-center justify-center rounded-full border border-cyan-100/10 bg-cyan-400/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                      >
+                        Contactar por chat
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => togglePublicationLike(selectedPublication.id)}
+                        className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                          selectedPublicationSocial.liked
+                            ? "border-rose-300/35 bg-rose-400/10 text-rose-100"
+                            : "border-cyan-100/10 bg-white/5 text-cyan-100/80 hover:bg-cyan-100/10"
+                        }`}
+                      >
+                        <LikeIcon />
+                        Like {selectedPublicationSocial.likes}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                      >
+                        <CommentIcon />
+                        Comentarios {selectedPublicationSocial.comments.length}
+                      </button>
+                    </div>
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-3">
+                        <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">Likes acumulados</p>
+                        <p className="mt-2 text-xl font-semibold text-cyan-50">{selectedPublicationSocial.likes}</p>
+                      </div>
+                      <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-3">
+                        <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">Comentarios</p>
+                        <p className="mt-2 text-xl font-semibold text-cyan-50">{selectedPublicationSocial.comments.length}</p>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="rounded-3xl border border-cyan-100/12 bg-slate-950/40 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Comentarios</p>
+
+                    <form onSubmit={handleCommentSubmit} className="mt-4 space-y-3">
+                      <textarea
+                        value={commentDraft}
+                        onChange={(event) => setCommentDraft(event.target.value)}
+                        placeholder="Escribe un comentario como empresa..."
+                        rows={3}
+                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/45 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                      />
+                      <button
+                        type="submit"
+                        className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                      >
+                        Publicar comentario
+                      </button>
+                    </form>
+
+                    <div className="mt-5 space-y-3">
+                      {selectedPublicationSocial.comments.map((comment) => (
+                        <article
+                          key={comment.id}
+                          className="rounded-2xl border border-cyan-100/10 bg-slate-950/45 p-4"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="font-semibold text-cyan-50">{comment.author}</p>
+                            <p className="text-xs text-cyan-100/65">{comment.time}</p>
+                          </div>
+                          <p className="mt-2 text-sm leading-7 text-cyan-100/82">{comment.text}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              ) : null}
             </motion.article>
           </motion.div>
         ) : null}
@@ -1667,13 +2537,17 @@ export default function PublicacionesPage() {
                 </label>
 
                 <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                  <span>URL de imagen</span>
+                  <span>Seleccionar imagen desde la PC</span>
                   <input
-                    value={productEditForm.image}
-                    onChange={(event) => setProductEditForm((current) => ({ ...current, image: event.target.value }))}
-                    placeholder="/productos/laptop-pro-14.jpg"
-                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                    key={productEditFileKey}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProductEditImageChange}
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300/20 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                   />
+                  {productEditImageName ? (
+                    <p className="text-xs text-cyan-100/70">Archivo: {productEditImageName}</p>
+                  ) : null}
                 </label>
               </div>
 
@@ -1765,14 +2639,18 @@ export default function PublicacionesPage() {
                   />
                 </label>
 
-                <label className="space-y-2 text-sm text-cyan-100/85">
-                  <span>URL de imagen</span>
+                <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
+                  <span>Seleccionar imagen desde la PC</span>
                   <input
-                    value={serviceEditForm.image}
-                    onChange={(event) => setServiceEditForm((current) => ({ ...current, image: event.target.value }))}
-                    placeholder="/productos/monitor-ultrawide-34.jpg"
-                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                    key={serviceEditFileKey}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleServiceEditImageChange}
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300/20 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                   />
+                  {serviceEditImageName ? (
+                    <p className="text-xs text-cyan-100/70">Archivo: {serviceEditImageName}</p>
+                  ) : null}
                 </label>
               </div>
 
@@ -1788,6 +2666,130 @@ export default function PublicacionesPage() {
                 <button
                   type="button"
                   onClick={closeServiceEditModal}
+                  className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </motion.form>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showSurveyCreateModal ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                closeSurveyCreateModal();
+              }
+            }}
+          >
+            <motion.form
+              onSubmit={handleSurveyCreateSubmit}
+              className="w-full max-w-2xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+              initial={{ opacity: 0, y: 28, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28, mass: 0.92 }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Encuesta</p>
+                  <h2 className="mt-2 text-2xl font-bold text-white">Agregar encuesta</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeSurveyCreateModal}
+                  className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
+                >
+                  Cerrar
+                </button>
+              </div>
+
+              <div className="mt-6 grid gap-4">
+                <label className="space-y-2 text-sm text-cyan-100/85">
+                  <span>Pregunta</span>
+                  <input
+                    value={surveyForm.question}
+                    onChange={(event) =>
+                      setSurveyForm((current) => ({ ...current, question: event.target.value }))
+                    }
+                    placeholder="Ej: Que servicio necesitas con mas frecuencia?"
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                </label>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="space-y-2 text-sm text-cyan-100/85">
+                    <span>Opcion 1</span>
+                    <input
+                      value={surveyForm.option1}
+                      onChange={(event) =>
+                        setSurveyForm((current) => ({ ...current, option1: event.target.value }))
+                      }
+                      placeholder="Ej: Diagnostico"
+                      className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                    />
+                  </label>
+
+                  <label className="space-y-2 text-sm text-cyan-100/85">
+                    <span>Opcion 2</span>
+                    <input
+                      value={surveyForm.option2}
+                      onChange={(event) =>
+                        setSurveyForm((current) => ({ ...current, option2: event.target.value }))
+                      }
+                      placeholder="Ej: Mantenimiento"
+                      className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                    />
+                  </label>
+
+                  <label className="space-y-2 text-sm text-cyan-100/85">
+                    <span>Opcion 3 (opcional)</span>
+                    <input
+                      value={surveyForm.option3}
+                      onChange={(event) =>
+                        setSurveyForm((current) => ({ ...current, option3: event.target.value }))
+                      }
+                      placeholder="Ej: Redes"
+                      className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                    />
+                  </label>
+
+                  <label className="space-y-2 text-sm text-cyan-100/85">
+                    <span>Opcion 4 (opcional)</span>
+                    <input
+                      value={surveyForm.option4}
+                      onChange={(event) =>
+                        setSurveyForm((current) => ({ ...current, option4: event.target.value }))
+                      }
+                      placeholder="Ej: Soporte remoto"
+                      className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {surveyCreateMessage ? (
+                <p className="mt-4 text-sm text-amber-200">{surveyCreateMessage}</p>
+              ) : null}
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="submit"
+                  className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                >
+                  Publicar encuesta
+                </button>
+                <button
+                  type="button"
+                  onClick={closeSurveyCreateModal}
                   className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
                 >
                   Cancelar
@@ -1876,22 +2878,33 @@ export default function PublicacionesPage() {
 
                 <label className="space-y-2 text-sm text-cyan-100/85">
                   <span>Etiqueta</span>
-                  <input
+                  <select
                     value={offerEditForm.label}
-                    onChange={(event) => setOfferEditForm((current) => ({ ...current, label: event.target.value }))}
-                    placeholder="Oferta"
+                    onChange={(event) =>
+                      setOfferEditForm((current) => ({
+                        ...current,
+                        label: event.target.value,
+                      }))
+                    }
                     className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                  />
+                  >
+                    <option value="Oferta">Oferta</option>
+                    <option value="Promocion">Promocion</option>
+                  </select>
                 </label>
 
                 <label className="space-y-2 text-sm text-cyan-100/85">
-                  <span>URL de imagen</span>
+                  <span>Seleccionar imagen desde la PC</span>
                   <input
-                    value={offerEditForm.image}
-                    onChange={(event) => setOfferEditForm((current) => ({ ...current, image: event.target.value }))}
-                    placeholder="/productos/laptop-pro-14.jpg"
-                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                    key={offerEditFileKey}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleOfferEditImageChange}
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 file:mr-4 file:rounded-full file:border-0 file:bg-cyan-300/20 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                   />
+                  {offerEditImageName ? (
+                    <p className="text-xs text-cyan-100/70">Archivo: {offerEditImageName}</p>
+                  ) : null}
                 </label>
               </div>
 

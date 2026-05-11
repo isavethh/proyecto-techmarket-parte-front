@@ -98,20 +98,24 @@ type ProfileEditForm = {
 
 function RatingStars({ rating }: { rating: number }) {
   return (
-    <div className="flex items-center gap-1" aria-label={`Calificacion ${rating} de 5`}>
+    <div
+      className="inline-flex items-center gap-1"
+      aria-label={`Calificacion ${rating} de 5`}
+    >
       {Array.from({ length: 5 }, (_, index) => {
         const filled = index < Math.round(rating);
         return (
           <span
             key={index}
-            className={filled ? "text-amber-400" : "text-cyan-100/25"}
+            className={`text-base leading-none ${
+              filled ? "text-amber-400" : "text-cyan-100/20"
+            }`}
             aria-hidden="true"
           >
             ★
           </span>
         );
       })}
-      <span className="ml-2 text-sm text-cyan-100/80">{rating.toFixed(1)} / 5</span>
     </div>
   );
 }
@@ -279,8 +283,8 @@ export default function Perfil() {
         </div>
       </header>
 
-      <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_1fr]">
-        <aside className="space-y-4 h-fit">
+      <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">PERFIL EMPRESA</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Identidad y datos del negocio</h1>
@@ -291,7 +295,7 @@ export default function Perfil() {
           <CompanySidebar />
         </aside>
 
-        <section className="space-y-6 overflow-y-auto pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
+        <section className="chat-scrollbar space-y-6 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
           <section className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/30">
                 <div className="grid gap-6 p-6 md:grid-cols-[1.1fr_0.9fr] md:p-8">
                   <div>
@@ -314,8 +318,16 @@ export default function Perfil() {
 
                     <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                        <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificacion general</p>
-                        <div className="mt-3">
+                        <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">
+                          Calificacion general
+                        </p>
+                        <div className="mt-4 space-y-3">
+                          <div className="space-y-1">
+                            <p className="mt-3 text-3xl font-bold text-white">
+                              {businessProfile.rating.toFixed(1)}
+                            </p>
+                            <p className="text-sm text-cyan-100/70">de 5 puntos</p>
+                          </div>
                           <RatingStars rating={businessProfile.rating} />
                         </div>
                       </div>
@@ -372,8 +384,8 @@ export default function Perfil() {
                 </div>
               </section>
 
-              <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-                <article className="rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
+              <section className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
+                <article className="h-full rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Informacion general</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Descripcion del negocio</h2>
                   <p className="mt-4 text-sm leading-7 text-cyan-100/80">
@@ -405,7 +417,7 @@ export default function Perfil() {
                   </div>
                 </article>
 
-                <article className="rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
+                <article className="h-full rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Ubicacion y cobertura</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Donde atiende</h2>
 

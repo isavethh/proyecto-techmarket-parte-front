@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
+import { logout } from "@/lib/auth/authGuard";
+import { getUser, getToken } from "@/lib/auth/tokenStore";
 import { specialistNavLinks, specialistProfile } from "../specialistData";
 
 type SpecialistShellProps = {
@@ -11,8 +13,84 @@ type SpecialistShellProps = {
   children: ReactNode;
 };
 
+type SpecialistSidebarSummary = {
+  eyebrow: string;
+  title: string;
+  description: string;
+  points: string[];
+};
+
 type SpecialistTopbarControlsProps = {
   sectionLabel: string;
+};
+
+const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
+  "Resumen especialista": {
+    eyebrow: "PERFIL DESTACADO",
+    title: "Especialista recomendado",
+    description:
+      "Perfil tecnico orientado a confianza, soporte claro y evidencia visible para que el cliente decida con mas seguridad.",
+    points: [
+      "Atencion clara y profesional",
+      "Portafolio con evidencia visible",
+      "Respuesta rapida por chat",
+    ],
+  },
+  Portafolio: {
+    eyebrow: "PORTAFOLIO ACTIVO",
+    title: "Resultados que generan confianza",
+    description:
+      "Esta seccion ayuda al cliente a revisar trabajos realizados, resultados obtenidos y evidencia tecnica antes de contratar.",
+    points: [
+      "Trabajos documentados",
+      "Resultados visibles",
+      "Mayor credibilidad comercial",
+    ],
+  },
+  Servicios: {
+    eyebrow: "CATALOGO ACTIVO",
+    title: "Servicios listos para contratar",
+    description:
+      "Aqui se muestran servicios tecnicos claros, con descripcion, precio y acceso directo al chat para facilitar la decision.",
+    points: [
+      "Servicios destacados",
+      "Precio visible o consultable",
+      "Acceso directo al chat",
+    ],
+  },
+  Chat: {
+    eyebrow: "ATENCION DIRECTA",
+    title: "Conversaciones activas",
+    description:
+      "Este canal concentra consultas, seguimiento y respuesta rapida para mejorar confianza, atencion y conversion comercial.",
+    points: [
+      "Consultas activas",
+      "Seguimiento en tiempo real",
+      "Canal de cierre comercial",
+    ],
+  },
+  Reputacion: {
+    eyebrow: "CONFIANZA VISIBLE",
+    title: "Opiniones y calificaciones",
+    description:
+      "La reputacion permite al cliente validar calidad de servicio, atencion y experiencia antes de tomar una decision.",
+    points: [
+      "Calificacion general",
+      "Comentarios recientes",
+      "Senales de confianza",
+    ],
+  },
+  Disponibilidad: {
+    eyebrow: "AGENDA ACTIVA",
+    title: "Estado operativo",
+    description:
+      "Esta vista muestra horario, modalidad de atencion y capacidad operativa para saber cuando contactar o programar servicio.",
+    points: [
+      "Horario visible",
+      "Modalidad de atencion",
+      "Estado actual del tecnico",
+    ],
+  },
 };
 
 function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProps) {
@@ -115,13 +193,13 @@ function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProp
               );
             })}
 
-            <Link
-              href="/auth"
-              onClick={() => setIsProfileMenuOpen(false)}
-              className="auth-action block w-full"
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="auth-action block w-full text-left"
             >
               Cerrar sesion
-            </Link>
+            </button>
           </div>
         </div>
       ) : null}
@@ -131,9 +209,20 @@ function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProp
 
 export function SpecialistShell({ sectionLabel, statusMessage, children }: SpecialistShellProps) {
   const pathname = usePathname();
+  const sidebarSummary = specialistSidebarSummaries[sectionLabel];
+
+  useEffect(() => {
+    try {
+      console.log("[SpecialistShell] mount - getToken():", getToken());
+      console.log("[SpecialistShell] mount - getUser():", getUser());
+      console.log("[SpecialistShell] mount - document.cookie:", typeof document !== 'undefined' ? document.cookie : 'no-document');
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   return (
-    <div className="flex-1 pb-8">
+    <div className="flex-1">
       <header className="tech-top-nav sticky top-0 z-30">
         <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
           <Link href="/" className="font-semibold text-cyan-100/90">
@@ -151,8 +240,8 @@ export function SpecialistShell({ sectionLabel, statusMessage, children }: Speci
         </div>
       </header>
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-5">
+        <aside className="space-y-3 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-1">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">PERFIL ESPECIALISTA</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">{specialistProfile.name}</h1>
@@ -171,7 +260,7 @@ export function SpecialistShell({ sectionLabel, statusMessage, children }: Speci
               </div>
             </div>
 
-            <div className="mt-4 grid gap-2">
+            <div className="mt-3 grid gap-2">
               {specialistNavLinks.map((link) => {
                 const isActive = pathname === link.href;
 
@@ -187,9 +276,29 @@ export function SpecialistShell({ sectionLabel, statusMessage, children }: Speci
               })}
             </div>
           </section>
+            {sidebarSummary ? (
+              <section className="tech-card">
+                <p className="tech-mono text-xs text-cyan-200/75">{sidebarSummary.eyebrow}</p>
+                <h2 className="mt-2 text-xl font-semibold text-white">{sidebarSummary.title}</h2>
+                <p className="mt-3 text-sm leading-7 text-cyan-100/80">
+                  {sidebarSummary.description}
+                </p>
+
+                <div className="mt-4 space-y-2">
+                  {sidebarSummary.points.map((point) => (
+                    <div
+                      key={point}
+                      className="rounded-2xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-sm text-cyan-100/80"
+                    >
+                      {point}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
         </aside>
 
-        <section className="chat-scrollbar space-y-6 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
+        <section className="space-y-6 pr-0 lg:pr-4">
           {children}
         </section>
       </main>

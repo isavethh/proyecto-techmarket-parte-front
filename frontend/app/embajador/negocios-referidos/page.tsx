@@ -19,6 +19,67 @@ const scoreTone = (score: number) => {
   return "text-amber-100 border-amber-300/30 bg-amber-300/12";
 };
 
+const getGrowthTrend = (growthRate: number) => {
+  if (growthRate >= 30) {
+    return { label: "Crecimiento acelerado", tone: "text-emerald-100" };
+  }
+
+  if (growthRate >= 20) {
+    return { label: "Crecimiento saludable", tone: "text-cyan-100" };
+  }
+
+  return { label: "Crecimiento bajo", tone: "text-amber-100" };
+};
+
+const getPriorityLevel = (business: { status: string; valueScore: number; growthRate: number }) => {
+  if (business.status === "En onboarding") {
+    return { label: "Prioridad alta", tone: "text-amber-100" };
+  }
+
+  if (business.valueScore >= 85 || business.growthRate >= 30) {
+    return { label: "Prioridad estrategica", tone: "text-emerald-100" };
+  }
+
+  if (business.valueScore >= 70) {
+    return { label: "Prioridad media", tone: "text-cyan-100" };
+  }
+
+  return { label: "Prioridad de seguimiento", tone: "text-amber-100" };
+};
+
+const getProjectedCommission = (business: { commissionGenerated: number; growthRate: number; status: string }) => {
+  const growthMultiplier = 1 + business.growthRate / 100;
+  const onboardingFactor = business.status === "En onboarding" ? 0.72 : 1;
+  return Math.round(business.commissionGenerated * growthMultiplier * onboardingFactor);
+};
+
+const getRecommendations = (business: {
+  status: string;
+  growthRate: number;
+  userScore: number;
+  conversionRate: number;
+}) => {
+  const recommendations = ["Revisar datos comerciales y mantener contacto semanal."];
+
+  if (business.status === "En onboarding") {
+    recommendations.unshift("Acelerar onboarding para pasar a negocio activo lo antes posible.");
+  }
+
+  if (business.growthRate < 20) {
+    recommendations.push("Publicar nuevas evidencias y contenido para impulsar visibilidad.");
+  }
+
+  if (business.userScore < 80) {
+    recommendations.push("Mejorar percepcion de usuarios con seguimiento y respuestas mas rapidas.");
+  }
+
+  if (business.conversionRate < 18) {
+    recommendations.push("Optimizar el mensaje comercial y reforzar las ofertas de conversion.");
+  }
+
+  return recommendations.slice(0, 3);
+};
+
 export default function EmbajadorNegociosReferidosPage() {
   const searchParams = useSearchParams();
   const requestedBusinessId = searchParams.get("business") ?? "";
@@ -51,6 +112,11 @@ export default function EmbajadorNegociosReferidosPage() {
       : activeBusiness.reputationContribution >= 65
         ? "Impacto positivo"
         : "Impacto moderado";
+
+  const growthTrend = getGrowthTrend(activeBusiness.growthRate);
+  const priorityLevel = getPriorityLevel(activeBusiness);
+  const projectedCommission = getProjectedCommission(activeBusiness);
+  const recommendations = getRecommendations(activeBusiness);
 
   return (
     <div className="flex-1 pb-10">
@@ -209,6 +275,65 @@ export default function EmbajadorNegociosReferidosPage() {
               >
                 Volver al panel principal
               </Link>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5 md:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="tech-mono text-xs text-cyan-200/75">INDICADORES ESTRATEGICOS</p>
+                <h3 className="mt-2 text-2xl font-bold text-cyan-50">Lectura rapida del negocio seleccionado</h3>
+                <p className="mt-2 text-sm text-cyan-100/78">
+                  Usa estos indicadores para decidir si conviene acelerar seguimiento, reforzar onboarding o escalar
+                  la comision proyectada.
+                </p>
+              </div>
+              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${scoreTone(activeBusiness.valueScore)}`}>
+                Valor estrategico: {activeBusiness.valueScore}/100
+              </span>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Tendencia de crecimiento</p>
+                <p className={`mt-2 text-lg font-semibold ${growthTrend.tone}`}>{growthTrend.label}</p>
+                <p className="mt-1 text-sm text-cyan-100/76">+{activeBusiness.growthRate}% respecto al periodo previo.</p>
+              </article>
+
+              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Nivel de prioridad</p>
+                <p className={`mt-2 text-lg font-semibold ${priorityLevel.tone}`}>{priorityLevel.label}</p>
+                <p className="mt-1 text-sm text-cyan-100/76">
+                  Define cuanta atencion operativa necesita este negocio hoy.
+                </p>
+              </article>
+
+              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Proyeccion de comision</p>
+                <p className="mt-2 text-lg font-semibold text-emerald-100">Bs {projectedCommission.toLocaleString("es-BO")}</p>
+                <p className="mt-1 text-sm text-cyan-100/76">
+                  Estimacion basada en la comision actual y el ritmo de crecimiento.
+                </p>
+              </article>
+
+              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Seguimiento comercial</p>
+                <p className="mt-2 text-lg font-semibold text-cyan-50">{activeBusiness.monthlyLeads} leads / mes</p>
+                <p className="mt-1 text-sm text-cyan-100/76">
+                  Conversion actual del {activeBusiness.conversionRate}% con impacto reputacional de {activeBusiness.reputationContribution}/100.
+                </p>
+              </article>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-cyan-100/10 bg-[linear-gradient(180deg,rgba(8,18,31,0.88),rgba(5,12,22,0.95))] p-4 md:p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Recomendaciones accionables</p>
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
+                {recommendations.map((item) => (
+                  <article key={item} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4 text-sm text-cyan-100/82">
+                    {item}
+                  </article>
+                ))}
+              </div>
             </div>
           </section>
         </section>

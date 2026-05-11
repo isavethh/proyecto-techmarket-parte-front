@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { ReactNode, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { logout } from "@/lib/auth/authGuard";
 
 type CompanyPageHeaderProps = {
   sectionLabel: string;
@@ -41,9 +43,14 @@ const COMPANY_PROFILE = {
 };
 
 function CompanyTopbarControls({ sectionLabel }: CompanyTopbarControlsProps) {
+  const router = useRouter();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleLogout = () => {
+    logout(router);
+  };
 
   useEffect(() => {
     if (!isProfileMenuOpen) {
@@ -152,13 +159,13 @@ function CompanyTopbarControls({ sectionLabel }: CompanyTopbarControlsProps) {
             >
               Consultor IA
             </Link>
-            <Link
-              href="/auth"
-              onClick={() => setIsProfileMenuOpen(false)}
-              className="auth-action block w-full"
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="auth-action block w-full text-left"
             >
               Cerrar sesion
-            </Link>
+            </button>
           </div>
         </div>
       ) : null}

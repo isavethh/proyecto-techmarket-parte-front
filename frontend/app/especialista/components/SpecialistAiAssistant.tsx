@@ -49,6 +49,11 @@ const scenarioPrompts = [
     prompt: "Escribeme una respuesta profesional para una resena de 3 estrellas y un plan de seguimiento.",
     impact: "Protege confianza del cliente.",
   },
+  {
+    title: "Priorizar servicios",
+    prompt: "Que servicio debo impulsar esta semana segun demanda, reputacion y facilidad de cierre?",
+    impact: "Enfoca mejor el esfuerzo comercial.",
+  },
 ];
 
 const specialistRadarBars = [
@@ -56,6 +61,8 @@ const specialistRadarBars = [
   { label: "Probabilidad de cierre", value: 72 },
   { label: "Carga operativa", value: 66 },
   { label: "Potencial de reputacion", value: 84 },
+  { label: "Visibilidad del perfil", value: 74 },
+  { label: "Riesgo de abandono", value: 31 },
 ];
 
 function buildSpecialistAiInsight(question: string): SpecialistAiInsight {
@@ -491,31 +498,60 @@ export function SpecialistAiAssistant() {
           </article>
         </section>
 
-        <section className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <article className="rounded-3xl border border-cyan-100/12 bg-slate-950/35 p-4 md:p-5">
+        <section className="mt-6 grid items-stretch gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <article className="flex h-full flex-col rounded-3xl border border-cyan-100/12 bg-slate-950/35 p-4 md:p-5">
             <p className="tech-mono text-xs text-cyan-200/75">PLAYBOOK IA</p>
             <h4 className="mt-2 text-xl font-semibold text-cyan-50">Prompts listos para usar</h4>
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <p className="mt-2 text-xs leading-6 text-cyan-100/72">
+              Acciones rápidas para agenda, diagnostico, reputacion y enfoque comercial del especialista.
+            </p>
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {scenarioPrompts.map((scenario) => (
-                <article key={scenario.title} className="rounded-2xl border border-cyan-100/12 bg-slate-950/40 p-4">
+                <article
+                  key={scenario.title}
+                  className="flex h-full min-h-[390px] flex-col rounded-2xl border border-cyan-100/12 bg-slate-950/40 p-4"
+                >
                   <p className="text-sm font-semibold text-cyan-50">{scenario.title}</p>
                   <p className="mt-2 text-xs leading-6 text-cyan-100/78">{scenario.prompt}</p>
+
                   <p className="mt-3 text-[11px] text-emerald-200/88">{scenario.impact}</p>
+
                   <button
                     type="button"
                     onClick={() => runAiQuestion(scenario.prompt)}
                     disabled={isAiThinking}
-                    className="mt-3 rounded-xl border border-cyan-100/15 bg-cyan-400/15 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-auto inline-flex w-full items-center justify-center rounded-xl border border-cyan-100/15 bg-cyan-400/15 px-3 py-2.5 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Usar prompt
                   </button>
                 </article>
               ))}
             </div>
+            <div className="mt-auto pt-2">
+              <div className="rounded-2xl border border-cyan-100/12 bg-white/5 p-4">
+                <article>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-cyan-200/65">Uso recomendado</p>
+                  <p className="mt-2 text-sm leading-6 text-cyan-100/78">
+                    Usa este playbook cuando necesites decidir rapido que atender, como responder y que empujar comercialmente sin improvisar.
+                  </p>
+                </article>
+
+                <article>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-cyan-200/65">Valor para el tecnico</p>
+                  <p className="mt-2 text-sm leading-6 text-cyan-100/78">
+                    La IA ayuda a ordenar agenda, mejorar diagnostico, proteger reputacion y convertir mejor dentro del ecosistema TechMarket.
+                  </p>
+                </article>
+              </div>
+            </div>
           </article>
 
-          <article className="rounded-3xl border border-cyan-100/12 bg-slate-950/35 p-4 md:p-5">
+          <article className="flex h-full flex-col rounded-3xl border border-cyan-100/12 bg-slate-950/35 p-4 md:p-5">
             <p className="text-sm font-semibold text-cyan-50">Radar IA</p>
+            <p className="mt-2 text-xs leading-6 text-cyan-100/72">
+              Lectura rapida de señales operativas, reputacion y capacidad comercial del especialista.
+            </p>
+
             <div className="mt-4 space-y-3">
               {specialistRadarBars.map((bar) => (
                 <div key={bar.label}>
@@ -531,6 +567,34 @@ export function SpecialistAiAssistant() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <article className="rounded-2xl border border-cyan-100/12 bg-white/5 p-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-cyan-200/65">Lectura general</p>
+                <p className="mt-2 text-sm font-semibold text-cyan-50">Buen potencial operativo</p>
+                <p className="mt-2 text-xs leading-6 text-cyan-100/75">
+                  La IA detecta margen para mejorar cierres sin ampliar jornada si priorizas agenda y seguimiento.
+                </p>
+              </article>
+
+              <article className="rounded-2xl border border-cyan-100/12 bg-white/5 p-3">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-cyan-200/65">Siguiente foco</p>
+                <p className="mt-2 text-sm font-semibold text-cyan-50">Visibilidad + reputacion</p>
+                <p className="mt-2 text-xs leading-6 text-cyan-100/75">
+                  Conviene reforzar portafolio, reputacion y velocidad de respuesta para sostener confianza y conversion.
+                </p>
+              </article>
+            </div>
+            <div className="mt-auto pt-4">
+              <div className="rounded-2xl border border-cyan-100/12 bg-white/5 p-4">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-cyan-200/65">Recomendacion IA</p>
+                <p className="mt-2 text-sm font-semibold text-cyan-50">Momento favorable para captar y responder</p>
+                <p className="mt-2 text-sm leading-6 text-cyan-100/75">
+                  El radar sugiere mantener velocidad de respuesta, reforzar portafolio visible y priorizar servicios con
+                  mayor facilidad de cierre para mejorar conversion y confianza.
+                </p>
+              </div>
             </div>
           </article>
         </section>

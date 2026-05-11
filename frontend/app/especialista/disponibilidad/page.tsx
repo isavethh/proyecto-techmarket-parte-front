@@ -48,7 +48,11 @@ export default function EspecialistaDisponibilidadPage() {
       </section>
 
       <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-        <h2 className="text-2xl font-bold text-white">Actividad reciente del tecnico</h2>
+        <h2 className="text-2xl font-bold text-white">Actividad reciente y señales operativas</h2>
+        <p className="mt-2 text-sm leading-6 text-cyan-100/75">
+          Esta vista ayuda al cliente a entender si el especialista mantiene actividad visible, respuesta constante
+          y condiciones claras antes de iniciar una conversacion.
+        </p>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           {recentActivity.map((item) => (
             <article key={item.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-3">
@@ -59,6 +63,88 @@ export default function EspecialistaDisponibilidadPage() {
           ))}
         </div>
       </section>
+      <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+          <p className="tech-mono text-xs text-cyan-200/75">CRITERIOS OPERATIVOS</p>
+          <h2 className="mt-2 text-2xl font-bold text-white">Como atiende el especialista dentro de TechMarket</h2>
+          <p className="mt-3 text-sm leading-7 text-cyan-100/80">
+            La disponibilidad no solo indica horario. Tambien comunica capacidad real de respuesta,
+            orden operativo y confianza para que el cliente pueda decidir si contactar ahora,
+            programar una atencion o esperar una ventana mas conveniente.
+          </p>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-cyan-50">Respuesta por prioridad</p>
+              <p className="mt-2 text-sm leading-6 text-cyan-100/75">
+                Las consultas por diagnostico urgente, fallas operativas y conectividad tienen atencion prioritaria
+                dentro del horario activo del especialista.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-cyan-50">Programacion ordenada</p>
+              <p className="mt-2 text-sm leading-6 text-cyan-100/75">
+                Los trabajos presenciales y mantenimientos se coordinan por agenda para evitar saturacion,
+                mejorar tiempos y asegurar cumplimiento tecnico.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-cyan-50">Cobertura y modalidad</p>
+              <p className="mt-2 text-sm leading-6 text-cyan-100/75">
+                La atencion puede variar entre soporte remoto, visita tecnica o servicio en punto acordado,
+                segun el tipo de problema y la ubicacion del cliente.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-cyan-50">Confianza y seguimiento</p>
+              <p className="mt-2 text-sm leading-6 text-cyan-100/75">
+                La actividad visible, el historial reciente y la reputacion ayudan a que el cliente tenga señales
+                claras antes de solicitar el servicio.
+              </p>
+            </article>
+          </div>
+        </article>
+
+        <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+          <p className="tech-mono text-xs text-cyan-200/75">ALCANCE DEL SERVICIO</p>
+          <h2 className="mt-2 text-2xl font-bold text-white">Canales y condiciones de atencion</h2>
+
+          <div className="mt-4 space-y-3">
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-cyan-50">Canal principal</p>
+              <p className="mt-1 text-sm text-cyan-100/75">
+                Chat directo dentro de TechMarket para consultas, coordinacion y seguimiento inicial.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-cyan-50">Atencion remota</p>
+              <p className="mt-1 text-sm text-cyan-100/75">
+                Ideal para configuracion, soporte rapido, validaciones preliminares y asistencia guiada.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-cyan-50">Atencion presencial</p>
+              <p className="mt-1 text-sm text-cyan-100/75">
+                Disponible para mantenimiento, instalacion, revision fisica, redes y trabajos que requieren visita.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <p className="text-sm font-semibold text-cyan-50">Tiempo estimado de respuesta</p>
+              <p className="mt-1 text-sm text-cyan-100/75">
+                La primera respuesta se prioriza dentro del horario activo. La confirmacion final depende del tipo
+                de servicio, carga operativa y zona de cobertura.
+              </p>
+            </article>
+          </div>
+        </article>
+      </section>
+      
     </SpecialistShell>
   );
 }

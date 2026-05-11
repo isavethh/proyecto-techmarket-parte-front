@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { logout, requireAuth } from "@/lib/auth/authGuard";
 import {
   ambassadorProfile,
   referredAmbassadors,
@@ -42,11 +44,13 @@ export type EmbajadorSidebarSection =
   | "embajadores"
   | "prospectos"
   | "onboarding"
-  | "comisiones";
+  | "comisiones"
+  | "guia";
 
 type EmbajadorSidebarProps = {
   activeSection?: EmbajadorSidebarSection;
   onOpenReferralModal?: () => void;
+  onLogout?: () => void;
 };
 
 const getSidebarLinkClass = (isActive: boolean) => {
@@ -56,9 +60,10 @@ const getSidebarLinkClass = (isActive: boolean) => {
 export function EmbajadorSidebar({
   activeSection = "resumen",
   onOpenReferralModal,
+  onLogout,
 }: EmbajadorSidebarProps) {
   return (
-    <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+    <aside className="space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-scroll lg:pr-2 chat-scrollbar">
       <section className="tech-card">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
@@ -139,9 +144,16 @@ export function EmbajadorSidebar({
           )}
 
           <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/60">--- SISTEMA ---</p>
-          <Link href="/auth?mode=login&type=embajador" className="auth-action">
-            Cerrar sesion
+          <Link href="/embajador/guia" className={getSidebarLinkClass(activeSection === "guia")}>
+            Guia de uso
           </Link>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="auth-action"
+          >
+            Cerrar sesion
+          </button>
         </div>
       </section>
     </aside>
@@ -149,6 +161,12 @@ export function EmbajadorSidebar({
 }
 
 export default function EmbajadorPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    requireAuth(router);
+  }, [router]);
+
   const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
   const [didCopyReferralLink, setDidCopyReferralLink] = useState(false);
   const referredBusinessesState = useReferredBusinessesState();
@@ -256,6 +274,7 @@ export default function EmbajadorPage() {
         <EmbajadorSidebar
           activeSection="resumen"
           onOpenReferralModal={() => setIsReferralModalOpen(true)}
+          onLogout={() => logout(router)}
         />
 
         <section className="space-y-6">

@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
+import { requireAuth } from "@/lib/auth/authGuard";
 import {
   COMMUNITY_FEED_UPDATED_EVENT,
   CommunityFeedPost,
@@ -259,6 +261,12 @@ const subscribeCommunityFeed = (onStoreChange: () => void) => {
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function ClientePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    requireAuth(router);
+  }, [router]);
+
   const [topView, setTopView] = useState<TopView>("feed");
   const [searchMode, setSearchMode] = useState<SearchMode>("normal");
   const [query, setQuery] = useState<string>("");
@@ -517,7 +525,7 @@ export default function ClientePage() {
       : ["TechMarket"];
 
   return (
-    <div className="flex-1 pb-10">
+    <div className="flex-1 pb-0">
       <ClientPageHeader
         sectionLabel="Cliente activo"
         brandHref="/"
@@ -533,8 +541,7 @@ export default function ClientePage() {
         }
       />
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[260px_minmax(0,1fr)_300px] lg:px-6">
-        {/* ─── Sidebar izquierdo ─────────────────────────────────────────── */}
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)_320px] lg:items-start lg:px-6">
         <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
           <section className="tech-card">
             <div className="flex items-center gap-3">

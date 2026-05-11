@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ClientPageHeader } from "../../components/ClientPageSections";
@@ -14,20 +14,168 @@ import {
 } from "../../lib/api/clientApi";
 import type { ApiChat, ApiMessage } from "../../lib/api/types";
 
-function formatHour(isoDate: string): string {
+
+
+type ChatAuthor = "cliente" | "empresa";
+
+type ChatMessage = {
+  id: string;
+  author: ChatAuthor;
+  text: string;
+  createdAt: string;
+};
+
+type ChatThread = {
+  id: string;
+  sellerId: string;
+  sellerName: string;
+  company: string;
+  product: string;
+  avatar: string;
+  unread: number;
+  online: boolean;
+  messages: ChatMessage[];
+  updatedAt: string;
+};
+
+type MarketplaceChatIntent = {
+  seller: string;
+  company: string;
+  product: string;
+  message: string;
+};
+
+const CHAT_STORAGE_KEY = "techmarket.client.chat.threads";
+
+const clientMenuItems = [
+  { label: "Explorar marketplace", href: "/cliente/marketplace" },
+  { label: "Mis chats", href: "/cliente/chat" },
+  { label: "Buscar servicios", href: "/cliente/servicios" },
+  { label: "Versus de productos", href: "/cliente/versus" },
+  { label: "Explorar empresas", href: "/cliente/empresas" },
+  { label: "Comunidades", href: "/cliente/comunidades" },
+  { label: "Actividad reciente", href: "/cliente" },
+];
+
+const seedThreads: ChatThread[] = [
+  {
+    id: "chat-techfix-lab",
+    sellerId: "techfix-lab",
+    sellerName: "Sergio Ramirez",
+    company: "TechFix Lab",
+    product: "Diagnostico express para laptops lentas",
+    avatar: "TL",
+    unread: 1,
+    online: true,
+    updatedAt: "2026-04-19T10:22:00.000Z",
+    messages: [
+      {
+        id: "chat-techfix-lab-m1",
+        author: "empresa",
+        text: "Hola, vi que buscaste servicio tecnico.",
+        createdAt: "2026-04-19T10:20:00.000Z",
+      },
+      {
+        id: "chat-techfix-lab-m2",
+        author: "empresa",
+        text: "Puedo atenderte hoy mismo en tu zona.",
+        createdAt: "2026-04-19T10:21:00.000Z",
+      },
+      {
+        id: "chat-techfix-lab-m3",
+        author: "cliente",
+        text: "Perfecto, necesito diagnostico para mi laptop.",
+        createdAt: "2026-04-19T10:22:00.000Z",
+      },
+    ],
+  },
+  {
+    id: "chat-zona-gamer-store",
+    sellerId: "zona-gamer-store",
+    sellerName: "Laura V.",
+    company: "Zona Gamer Store",
+    product: "Mouse ergonomico con 20% de descuento",
+    avatar: "ZG",
+    unread: 2,
+    online: true,
+    updatedAt: "2026-04-19T10:00:00.000Z",
+    messages: [
+      {
+        id: "chat-zona-gamer-store-m1",
+        author: "empresa",
+        text: "Hola, vimos que buscaste una laptop.",
+        createdAt: "2026-04-19T09:55:00.000Z",
+      },
+      {
+        id: "chat-zona-gamer-store-m2",
+        author: "empresa",
+        text: "Tenemos opciones para estudio y gaming.",
+        createdAt: "2026-04-19T09:56:00.000Z",
+      },
+      {
+        id: "chat-zona-gamer-store-m3",
+        author: "cliente",
+        text: "Me interesa una laptop ligera para trabajo.",
+        createdAt: "2026-04-19T09:58:00.000Z",
+      },
+      {
+        id: "chat-zona-gamer-store-m4",
+        author: "empresa",
+        text: "Te comparto 2 opciones con entrega inmediata.",
+        createdAt: "2026-04-19T10:00:00.000Z",
+      },
+    ],
+  },
+];
+
+const sortThreadsByRecent = (threads: ChatThread[]): ChatThread[] =>
+  [...threads].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+
+const createSellerId = (value: string): string => {
+  const normalized = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized || `seller-${Date.now()}`;
+};
+
+const createAvatar = (company: string): string => {
+  const parts = company
+    .split(" ")
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (!parts.length) {
+    return "CH";
+  }
+
+  return parts.map((token) => token[0]?.toUpperCase() ?? "").join("");
+};
+
+const formatHour = (isoDate: string): string => {
   const parsed = Date.parse(isoDate);
-  if (Number.isNaN(parsed)) return "--:--";
-  return new Date(parsed).toLocaleTimeString("es-BO", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+
+  if (Number.isNaN(parsed)) {
+    return "--:--";
+  }
+
+  const date = new Date(parsed);
+  const hours = date.getUTCHours();
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const period = hours >= 12 ? "p. m." : "a. m.";
+  const normalizedHour = hours % 12 === 0 ? 12 : hours % 12;
+
+  return `${String(normalizedHour).padStart(2, "0")}:${minutes} ${period}`;
+};
+const REFERENCE_NOW = Date.parse("2026-04-19T10:30:00.000Z");
 
 function formatRelativeTime(isoDate: string): string {
   const parsed = Date.parse(isoDate);
   if (Number.isNaN(parsed)) return "Reciente";
 
-  const diffMs = Date.now() - parsed;
+  const diffMs = REFERENCE_NOW - parsed;
   const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
 
   if (diffMinutes < 1) return "Ahora";
@@ -51,10 +199,51 @@ function getInitials(name: string): string {
 export default function ClienteChatPage() {
   const searchParams = useSearchParams();
 
-  const [chats, setChats] = useState<ApiChat[]>([]);
-  const [messages, setMessages] = useState<ApiMessage[]>([]);
-  const [activeChatId, setActiveChatId] = useState<string | null>(null);
-  const [draftMessage, setDraftMessage] = useState("");
+  const pathname = usePathname();
+
+  const marketplaceIntent = useMemo<MarketplaceChatIntent | null>(() => {
+    const source = searchParams.get("source");
+    const seller = searchParams.get("seller")?.trim() ?? "";
+    const company = searchParams.get("company")?.trim() ?? seller;
+    const product = searchParams.get("product")?.trim() ?? "Publicacion en marketplace";
+    const message =
+      searchParams.get("message")?.trim() ??
+      `Hola, vi tu anuncio \"${product}\". Sigue disponible?`;
+
+    if (source !== "marketplace") {
+      return null;
+    }
+
+    if (!seller && !company) {
+      return null;
+    }
+
+    return {
+      seller: seller || company,
+      company: company || seller,
+      product,
+      message,
+    };
+  }, [searchParams]);
+
+  const [threads, setThreads] = useState<ChatThread[]>(() => {
+    const initialThreads = readStoredThreads();
+
+    if (!marketplaceIntent) {
+      return initialThreads;
+    }
+
+    return upsertThreadFromMarketplace(initialThreads, marketplaceIntent).threads;
+  });
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(() => {
+    const initialThreads = readStoredThreads();
+
+    if (!marketplaceIntent) {
+      return initialThreads[0]?.id ?? null;
+    }
+
+    return upsertThreadFromMarketplace(initialThreads, marketplaceIntent).threadId;
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -170,7 +359,7 @@ export default function ClienteChatPage() {
   );
 
   return (
-    <div className="flex-1 pb-10">
+    <div className="flex-1 pb-0">
       <ClientPageHeader
         sectionLabel="Chats cliente"
         middleSlot={
@@ -183,8 +372,39 @@ export default function ClienteChatPage() {
         }
       />
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[320px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)]">
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:h-[calc(100vh-120px)] lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:px-6">
+        <aside className="chat-scrollbar min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start lg:h-[calc(100vh-120px)] lg:overflow-y-auto lg:overflow-x-hidden lg:pr-2">
+          <section className="tech-card">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                CM
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
+                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-2">
+              {clientMenuItems.map((item) => {
+                const isActive =
+                  item.href === "/cliente"
+                    ? pathname === "/cliente"
+                    : pathname.startsWith(item.href);
+
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`auth-action ${isActive ? "active" : ""}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">BANDEJA DE CHATS</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Conversaciones</h1>
@@ -213,27 +433,11 @@ export default function ClienteChatPage() {
             </div>
           </section>
 
-          <section className="chat-scrollbar flex-1 overflow-y-auto rounded-3xl border border-cyan-100/15 bg-[linear-gradient(170deg,rgba(11,34,60,0.95),rgba(6,23,43,0.98))] p-3 shadow-xl shadow-slate-950/35">
-            {loading ? (
-              <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-4 text-sm text-cyan-100/75">
-                Cargando chats desde la API...
-              </div>
-            ) : apiError ? (
-              <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-4 text-sm text-cyan-100/75">
-                No se pudo conectar con la API en{" "}
-                <span className="font-mono text-cyan-200">localhost:8082</span>.
-              </div>
-            ) : filteredChats.length === 0 ? (
-              <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-4 text-sm text-cyan-100/75">
-                {chats.length === 0
-                  ? "No tienes conversaciones activas."
-                  : "No encontramos chats para esa busqueda."}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {filteredChats.map((chat) => {
-                  const isActive = chat.id === activeChatId;
-                  const initials = getInitials(chat.empresa.nombre);
+          <section className="chat-scrollbar min-w-0 flex-1 overflow-y-auto overflow-x-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(170deg,rgba(11,34,60,0.95),rgba(6,23,43,0.95))] p-4">
+            <div className="space-y-2">
+              {filteredThreads.map((thread) => {
+                const isActive = thread.id === activeThread?.id;
+                const lastMessage = thread.messages[thread.messages.length - 1];
 
                   return (
                     <button
@@ -277,14 +481,8 @@ export default function ClienteChatPage() {
           </section>
         </aside>
 
-        <section className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(165deg,rgba(10,33,57,0.97),rgba(4,18,34,0.98))] shadow-xl shadow-slate-950/35">
-          {!activeChat ? (
-            <div className="flex h-[60vh] items-center justify-center px-5 text-center text-cyan-100/75">
-              {loading
-                ? "Cargando conversaciones..."
-                : "Selecciona un chat para ver la conversacion."}
-            </div>
-          ) : (
+        <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(165deg,rgba(10,33,57,0.97),rgba(4,18,34,0.98))] shadow-xl shadow-slate-950/35">
+          {activeThread ? (
             <>
               <div className="border-b border-cyan-100/10 bg-[linear-gradient(120deg,rgba(19,78,110,0.28),rgba(7,24,44,0.84))] px-5 py-4">
                 <div className="flex items-center justify-between gap-3">
@@ -306,7 +504,7 @@ export default function ClienteChatPage() {
 
               <div
                 ref={messageListRef}
-                className="chat-scrollbar h-[58vh] min-h-[420px] space-y-3 overflow-y-auto bg-[linear-gradient(180deg,rgba(4,13,24,0.3),rgba(4,11,20,0.58))] px-5 py-4"
+                className="chat-scrollbar flex-1 min-h-0 space-y-3 overflow-y-auto bg-[linear-gradient(180deg,rgba(4,13,24,0.3),rgba(4,11,20,0.58))] px-5 py-4"
               >
                 {loadingMessages ? (
                   <p className="text-sm text-cyan-100/70">Cargando mensajes...</p>

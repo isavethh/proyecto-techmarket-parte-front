@@ -1,19 +1,56 @@
 "use client";
 
+
 import Link from "next/link";
 import { motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import {
-  ClientInfoCard,
   ClientPageHeader,
   ClientQuickLinksCard,
 } from "../../components/ClientPageSections";
 import {
-  getProducts,
-  getCategories,
-} from "../../lib/api/marketplace";
-import { addFavoriteProduct, addToCart } from "../../lib/api/clientApi";
-import type { ApiProduct, ApiCategory } from "../../lib/api/types";
+  PublicationViewerComment,
+  PublicationViewerData,
+  PublicationViewerModal,
+} from "../../components/PublicationViewerModal";
+<<<<<<< ours
+=======
+import {
+  COMMUNITY_FEED_UPDATED_EVENT,
+  CommunityFeedPost,
+  readCommunityFeedPosts,
+} from "../../lib/communityFeed";
+>>>>>>> theirs
+import {
+  buildMarketplaceListings,
+  createMarketplaceSellerKey,
+  MarketplaceCategory,
+  marketplaceCategoryOptions,
+  marketplaceSeedPosts,
+} from "../../lib/marketplaceFeed";
+
+<<<<<<< ours
+import {
+  COMMUNITY_FEED_UPDATED_EVENT,
+  CommunityFeedPost,
+  readCommunityFeedPosts,
+} from "../../lib/communityFeed";
+
+const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
+
+const clientMenuItems = [
+  { label: "Explorar marketplace", href: "/cliente/marketplace" },
+  { label: "Mis chats", href: "/cliente/chat" },
+  { label: "Buscar servicios", href: "/cliente/servicios" },
+  { label: "Versus de productos", href: "/cliente/versus" },
+  { label: "Explorar empresas", href: "/cliente/empresas" },
+  { label: "Comunidades", href: "/cliente/comunidades" },
+  { label: "Actividad reciente", href: "/cliente" },
+];
+=======
+const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
+>>>>>>> theirs
 
 type SortMode = "recientes" | "precio-bajo" | "precio-alto";
 
@@ -167,13 +204,81 @@ export default function ClienteMarketplacePage() {
     }
   };
 
-  const handleCategoryChange = async (categoryId: string) => {
-    setSelectedCategoryId(categoryId);
-    if (categoryId === "all") {
-      const res = await getProducts();
-      if (res) {
-        setProducts(res.productos);
-        setTotal(res.total);
+  const handleFeedUpdate = () => {
+    onStoreChange();
+  };
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
+  };
+};
+
+const parsePriceToNumber = (priceLabel: string): number => {
+  const numeric = priceLabel.replace(/[^\d.,]/g, "").replace(/,/g, "");
+  const parsed = Number.parseFloat(numeric);
+
+  if (Number.isNaN(parsed)) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return parsed;
+};
+
+export default function ClienteMarketplacePage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<MarketplaceCategory>("Todos");
+  const [selectedCity, setSelectedCity] = useState("Todas");
+  const [sortMode, setSortMode] = useState<SortMode>("recientes");
+  const [activePublication, setActivePublication] = useState<PublicationViewerData | null>(null);
+
+  const dynamicFeedPosts = useSyncExternalStore(
+    subscribeCommunityFeed,
+    readCommunityFeedPosts,
+    () => EMPTY_FEED_SNAPSHOT,
+  );
+
+  const allListings = useMemo(
+    () => buildMarketplaceListings([...marketplaceSeedPosts, ...dynamicFeedPosts]),
+    [dynamicFeedPosts],
+  );
+
+  const listingCountBySeller = useMemo(() => {
+    return allListings.reduce<Record<string, number>>((accumulator, listing) => {
+      accumulator[listing.post.author] = (accumulator[listing.post.author] ?? 0) + 1;
+      return accumulator;
+    }, {});
+  }, [allListings]);
+
+  const cityOptions = useMemo(() => {
+    const cities = new Set(allListings.map((listing) => listing.post.location));
+    return ["Todas", ...cities];
+  }, [allListings]);
+
+  const filteredListings = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    const baseFiltered = allListings.filter((listing) => {
+      const matchesQuery =
+        !normalizedSearch ||
+        `${listing.post.title} ${listing.post.body} ${listing.post.author} ${listing.post.location}`
+          .toLowerCase()
+          .includes(normalizedSearch);
+
+      const matchesCategory = selectedCategory === "Todos" || listing.category === selectedCategory;
+      const matchesCity = selectedCity === "Todas" || listing.post.location === selectedCity;
+
+      return matchesQuery && matchesCategory && matchesCity;
+    });
+
+    return [...baseFiltered].sort((a, b) => {
+      if (sortMode === "precio-bajo") {
+        return parsePriceToNumber(a.priceLabel) - parsePriceToNumber(b.priceLabel);
       }
     } else {
       const res = await getProducts({ category: categoryId });
@@ -217,95 +322,132 @@ export default function ClienteMarketplacePage() {
     <div className="flex-1 pb-10">
       <ClientPageHeader sectionLabel="Marketplace" />
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <ClientInfoCard
-            eyebrow="MARKETPLACE"
-            title="Catalogo de productos"
-            description="Productos registrados en TechMarket. Usa los filtros para encontrar lo que necesitas."
-          />
-
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:px-6">
+        <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
-            <p className="text-sm font-semibold text-cyan-50">Filtros</p>
-
-            <div className="mt-3 space-y-3">
-              <label
-                className="block text-xs font-semibold text-cyan-200/80"
-                htmlFor="marketplace-search"
-              >
-                Buscar producto
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="marketplace-search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  placeholder="Ej: laptop, monitor"
-                  className="auth-input flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={handleSearch}
-                  className="rounded-xl border border-cyan-200/25 bg-cyan-400/18 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/24"
-                >
-                  Buscar
-                </button>
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                CM
               </div>
+              <div>
+                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
+                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
+              </div>
+            </div>
 
-              {categories.length > 0 && (
-                <>
-                  <label
-                    className="block text-xs font-semibold text-cyan-200/80"
-                    htmlFor="marketplace-category"
-                  >
-                    Categoria
-                  </label>
-                  <select
-                    id="marketplace-category"
-                    value={selectedCategoryId}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
-                    className="auth-select"
-                  >
-                    <option value="all">Todas las categorias</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </>
-              )}
+            <div className="mt-4 grid gap-2">
+              {clientMenuItems.map((item) => {
+                const isActive =
+                  item.href === "/cliente"
+                    ? pathname === "/cliente"
+                    : pathname.startsWith(item.href);
 
-              <label
-                className="block text-xs font-semibold text-cyan-200/80"
-                htmlFor="marketplace-sort"
-              >
-                Ordenar por
-              </label>
-              <select
-                id="marketplace-sort"
-                value={sortMode}
-                onChange={(e) => setSortMode(e.target.value as SortMode)}
-                className="auth-select"
-              >
-                <option value="recientes">Recientes</option>
-                <option value="precio-bajo">Precio: menor a mayor</option>
-                <option value="precio-alto">Precio: mayor a menor</option>
-              </select>
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`auth-action ${isActive ? "active" : ""}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </div>
           </section>
 
-          <ClientQuickLinksCard
-            links={[
-              { href: "/cliente", label: "Volver al feed" },
-              { href: "/cliente/empresas", label: "Explorar empresas" },
-              { href: "/cliente/comunidades", label: "Ir a comunidades" },
-            ]}
-          />
+          <section className="tech-card mt-4">
+            <p className="tech-mono text-xs text-cyan-200/75">MARKETPLACE</p>
+            <h3 className="mt-2 text-xl font-semibold text-cyan-50">Exploracion comercial</h3>
+            <p className="mt-3 text-sm leading-7 text-cyan-100/80">
+              Descubre productos, ofertas y servicios publicados por empresas y tecnicos en TechMarket.
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["Marketplace", "Ofertas", "Productos", "Servicios"].map((chip) => (
+                <span
+                  key={chip}
+                  className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs text-cyan-100/85"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+          </section>
+          <div className="space-y-4">
+            <section className="tech-card">
+              <p className="text-sm font-semibold text-cyan-50">Filtros rapidos</p>
+
+              <div className="mt-3 space-y-3">
+                <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-search">
+                  Buscar en marketplace
+                </label>
+                <input
+                  id="marketplace-search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Ej: laptop, monitor, teclado"
+                  className="auth-input"
+                />
+
+                <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-category">
+                  Categoria
+                </label>
+                <select
+                  id="marketplace-category"
+                  value={selectedCategory}
+                  onChange={(event) => setSelectedCategory(event.target.value as MarketplaceCategory)}
+                  className="auth-select"
+                >
+                  {marketplaceCategoryOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-city">
+                  Ciudad
+                </label>
+                <select
+                  id="marketplace-city"
+                  value={selectedCity}
+                  onChange={(event) => setSelectedCity(event.target.value)}
+                  className="auth-select"
+                >
+                  {cityOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-sort">
+                  Ordenar por
+                </label>
+                <select
+                  id="marketplace-sort"
+                  value={sortMode}
+                  onChange={(event) => setSortMode(event.target.value as SortMode)}
+                  className="auth-select"
+                >
+                  <option value="recientes">Recientes</option>
+                  <option value="precio-bajo">Precio: menor a mayor</option>
+                  <option value="precio-alto">Precio: mayor a menor</option>
+                </select>
+              </div>
+            </section>
+
+            <ClientQuickLinksCard
+              links={[
+                { href: "/cliente", label: "Volver al feed" },
+                { href: "/cliente/empresas", label: "Explorar empresas" },
+                { href: "/cliente/comunidades", label: "Ir a comunidades" },
+              ]}
+            />
+          </div>
         </aside>
 
-        <section className="space-y-4">
+        <section className="chat-scrollbar space-y-4 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
           <section className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(130deg,rgba(7,29,50,0.96),rgba(8,58,87,0.9),rgba(6,23,43,0.95))] p-5 shadow-xl shadow-slate-950/30 md:p-6">
             <p className="tech-mono text-xs text-cyan-200/80">
               GET /api/marketplace/products

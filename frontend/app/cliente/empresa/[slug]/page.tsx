@@ -1,41 +1,6 @@
 import Link from "next/link";
-import { ClientPageHeader } from "../../../components/ClientPageSections";
-import {
-  getCompanyById,
-  getCompanyProducts,
-} from "../../../lib/api/marketplace";
-import { createCompanyReview } from "../../../lib/api/clientApi";
-import type { ApiCompanyDetail, ApiProduct } from "../../../lib/api/types";
-
-function getInitials(name: string): string {
-  return (
-    name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((token) => token[0]?.toUpperCase() ?? "")
-      .join("") || "EM"
-  );
-}
-
-function formatDate(iso: string): string {
-  const parsed = Date.parse(iso);
-  if (Number.isNaN(parsed)) return iso;
-  const date = new Date(parsed);
-  return date.toLocaleDateString("es-BO", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat("es-BO", {
-    style: "currency",
-    currency: "BOB",
-    minimumFractionDigits: 0,
-  }).format(price);
-}
+import { getClientCompanyProfile } from "../../../lib/clientCompanyProfiles";
+import { ClientPageHeader, ClientQuickLinksCard } from "../../../components/ClientPageSections";
 
 function RatingStars({ rating }: { rating: number }) {
   return (
@@ -59,58 +24,17 @@ function RatingStars({ rating }: { rating: number }) {
   );
 }
 
-function ProductCard({ product }: { product: ApiProduct }) {
-  return (
-    <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
-      {product.imagenPrincipal && (
-        <img
-          src={product.imagenPrincipal}
-          alt={product.nombre}
-          className="mb-3 h-32 w-full rounded-xl object-cover"
-          loading="lazy"
-        />
-      )}
-      <p className="text-sm font-semibold text-cyan-50">{product.nombre}</p>
-      <p className="mt-1 text-base font-bold text-cyan-200">
-        {formatPrice(product.precio)}
-      </p>
-      <div className="mt-2 flex items-center gap-1">
-        <RatingStars rating={product.calificacion} />
-        <span className="text-xs text-cyan-100/70">{product.calificacion.toFixed(1)}</span>
-      </div>
-    </div>
-  );
-}
+const clientMenuItems = [
+  { label: "Explorar marketplace", href: "/cliente/marketplace" },
+  { label: "Mis chats", href: "/cliente/chat" },
+  { label: "Buscar servicios", href: "/cliente/servicios" },
+  { label: "Versus de productos", href: "/cliente/versus" },
+  { label: "Explorar empresas", href: "/cliente/empresas" },
+  { label: "Comunidades", href: "/cliente/comunidades" },
+  { label: "Actividad reciente", href: "/cliente" },
+];
 
-function NotFound({ companyId }: { companyId: string }) {
-  return (
-    <div className="flex-1 pb-8">
-      <ClientPageHeader sectionLabel="Perfil de empresa" sticky={false} />
-      <main className="mx-auto mt-8 max-w-[1500px] px-4 lg:px-6">
-        <div className="tech-card">
-          <p className="text-sm text-cyan-100/80">
-            No se encontro la empresa con ID{" "}
-            <span className="font-mono text-cyan-200">{companyId}</span>. Verifica que el
-            servidor API este corriendo en{" "}
-            <span className="font-mono text-cyan-200">localhost:8082</span>.
-          </p>
-          <Link
-            href="/cliente/empresas"
-            className="mt-4 inline-flex rounded-xl border border-cyan-100/20 bg-cyan-300/12 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/18"
-          >
-            Volver a empresas
-          </Link>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-export default async function ClienteEmpresaPerfilPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function ClienteEmpresaPerfilPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
   const [company, productsResponse] = await Promise.all([
@@ -129,31 +53,67 @@ export default async function ClienteEmpresaPerfilPage({
     <div className="flex-1 pb-8">
       <ClientPageHeader sectionLabel="Perfil de empresa" sticky={false} />
 
-      <main className="mx-auto mt-8 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_1fr] lg:px-6">
-        <aside className="tech-card h-fit space-y-2">
-          <p className="tech-mono text-xs text-cyan-200/75">NAVEGACION</p>
-          <Link
-            href="/cliente/empresas"
-            className="block rounded-2xl border border-cyan-100/10 p-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-100/5"
-          >
-            Volver a empresas
-          </Link>
-          <Link
-            href="/cliente"
-            className="block rounded-2xl border border-cyan-100/10 p-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-100/5"
-          >
-            Volver al feed
-          </Link>
-          <Link
-            href="/cliente/marketplace"
-            className="block rounded-2xl border border-cyan-100/10 p-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-100/5"
-          >
-            Ir a marketplace
-          </Link>
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:px-6">
+        <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:self-start lg:h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
+          <section className="tech-card">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
+                CM
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
+                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-2">
+              {clientMenuItems.map((item) => {
+                const isActive = item.href === "/cliente/empresas";
+
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`auth-action ${isActive ? "active" : ""}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="tech-card mt-4">
+            <p className="tech-mono text-xs text-cyan-200/75">PERFIL DE EMPRESA</p>
+            <h3 className="mt-2 text-xl font-semibold text-cyan-50">Vista para cliente</h3>
+            <p className="mt-3 text-sm leading-7 text-cyan-100/80">
+              Revisa reputacion, especialidades, contacto y senales de confianza antes de comparar o contactar.
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["Empresa", "Reputacion", "Servicios", "Confianza"].map((chip) => (
+                <span
+                  key={chip}
+                  className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs text-cyan-100/85"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <div className="space-y-4">
+            <ClientQuickLinksCard
+              links={[
+                { href: "/cliente", label: "Volver al feed" },
+                { href: "/cliente/versus", label: "Comparar productos" },
+                { href: "/cliente/marketplace", label: "Ir a marketplace" },
+              ]}
+            />
+          </div>
         </aside>
 
-        <section className="space-y-6 overflow-y-auto pr-4">
-          {/* Header */}
+        <section className="chat-scrollbar space-y-6 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
           <section className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] shadow-2xl shadow-slate-950/30">
             <div className="grid gap-6 p-6 xl:grid-cols-[1.1fr_0.9fr] md:p-8">
               <div>
@@ -230,7 +190,83 @@ export default async function ClienteEmpresaPerfilPage({
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
-            )}
+
+              <div className="mt-6 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Servicios destacados</p>
+                <div className="mt-4 grid gap-2">
+                  {profile.featuredServices.map((service) => (
+                    <div key={service} className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-sm text-cyan-100/85">
+                      {service}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-6 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Senales de confianza</p>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border border-cyan-100/10 bg-white/5 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-200/65">Calificacion</p>
+                    <p className="mt-2 text-xl font-bold text-white">{profile.rating.toFixed(1)}</p>
+                    <p className="mt-1 text-xs text-cyan-100/70">Promedio general</p>
+                  </div>
+
+                  <div className="rounded-xl border border-cyan-100/10 bg-white/5 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-200/65">Opiniones</p>
+                    <p className="mt-2 text-xl font-bold text-white">{profile.reviewCount}</p>
+                    <p className="mt-1 text-xs text-cyan-100/70">Clientes registrados</p>
+                  </div>
+
+                  <div className="rounded-xl border border-cyan-100/10 bg-white/5 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-200/65">Cobertura</p>
+                    <p className="mt-2 text-xl font-bold text-white">{profile.coverage.length}</p>
+                    <p className="mt-1 text-xs text-cyan-100/70">Zonas de atencion</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article className="rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
+              <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Contacto y horarios</p>
+              <h2 className="mt-3 text-2xl font-bold text-white">Como contactar y cuando atiende</h2>
+
+              <div className="mt-5 grid gap-4">
+                <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Canales de contacto</p>
+                  <div className="mt-3 grid gap-2 text-sm text-cyan-100/85">
+                    {profile.contact.map((item) => (
+                      <div key={item.label} className="flex items-center justify-between gap-3">
+                        <span className="font-semibold">{item.label}</span>
+                        <span>{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Horarios</p>
+                  <div className="mt-3 grid gap-2 text-sm text-cyan-100/85">
+                    {profile.hours.map((item) => (
+                      <div key={item.day} className="flex items-center justify-between gap-3">
+                        <span className="font-semibold">{item.day}</span>
+                        <span>{item.hours}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cobertura</p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {profile.coverage.map((area) => (
+                      <span key={area} className="rounded-full border border-cyan-100/10 bg-white/5 px-3 py-2 text-sm text-cyan-100/85">
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </article>
           </section>
 
           {/* Calificar empresa */}
