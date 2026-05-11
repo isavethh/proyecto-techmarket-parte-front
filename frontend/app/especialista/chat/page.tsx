@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SpecialistShell } from "../components/SpecialistShell";
 
@@ -89,7 +89,7 @@ function normalizeText(value: string) {
     .trim();
 }
 
-export default function EspecialistaChatPage() {
+function EspecialistaChatContent() {
   const searchParams = useSearchParams();
   const serviceFromQuery = searchParams.get("service") ?? "";
 
@@ -242,5 +242,13 @@ export default function EspecialistaChatPage() {
         </section>
       </section>
     </SpecialistShell>
+  );
+}
+
+export default function EspecialistaChatPage() {
+  return (
+    <Suspense fallback={<div className="flex-1 pb-0" />}>
+      <EspecialistaChatContent />
+    </Suspense>
   );
 }

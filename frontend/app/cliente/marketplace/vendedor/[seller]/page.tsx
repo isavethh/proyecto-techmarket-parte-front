@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { Suspense, useMemo, useState, useSyncExternalStore } from "react";
 import {
   ClientInfoCard,
   ClientPageHeader,
@@ -95,7 +95,7 @@ const getSellerInitials = (sellerName: string): string => {
   return chunks.join("") || "VD";
 };
 
-export default function MarketplaceSellerProfilePage() {
+function MarketplaceSellerProfileContent() {
   const params = useParams<{ seller: string | string[] }>();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -338,5 +338,13 @@ export default function MarketplaceSellerProfilePage() {
         }}
       />
     </div>
+  );
+}
+
+export default function MarketplaceSellerProfilePage() {
+  return (
+    <Suspense fallback={<div className="flex-1 pb-10" />}>
+      <MarketplaceSellerProfileContent />
+    </Suspense>
   );
 }

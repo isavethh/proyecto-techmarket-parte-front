@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   ClientInfoCard,
   ClientPageHeader,
@@ -81,7 +81,7 @@ const getInitials = (name: string): string =>
     .map((token) => token[0]?.toUpperCase() ?? "")
     .join("") || "US";
 
-export default function ClienteUsuarioPerfilPage() {
+function ClienteUsuarioPerfilContent() {
   const params = useParams<{ slug: string | string[] }>();
   const searchParams = useSearchParams();
 
@@ -445,5 +445,13 @@ export default function ClienteUsuarioPerfilPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function ClienteUsuarioPerfilPage() {
+  return (
+    <Suspense fallback={<div className="flex-1 pb-8" />}>
+      <ClienteUsuarioPerfilContent />
+    </Suspense>
   );
 }

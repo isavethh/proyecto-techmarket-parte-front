@@ -6,6 +6,15 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { requireAuth } from "@/lib/auth/authGuard";
 import {
+  createSearchHistory,
+  searchGlobal,
+  searchSuggestions as fetchSearchSuggestions,
+  searchTrending,
+  type GlobalSearchItem,
+  type SearchSuggestion,
+  type SearchTrending,
+} from "@/lib/api/iaApi";
+import {
   COMMUNITY_FEED_UPDATED_EVENT,
   CommunityFeedPost,
   mergeCommunityFeedPosts,
@@ -233,6 +242,12 @@ const quickActions = [
 ];
 
 const stories = ["TecnoCentro", "FixCloud", "RedLink", "Zona Gamer", "ElectroCare", "BuildStation"];
+
+const activityFallback = [
+  "Nuevas publicaciones de empresas cada dia.",
+  "Mayor interaccion en soporte remoto y diagnostico.",
+  "Embajadores activos recomendando negocios locales.",
+];
 
 const feedCommentsByPostId: Record<string, PostComment[]> = {
   "post-1": [
@@ -489,6 +504,16 @@ export default function ClientePage() {
   const [topView, setTopView] = useState<TopView>("feed");
   const [searchMode, setSearchMode] = useState<SearchMode>("normal");
   const [query, setQuery] = useState<string>("");
+  const [headerQuery, setHeaderQuery] = useState<string>("");
+  const [lastSearchQuery, setLastSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<GlobalSearchItem[]>([]);
+  const [searchTotal, setSearchTotal] = useState<number | null>(null);
+  const [searchStatus, setSearchStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
+  const [trendingSearches, setTrendingSearches] = useState<SearchTrending[]>([]);
   const [aiQuery, setAiQuery] = useState<string>("");
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [hasAiSearchRun, setHasAiSearchRun] = useState<boolean>(false);
@@ -512,6 +537,51 @@ export default function ClientePage() {
 
   const activeChat =
     clientChatThreads.find((chat) => chat.id === activeChatId) ?? clientChatThreads[0];
+
+  useEffect(() => {
+    let active = true;
+
+    searchTrending()
+      .then((items) => {
+        if (!active) {
+          return;
+        }
+        setTrendingSearches(items);
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+        setTrendingSearches([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const normalizedQuery = query.trim();
+
+    if (!normalizedQuery) {
+      setSearchSuggestions([]);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      fetchSearchSuggestions(normalizedQuery)
+        .then((items) => {
+          setSearchSuggestions(items);
+        })
+        .catch(() => {
+          setSearchSuggestions([]);
+        });
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [query]);
 
   const aiSummary = useMemo(() => {
     if (!hasAiSearchRun || !aiResults.length) return "";
@@ -588,6 +658,41 @@ export default function ClientePage() {
     setAiResults([]);
   };
 
+  const runGlobalSearch = async (nextQuery: string) => {
+    const normalizedQuery = nextQuery.trim();
+
+    if (!normalizedQuery) {
+      setLastSearchQuery("");
+      setSearchResults([]);
+      setSearchTotal(null);
+      setSearchStatus("idle");
+      setSearchError(null);
+      return;
+    }
+
+    setLastSearchQuery(normalizedQuery);
+    setSearchStatus("loading");
+    setSearchError(null);
+
+    try {
+      const response = await searchGlobal(normalizedQuery);
+      setSearchResults(response.resultados ?? []);
+      setSearchTotal(response.total ?? 0);
+      setSearchStatus("success");
+
+      try {
+        await createSearchHistory({ query: normalizedQuery, tipo: "general" });
+      } catch {
+        // ignore history failures
+      }
+    } catch (error) {
+      setSearchResults([]);
+      setSearchTotal(null);
+      setSearchStatus("error");
+      setSearchError(error instanceof Error ? error.message : "Error de busqueda");
+    }
+  };
+
   const handleAiSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -609,8 +714,19 @@ export default function ClientePage() {
     }, 1850);
   };
 
+  const handleHeaderSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    runGlobalSearch(headerQuery);
+  };
+
   const handleNormalSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    runGlobalSearch(query);
+  };
+
+  const handleSuggestionClick = (text: string) => {
+    setQuery(text);
+    runGlobalSearch(text);
   };
 
   const isPostLiked = (postId: string): boolean => likedFeedPostIds.includes(postId);
@@ -706,12 +822,12 @@ export default function ClientePage() {
         sectionLabel="Cliente activo"
         brandHref="/"
         middleSlot={(
-          <form onSubmit={handleNormalSearch}>
+          <form onSubmit={handleHeaderSearch}>
             <input
               className="auth-input"
               placeholder="Buscar en TechMarket..."
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              value={headerQuery}
+              onChange={(event) => setHeaderQuery(event.target.value)}
             />
           </form>
         )}
@@ -888,22 +1004,79 @@ export default function ClientePage() {
             </div>
 
             {searchMode === "normal" && (
-              <form className="mt-4" onSubmit={handleNormalSearch}>
-                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                  <input
-                    className="auth-input w-full"
-                    placeholder="Busca productos, tiendas o servicios..."
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                  />
-                  <button
-                    type="submit"
-                    className="tech-button tech-button-primary w-full md:w-auto md:whitespace-nowrap"
-                  >
-                    Buscar en el feed
-                  </button>
-                </div>
-              </form>
+              <>
+                <form className="mt-4" onSubmit={handleNormalSearch}>
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                    <input
+                      className="auth-input w-full"
+                      placeholder="Busca productos, tiendas o servicios..."
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      className="tech-button tech-button-primary w-full md:w-auto md:whitespace-nowrap"
+                    >
+                      Buscar en el feed
+                    </button>
+                  </div>
+                </form>
+
+                {searchSuggestions.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {searchSuggestions.map((suggestion) => (
+                      <button
+                        key={`${suggestion.texto}-${suggestion.tipo}`}
+                        type="button"
+                        onClick={() => handleSuggestionClick(suggestion.texto)}
+                        className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs text-cyan-100/85 transition hover:border-cyan-200/40"
+                      >
+                        {suggestion.texto}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                {query.trim() && query.trim() === lastSearchQuery ? (
+                  <div className="mt-4 space-y-3">
+                    {searchStatus === "loading" ? (
+                      <p className="text-xs text-cyan-200/75">Buscando en todo TechMarket...</p>
+                    ) : null}
+                    {searchStatus === "error" && searchError ? (
+                      <p className="text-xs text-rose-200/85">{searchError}</p>
+                    ) : null}
+                    {searchStatus === "success" ? (
+                      searchResults.length > 0 ? (
+                        <div className="grid gap-3">
+                          <p className="text-xs text-cyan-200/75">
+                            Resultados: {searchTotal ?? searchResults.length}
+                          </p>
+                          {searchResults.map((result) => (
+                            <Link
+                              key={result.id}
+                              href={result.url}
+                              className="rounded-2xl border border-cyan-100/15 bg-slate-950/35 p-3 transition hover:border-cyan-200/40"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-200/75">
+                                  {result.tipo}
+                                </p>
+                                <span className="text-[11px] text-cyan-100/60">{result.id}</span>
+                              </div>
+                              <p className="mt-2 text-sm font-semibold text-cyan-50">{result.titulo}</p>
+                              <p className="mt-1 text-xs text-cyan-100/75">
+                                {result.descripcion || "Sin descripcion"}
+                              </p>
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-cyan-200/75">Sin resultados globales.</p>
+                      )
+                    ) : null}
+                  </div>
+                ) : null}
+              </>
             )}
 
             {searchMode === "ia" && (
@@ -1275,9 +1448,13 @@ export default function ClientePage() {
           <section className="tech-card">
             <p className="text-sm font-semibold text-cyan-50">Actividad del ecosistema</p>
             <ul className="mt-3 space-y-2 text-xs text-cyan-100/80">
-              <li>Nuevas publicaciones de empresas cada dia.</li>
-              <li>Mayor interaccion en soporte remoto y diagnostico.</li>
-              <li>Embajadores activos recomendando negocios locales.</li>
+              {trendingSearches.length > 0
+                ? trendingSearches.map((trend) => (
+                    <li key={trend.texto}>
+                      {trend.texto} · {trend.busquedas} busquedas
+                    </li>
+                  ))
+                : activityFallback.map((item) => <li key={item}>{item}</li>)}
             </ul>
           </section>
         </aside>
