@@ -3,6 +3,7 @@
 import { ChangeEvent, FormEvent, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { SpecialistShell } from "../components/SpecialistShell";
+import { useSpecialistBackendData } from "../hooks/useSpecialistBackendData";
 import { PortfolioItem, portfolioSeedItems } from "../specialistData";
 
 type PortfolioEditForm = {
@@ -14,7 +15,9 @@ type PortfolioEditForm = {
 };
 
 export default function EspecialistaPortafolioPage() {
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>(portfolioSeedItems);
+  const { profile, portfolio } = useSpecialistBackendData();
+  const [addedPortfolioItems, setAddedPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [editedPortfolioItems, setEditedPortfolioItems] = useState<Record<string, PortfolioItem>>({});
   const [showPortfolioForm, setShowPortfolioForm] = useState(false);
   const [portfolioMessage, setPortfolioMessage] = useState("");
   const [uploadedPortfolioImagePreview, setUploadedPortfolioImagePreview] = useState("");
@@ -36,6 +39,11 @@ export default function EspecialistaPortafolioPage() {
     result: "",
     date: "",
   });
+
+  const portfolioItems = [
+    ...addedPortfolioItems,
+    ...(portfolio.length > 0 ? portfolio : portfolioSeedItems).map((item) => editedPortfolioItems[item.id] ?? item),
+  ];
 
   const handlePortfolioFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -74,7 +82,7 @@ export default function EspecialistaPortafolioPage() {
       return;
     }
 
-    setPortfolioItems((current) => [
+    setAddedPortfolioItems((current) => [
       {
         id: `p-${Date.now()}`,
         image: uploadedPortfolioImagePreview || "/productos/laptop-pro-14.jpg",
@@ -133,27 +141,32 @@ export default function EspecialistaPortafolioPage() {
       return;
     }
 
-    setPortfolioItems((current) =>
-      current.map((item) =>
-        item.id === editingPortfolioId
-          ? {
-              ...item,
-              serviceType,
-              workDescription,
-              result: portfolioEditForm.result.trim() || undefined,
-              date: portfolioEditForm.date.trim() || undefined,
-              image: portfolioEditForm.image.trim() || item.image,
-            }
-          : item,
-      ),
+    const currentItem = portfolioItems.find((item) => item.id === editingPortfolioId);
+
+    if (!currentItem) {
+      return;
+    }
+
+    const updatedItem = {
+      ...currentItem,
+      serviceType,
+      workDescription,
+      result: portfolioEditForm.result.trim() || undefined,
+      date: portfolioEditForm.date.trim() || undefined,
+      image: portfolioEditForm.image.trim() || currentItem.image,
+    };
+
+    setAddedPortfolioItems((current) =>
+      current.map((item) => (item.id === editingPortfolioId ? updatedItem : item)),
     );
+    setEditedPortfolioItems((current) => ({ ...current, [editingPortfolioId]: updatedItem }));
 
     closePortfolioEditModal();
   };
 
   return (
     <>
-      <SpecialistShell sectionLabel="Portafolio" statusMessage="Portafolio tecnico con evidencia activa">
+      <SpecialistShell sectionLabel="Portafolio" statusMessage="Portafolio tecnico con evidencia activa" profile={profile}>
         <section className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_34%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8">
           <p className="tech-mono text-xs text-cyan-200/75">PORTAFOLIO DEL ESPECIALISTA</p>
           <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Evidencia tecnica</h1>

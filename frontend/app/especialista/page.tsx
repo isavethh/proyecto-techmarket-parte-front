@@ -5,19 +5,18 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SpecialistShell } from "./components/SpecialistShell";
 import { SpecialistAiAssistant } from "./components/SpecialistAiAssistant";
+import { useSpecialistBackendData } from "./hooks/useSpecialistBackendData";
 import { requireAuth } from "@/lib/auth/authGuard";
 import { getUser, getToken } from "@/lib/auth/tokenStore";
 import {
-  portfolioSeedItems,
   recentActivity,
   specialistKpis,
-  specialistProfile,
   specialistReviews,
-  specialistServices,
 } from "./specialistData";
 
 export default function EspecialistaCorePage() {
   const router = useRouter();
+  const { profile, services, portfolio } = useSpecialistBackendData();
 
   useEffect(() => {
     console.log("[Especialista page] Ejecutando requireAuth desde page.tsx");
@@ -27,25 +26,25 @@ export default function EspecialistaCorePage() {
     requireAuth(router);
   }, [router]);
 
-  const featuredServices = specialistServices.filter((service) => service.featured).length;
+  const featuredServices = services.filter((service) => service.featured).length;
 
   return (
-    <SpecialistShell sectionLabel="Resumen especialista" statusMessage="Resumen de especialista independiente activo">
+    <SpecialistShell sectionLabel="Resumen especialista" statusMessage="Resumen de especialista independiente activo" profile={profile}>
       <section className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8">
         <p className="tech-mono text-xs text-cyan-200/75">RESUMEN ESPECIALISTA</p>
         <div className="mt-4 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-xl font-bold text-slate-950">
-                {specialistProfile.avatar}
+                {profile.avatar}
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-cyan-50 md:text-4xl">{specialistProfile.name}</h1>
-                <p className="text-sm text-cyan-100/80">{specialistProfile.specialization}</p>
-                <p className="text-sm text-cyan-100/80">{specialistProfile.location}</p>
+                <h1 className="text-3xl font-bold text-cyan-50 md:text-4xl">{profile.name}</h1>
+                <p className="text-sm text-cyan-100/80">{profile.specialization}</p>
+                <p className="text-sm text-cyan-100/80">{profile.location}</p>
               </div>
             </div>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">{specialistProfile.bio}</p>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">{profile.bio}</p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Valor diferencial</p>
@@ -65,7 +64,7 @@ export default function EspecialistaCorePage() {
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
             <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Trabajos en portafolio</p>
-              <p className="mt-2 text-2xl font-bold text-cyan-50">{portfolioSeedItems.length}</p>
+              <p className="mt-2 text-2xl font-bold text-cyan-50">{portfolio.length}</p>
               <p className="mt-1 text-sm text-cyan-100/75">Evidencias visibles</p>
             </article>
             <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">

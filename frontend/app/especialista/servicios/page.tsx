@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChangeEvent, FormEvent, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { SpecialistShell } from "../components/SpecialistShell";
+import { useSpecialistBackendData } from "../hooks/useSpecialistBackendData";
 import { specialistServices } from "../specialistData";
 
 type SpecialistServiceItem = (typeof specialistServices)[number];
@@ -19,7 +20,8 @@ type ServiceFormData = {
 };
 
 export default function EspecialistaServiciosPage() {
-  const [serviceItems, setServiceItems] = useState<SpecialistServiceItem[]>(specialistServices);
+  const { profile, services } = useSpecialistBackendData();
+  const [createdServiceItems, setCreatedServiceItems] = useState<SpecialistServiceItem[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createMessage, setCreateMessage] = useState("");
   const [uploadedImagePreview, setUploadedImagePreview] = useState("");
@@ -30,12 +32,13 @@ export default function EspecialistaServiciosPage() {
     name: "",
     type: "",
     description: "",
-    technicianName: "Alejandro Torres",
+    technicianName: profile.name,
     price: "",
     featured: false,
     image: "",
   });
 
+  const serviceItems = [...createdServiceItems, ...(services.length > 0 ? services : specialistServices)];
   const featuredServices = serviceItems.filter((service) => service.featured).length;
 
   const closeCreateModal = () => {
@@ -48,7 +51,7 @@ export default function EspecialistaServiciosPage() {
       name: "",
       type: "",
       description: "",
-      technicianName: "Alejandro Torres",
+      technicianName: profile.name,
       price: "",
       featured: false,
       image: "",
@@ -65,7 +68,7 @@ export default function EspecialistaServiciosPage() {
       name: "",
       type: "",
       description: "",
-      technicianName: "Alejandro Torres",
+      technicianName: profile.name,
       price: "",
       featured: false,
       image: "",
@@ -124,12 +127,12 @@ export default function EspecialistaServiciosPage() {
       image,
     };
 
-    setServiceItems((current) => [newService, ...current]);
+    setCreatedServiceItems((current) => [newService, ...current]);
     closeCreateModal();
   };
 
   return (
-    <SpecialistShell sectionLabel="Servicios" statusMessage="Catalogo tecnico especialista activo">
+    <SpecialistShell sectionLabel="Servicios" statusMessage="Catalogo tecnico especialista activo" profile={profile}>
       <section className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_34%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>

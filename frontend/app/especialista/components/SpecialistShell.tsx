@@ -6,10 +6,12 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import { logout } from "@/lib/auth/authGuard";
 import { getUser, getToken } from "@/lib/auth/tokenStore";
 import { specialistNavLinks, specialistProfile } from "../specialistData";
+import type { SpecialistUiProfile } from "../hooks/useSpecialistBackendData";
 
 type SpecialistShellProps = {
   sectionLabel: string;
   statusMessage: string;
+  profile?: SpecialistUiProfile;
   children: ReactNode;
 };
 
@@ -22,6 +24,7 @@ type SpecialistSidebarSummary = {
 
 type SpecialistTopbarControlsProps = {
   sectionLabel: string;
+  profile: SpecialistUiProfile;
 };
 
 const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
@@ -93,11 +96,16 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
   },
 };
 
-function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProps) {
+function SpecialistTopbarControls({ sectionLabel, profile }: SpecialistTopbarControlsProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleLogout = () => {
+    logout(router);
+  };
 
   useEffect(() => {
     if (!isProfileMenuOpen) {
@@ -150,7 +158,7 @@ function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProp
         aria-label="Abrir perfil de especialista"
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-300 to-blue-600 text-[11px] font-bold text-slate-950">
-          {specialistProfile.avatar}
+          {profile.avatar}
         </span>
         <span className="hidden text-xs font-semibold text-cyan-100 md:block">{sectionLabel}</span>
       </button>
@@ -163,8 +171,8 @@ function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProp
           aria-label="Menu de especialista"
         >
           <p className="tech-mono text-xs text-cyan-200/70">PERFIL ESPECIALISTA</p>
-          <p className="mt-2 text-base font-semibold text-cyan-50">{specialistProfile.name}</p>
-          <p className="mt-1 text-sm text-cyan-100/80">{specialistProfile.specialization}</p>
+          <p className="mt-2 text-base font-semibold text-cyan-50">{profile.name}</p>
+          <p className="mt-1 text-sm text-cyan-100/80">{profile.specialization}</p>
 
           <div className="mt-3 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-3 text-xs text-cyan-100/80">
             <div className="flex items-center justify-between gap-3">
@@ -207,7 +215,7 @@ function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProp
   );
 }
 
-export function SpecialistShell({ sectionLabel, statusMessage, children }: SpecialistShellProps) {
+export function SpecialistShell({ sectionLabel, statusMessage, profile = specialistProfile, children }: SpecialistShellProps) {
   const pathname = usePathname();
   const sidebarSummary = specialistSidebarSummaries[sectionLabel];
 
@@ -216,7 +224,7 @@ export function SpecialistShell({ sectionLabel, statusMessage, children }: Speci
       console.log("[SpecialistShell] mount - getToken():", getToken());
       console.log("[SpecialistShell] mount - getUser():", getUser());
       console.log("[SpecialistShell] mount - document.cookie:", typeof document !== 'undefined' ? document.cookie : 'no-document');
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, []);
@@ -236,7 +244,7 @@ export function SpecialistShell({ sectionLabel, statusMessage, children }: Speci
             </div>
           </div>
 
-          <SpecialistTopbarControls sectionLabel={sectionLabel} />
+          <SpecialistTopbarControls sectionLabel={sectionLabel} profile={profile} />
         </div>
       </header>
 
@@ -244,15 +252,15 @@ export function SpecialistShell({ sectionLabel, statusMessage, children }: Speci
         <aside className="space-y-3 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-1">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">PERFIL ESPECIALISTA</p>
-            <h1 className="mt-2 text-xl font-semibold text-cyan-50">{specialistProfile.name}</h1>
-            <p className="mt-2 text-sm text-cyan-100/80">{specialistProfile.specialization}</p>
-            <p className="mt-2 text-xs text-cyan-100/75">{specialistProfile.location}</p>
+            <h1 className="mt-2 text-xl font-semibold text-cyan-50">{profile.name}</h1>
+            <p className="mt-2 text-sm text-cyan-100/80">{profile.specialization}</p>
+            <p className="mt-2 text-xs text-cyan-100/75">{profile.location}</p>
           </section>
 
           <section className="tech-card">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                {specialistProfile.avatar}
+                {profile.avatar}
               </div>
               <div>
                 <p className="text-sm font-semibold text-cyan-50">Mi panel</p>
