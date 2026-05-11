@@ -18,19 +18,26 @@ import {
   type SpecialistTransactionItem,
   type SpecialistWalletItem,
 } from "../specialistData";
+import { debugSpecialistResult, getDatasetSource, normalizeBackendList, type DatasetSource } from "./specialistBackendHelpers";
 
-type BackendListResponse<T> = {
-  value?: T[];
-  data?: T[];
-  Count?: number;
+const emptyWallet: SpecialistWalletItem = {
+  availableBalance: "Bs 0",
+  pendingBalance: "Bs 0",
+  currency: "BOB",
+  withdrawMethod: "No especificado",
+  status: "Pendiente",
 };
 
-function normalizeList<T>(response: T[] | BackendListResponse<T>) {
-  if (Array.isArray(response)) {
-    return response;
-  }
+const emptyEarnings: SpecialistEarningsSummaryItem = {
+  totalEarnings: "Bs 0",
+  monthlyEarnings: "Bs 0",
+  pendingPayments: "Bs 0",
+  commissions: "Bs 0",
+  paidServices: "0",
+};
 
-  return response.value ?? response.data ?? [];
+function hasObjectData(value: unknown) {
+  return Boolean(value && typeof value === "object" && Object.values(value).some(Boolean));
 }
 
 function text(value: unknown, fallback: string) {
@@ -61,8 +68,8 @@ export function mapBackendWalletToUiWallet(wallet: SpecialistWallet): Specialist
   const currency = text(wallet.moneda ?? wallet.currency, "BOB");
 
   return {
-    availableBalance: formatMoney(wallet.saldoDisponible ?? wallet.availableBalance, currency, specialistWallet.availableBalance),
-    pendingBalance: formatMoney(wallet.saldoPendiente ?? wallet.pendingBalance, currency, specialistWallet.pendingBalance),
+    availableBalance: formatMoney(wallet.saldoDisponible ?? wallet.availableBalance, currency, emptyWallet.availableBalance),
+    pendingBalance: formatMoney(wallet.saldoPendiente ?? wallet.pendingBalance, currency, emptyWallet.pendingBalance),
     currency,
     withdrawMethod: text(wallet.metodoRetiro ?? wallet.withdrawMethod, "Metodo de retiro no configurado"),
     status: text(wallet.estado ?? wallet.status, "Activa"),
@@ -71,11 +78,11 @@ export function mapBackendWalletToUiWallet(wallet: SpecialistWallet): Specialist
 
 export function mapBackendEarningsToUiEarnings(earnings: SpecialistEarningsSummary): SpecialistEarningsSummaryItem {
   return {
-    totalEarnings: formatMoney(earnings.ingresosTotales ?? earnings.totalEarnings, "BOB", specialistEarningsSummary.totalEarnings),
-    monthlyEarnings: formatMoney(earnings.ingresosMes ?? earnings.monthlyEarnings, "BOB", specialistEarningsSummary.monthlyEarnings),
-    pendingPayments: formatMoney(earnings.pagosPendientes ?? earnings.pendingPayments, "BOB", specialistEarningsSummary.pendingPayments),
-    commissions: formatMoney(earnings.comisiones ?? earnings.commissions, "BOB", specialistEarningsSummary.commissions),
-    paidServices: formatCount(earnings.serviciosPagados ?? earnings.paidServices, specialistEarningsSummary.paidServices),
+    totalEarnings: formatMoney(earnings.ingresosTotales ?? earnings.totalEarnings, "BOB", emptyEarnings.totalEarnings),
+    monthlyEarnings: formatMoney(earnings.ingresosMes ?? earnings.monthlyEarnings, "BOB", emptyEarnings.monthlyEarnings),
+    pendingPayments: formatMoney(earnings.pagosPendientes ?? earnings.pendingPayments, "BOB", emptyEarnings.pendingPayments),
+    commissions: formatMoney(earnings.comisiones ?? earnings.commissions, "BOB", emptyEarnings.commissions),
+    paidServices: formatCount(earnings.serviciosPagados ?? earnings.paidServices, emptyEarnings.paidServices),
   };
 }
 
@@ -99,9 +106,12 @@ export function mapBackendTransactionToUiTransaction(
 }
 
 export function useSpecialistPaymentsData() {
-  const [wallet, setWallet] = useState<SpecialistWalletItem>(specialistWallet);
-  const [earnings, setEarnings] = useState<SpecialistEarningsSummaryItem>(specialistEarningsSummary);
-  const [transactions, setTransactions] = useState<SpecialistTransactionItem[]>(specialistTransactions);
+  const [wallet, setWallet] = useState<SpecialistWalletItem>(emptyWallet);
+  const [earnings, setEarnings] = useState<SpecialistEarningsSummaryItem>(emptyEarnings);
+  const [transactions, setTransactions] = useState<SpecialistTransactionItem[]>([]);
+  const [walletSource, setWalletSource] = useState<DatasetSource>("empty");
+  const [earningsSource, setEarningsSource] = useState<DatasetSource>("empty");
+  const [transactionsSource, setTransactionsSource] = useState<DatasetSource>("empty");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,7 +124,7 @@ export function useSpecialistPaymentsData() {
         setError(null);
 
         const login = await loginTechMarket();
-        const [walletResponse, earningsResponse, transactionsResponse] = await Promise.all([
+        const [walletResult, earningsResult, transactionsResult] = await Promise.allSettled([
           getSpecialistWallet(login.accessToken, login.userId),
           getSpecialistEarningsSummary(login.accessToken, login.userId),
           getSpecialistTransactions(login.accessToken, login.userId),
@@ -124,15 +134,36 @@ export function useSpecialistPaymentsData() {
           return;
         }
 
-        const backendTransactions = normalizeList(transactionsResponse);
+        debugSpecialistResult("[specialist wallet]", walletResult);
+        debugSpecialistResult("[specialist earnings]", earningsResult);
+        debugSpecialistResult("[specialist transactions]", transactionsResult);
 
-        setWallet(walletResponse ? mapBackendWalletToUiWallet(walletResponse) : specialistWallet);
-        setEarnings(earningsResponse ? mapBackendEarningsToUiEarnings(earningsResponse) : specialistEarningsSummary);
-        setTransactions(
-          backendTransactions.length > 0
-            ? backendTransactions.map(mapBackendTransactionToUiTransaction)
-            : specialistTransactions,
-        );
+        if (walletResult.status === "fulfilled") {
+          const hasWallet = hasObjectData(walletResult.value);
+          setWallet(hasWallet ? mapBackendWalletToUiWallet(walletResult.value) : emptyWallet);
+          setWalletSource(hasWallet ? "backend" : "empty");
+        } else {
+          setWallet(specialistWallet);
+          setWalletSource("fallback");
+        }
+
+        if (earningsResult.status === "fulfilled") {
+          const hasEarnings = hasObjectData(earningsResult.value);
+          setEarnings(hasEarnings ? mapBackendEarningsToUiEarnings(earningsResult.value) : emptyEarnings);
+          setEarningsSource(hasEarnings ? "backend" : "empty");
+        } else {
+          setEarnings(specialistEarningsSummary);
+          setEarningsSource("fallback");
+        }
+
+        if (transactionsResult.status === "fulfilled") {
+          const backendTransactions = normalizeBackendList<SpecialistTransaction>(transactionsResult.value);
+          setTransactions(backendTransactions.map(mapBackendTransactionToUiTransaction));
+          setTransactionsSource(getDatasetSource(backendTransactions));
+        } else {
+          setTransactions(specialistTransactions);
+          setTransactionsSource("fallback");
+        }
       } catch (err) {
         if (!isMounted) {
           return;
@@ -142,6 +173,9 @@ export function useSpecialistPaymentsData() {
         setWallet(specialistWallet);
         setEarnings(specialistEarningsSummary);
         setTransactions(specialistTransactions);
+        setWalletSource("fallback");
+        setEarningsSource("fallback");
+        setTransactionsSource("fallback");
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -157,7 +191,7 @@ export function useSpecialistPaymentsData() {
   }, []);
 
   return useMemo(
-    () => ({ wallet, earnings, transactions, loading, error }),
-    [wallet, earnings, transactions, loading, error],
+    () => ({ wallet, earnings, transactions, walletSource, earningsSource, transactionsSource, loading, error }),
+    [wallet, earnings, transactions, walletSource, earningsSource, transactionsSource, loading, error],
   );
 }

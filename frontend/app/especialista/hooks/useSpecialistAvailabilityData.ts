@@ -14,17 +14,13 @@ import {
   type ActivityItem,
   type AvailabilityCard,
 } from "../specialistData";
+import { debugSpecialistResult, getDatasetSource, normalizeBackendList, type DatasetSource } from "./specialistBackendHelpers";
 
-type BackendListResponse<T> = {
-  value?: T[];
-  Count?: number;
-};
+function hasAvailabilityData(availability: unknown) {
+  if (!availability || typeof availability !== "object") {
+    return false;
+  }
 
-function normalizeList<T>(response: T[] | BackendListResponse<T>) {
-  return Array.isArray(response) ? response : response.value ?? [];
-}
-
-function hasAvailabilityData(availability: SpecialistAvailability) {
   return Object.values(availability).some((value) => {
     if (typeof value === "string") {
       return value.trim().length > 0;
@@ -64,7 +60,7 @@ function formatText(value: unknown, fallback: string) {
 
 export function mapBackendAvailabilityToCards(availability: SpecialistAvailability): AvailabilityCard[] {
   if (!hasAvailabilityData(availability)) {
-    return specialistAvailabilityCards;
+    return [];
   }
 
   const status = formatText(availability.estado ?? availability.status, "Disponible");
@@ -110,10 +106,6 @@ export function mapBackendAvailabilityToCards(availability: SpecialistAvailabili
 }
 
 export function mapBackendCalendarToActivity(items: SpecialistCalendarItem[]): ActivityItem[] {
-  if (items.length === 0) {
-    return recentActivity;
-  }
-
   return items.map((item, index) => {
     const title = item.titulo ?? item.title ?? item.tipo ?? item.type ?? "Evento de agenda";
     const detail = item.descripcion ?? item.description ?? item.detalle ?? item.detail ?? "Bloque de calendario del especialista";
@@ -129,8 +121,10 @@ export function mapBackendCalendarToActivity(items: SpecialistCalendarItem[]): A
 }
 
 export function useSpecialistAvailabilityData() {
-  const [availability, setAvailability] = useState<AvailabilityCard[]>(specialistAvailabilityCards);
-  const [calendar, setCalendar] = useState<ActivityItem[]>(recentActivity);
+  const [availability, setAvailability] = useState<AvailabilityCard[]>([]);
+  const [calendar, setCalendar] = useState<ActivityItem[]>([]);
+  const [availabilitySource, setAvailabilitySource] = useState<DatasetSource>("empty");
+  const [calendarSource, setCalendarSource] = useState<DatasetSource>("empty");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -143,7 +137,7 @@ export function useSpecialistAvailabilityData() {
         setError(null);
 
         const login = await loginTechMarket();
-        const [availabilityResponse, calendarResponse] = await Promise.all([
+        const [availabilityResult, calendarResult] = await Promise.allSettled([
           getSpecialistAvailability(login.accessToken, login.userId),
           getSpecialistCalendar(login.accessToken, login.userId),
         ]);
@@ -152,9 +146,26 @@ export function useSpecialistAvailabilityData() {
           return;
         }
 
-        const calendarItems = normalizeList(calendarResponse);
-        setAvailability(mapBackendAvailabilityToCards(availabilityResponse));
-        setCalendar(calendarItems.length > 0 ? mapBackendCalendarToActivity(calendarItems) : recentActivity);
+        debugSpecialistResult("[specialist availability]", availabilityResult);
+        debugSpecialistResult("[specialist calendar]", calendarResult);
+
+        if (availabilityResult.status === "fulfilled") {
+          const availabilityCards = mapBackendAvailabilityToCards(availabilityResult.value);
+          setAvailability(availabilityCards);
+          setAvailabilitySource(getDatasetSource(availabilityCards));
+        } else {
+          setAvailability(specialistAvailabilityCards);
+          setAvailabilitySource("fallback");
+        }
+
+        if (calendarResult.status === "fulfilled") {
+          const calendarItems = normalizeBackendList<SpecialistCalendarItem>(calendarResult.value);
+          setCalendar(mapBackendCalendarToActivity(calendarItems));
+          setCalendarSource(getDatasetSource(calendarItems));
+        } else {
+          setCalendar(recentActivity);
+          setCalendarSource("fallback");
+        }
       } catch (err) {
         if (!isMounted) {
           return;
@@ -163,6 +174,8 @@ export function useSpecialistAvailabilityData() {
         setError(err instanceof Error ? err.message : "Error desconocido al cargar disponibilidad");
         setAvailability(specialistAvailabilityCards);
         setCalendar(recentActivity);
+        setAvailabilitySource("fallback");
+        setCalendarSource("fallback");
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -178,7 +191,7 @@ export function useSpecialistAvailabilityData() {
   }, []);
 
   return useMemo(
-    () => ({ availability, calendar, loading, error }),
-    [availability, calendar, loading, error],
+    () => ({ availability, calendar, availabilitySource, calendarSource, loading, error }),
+    [availability, calendar, availabilitySource, calendarSource, loading, error],
   );
 }

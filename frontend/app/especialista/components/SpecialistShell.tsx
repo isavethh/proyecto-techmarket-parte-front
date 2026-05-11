@@ -5,8 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { logout } from "@/lib/auth/authGuard";
 import { getUser, getToken } from "@/lib/auth/tokenStore";
-import { specialistNavLinks, specialistProfile } from "../specialistData";
+import { specialistNavLinks } from "../specialistData";
 import type { SpecialistUiProfile } from "../hooks/useSpecialistBackendData";
+import { useSpecialistProfileData } from "../hooks/useSpecialistProfileData";
 
 type SpecialistShellProps = {
   sectionLabel: string;
@@ -232,11 +233,11 @@ function SpecialistTopbarControls({ sectionLabel, profile }: SpecialistTopbarCon
           <div className="mt-3 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-3 text-xs text-cyan-100/80">
             <div className="flex items-center justify-between gap-3">
               <span>Ciudad</span>
-              <strong className="text-cyan-50">Santa Cruz</strong>
+              <strong className="text-cyan-50">{profile.location}</strong>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span>Estado</span>
-              <strong className="text-cyan-50">Especialista verificado</strong>
+              <strong className="text-cyan-50">Pendiente</strong>
             </div>
           </div>
 
@@ -270,9 +271,12 @@ function SpecialistTopbarControls({ sectionLabel, profile }: SpecialistTopbarCon
   );
 }
 
-export function SpecialistShell({ sectionLabel, statusMessage, profile = specialistProfile, children }: SpecialistShellProps) {
+export function SpecialistShell({ sectionLabel, statusMessage, profile, children }: SpecialistShellProps) {
   const pathname = usePathname();
   const sidebarSummary = specialistSidebarSummaries[sectionLabel];
+  const shouldLoadProfile = !profile;
+  const { profile: backendProfile } = useSpecialistProfileData(shouldLoadProfile);
+  const shellProfile = profile ?? backendProfile;
 
   useEffect(() => {
     try {
@@ -299,7 +303,7 @@ export function SpecialistShell({ sectionLabel, statusMessage, profile = special
             </div>
           </div>
 
-          <SpecialistTopbarControls sectionLabel={sectionLabel} profile={profile} />
+          <SpecialistTopbarControls sectionLabel={sectionLabel} profile={shellProfile} />
         </div>
       </header>
 
@@ -307,19 +311,19 @@ export function SpecialistShell({ sectionLabel, statusMessage, profile = special
         <aside className="space-y-3 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-1">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">PERFIL ESPECIALISTA</p>
-            <h1 className="mt-2 text-xl font-semibold text-cyan-50">{profile.name}</h1>
-            <p className="mt-2 text-sm text-cyan-100/80">{profile.specialization}</p>
-            <p className="mt-2 text-xs text-cyan-100/75">{profile.location}</p>
+            <h1 className="mt-2 text-xl font-semibold text-cyan-50">{shellProfile.name}</h1>
+            <p className="mt-2 text-sm text-cyan-100/80">{shellProfile.specialization}</p>
+            <p className="mt-2 text-xs text-cyan-100/75">{shellProfile.location}</p>
           </section>
 
           <section className="tech-card">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                {profile.avatar}
+                {shellProfile.avatar}
               </div>
               <div>
                 <p className="text-sm font-semibold text-cyan-50">Mi panel</p>
-                <p className="text-xs text-cyan-100/75">Especialista activo</p>
+                <p className="text-xs text-cyan-100/75">Perfil especialista</p>
               </div>
             </div>
 

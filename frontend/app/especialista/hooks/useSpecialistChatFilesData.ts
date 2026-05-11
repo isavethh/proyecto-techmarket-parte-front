@@ -18,20 +18,7 @@ import {
   type SpecialistChatMessageItem,
   type SpecialistFileItem,
 } from "../specialistData";
-
-type BackendListResponse<T> = {
-  value?: T[];
-  data?: T[];
-  Count?: number;
-};
-
-function normalizeList<T>(response: T[] | BackendListResponse<T>) {
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  return response.value ?? response.data ?? [];
-}
+import { debugSpecialistResult, getDatasetSource, normalizeBackendList, type DatasetSource } from "./specialistBackendHelpers";
 
 function text(value: unknown, fallback: string) {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -50,6 +37,46 @@ function numberValue(value: unknown, fallback = 0) {
   return fallback;
 }
 
+function firstText(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return undefined;
+}
+
+function formatChatTime(value: unknown) {
+  const raw = firstText(value);
+
+  if (!raw) {
+    return "Fecha no disponible";
+  }
+
+  const date = new Date(raw);
+
+  if (Number.isNaN(date.getTime())) {
+    return raw;
+  }
+
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+
+  if (isToday) {
+    return new Intl.DateTimeFormat("es-BO", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  }
+
+  return new Intl.DateTimeFormat("es-BO", {
+    day: "2-digit",
+    month: "short",
+  }).format(date).replace(".", "");
+}
+
 function initialsFromName(name: string) {
   const initials = name
     .split(" ")
@@ -61,30 +88,105 @@ function initialsFromName(name: string) {
   return initials || "CL";
 }
 
-function mapMessage(message: SpecialistChatMessage, index: number): SpecialistChatMessageItem {
-  const sender = text(message.from ?? message.sender ?? message.role, "customer").toLowerCase();
+function firstArray<T>(...values: unknown[]): T[] {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      return value as T[];
+    }
+  }
+
+  return [];
+}
+
+function unwrapChatPayload(value: unknown): unknown {
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const payload = value as { value?: unknown; data?: unknown };
+  return payload.value ?? payload.data ?? value;
+}
+
+function extractMessages(value: unknown): SpecialistChatMessage[] {
+  const payload = unwrapChatPayload(value);
+
+  if (Array.isArray(payload)) {
+    return payload as SpecialistChatMessage[];
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  const chat = payload as SpecialistChatDetail;
+  const data = (chat.data && typeof chat.data === "object" && !Array.isArray(chat.data)) ? chat.data as SpecialistChatDetail : undefined;
+  const nestedValue = (chat.value && typeof chat.value === "object" && !Array.isArray(chat.value)) ? chat.value as SpecialistChatDetail : undefined;
+
+  return firstArray<SpecialistChatMessage>(
+    chat.messages,
+    chat.mensajes,
+    chat.ticketMessages,
+    chat.messageList,
+    data?.messages,
+    data?.mensajes,
+    data?.ticketMessages,
+    data?.messageList,
+    nestedValue?.messages,
+    nestedValue?.mensajes,
+    nestedValue?.ticketMessages,
+    nestedValue?.messageList,
+  );
+}
+
+function mapMessage(message: SpecialistChatMessage, index: number, currentUserId?: string): SpecialistChatMessageItem {
+  const explicitSender = text(message.from ?? message.sender ?? message.remitente ?? message.role, "").toLowerCase();
+  const authorUserId = text(message.author_user_id ?? message.authorUserId, "");
+  const from = explicitSender
+    ? explicitSender.includes("specialist") || explicitSender.includes("especialista") || explicitSender.includes("tecnico") || explicitSender.includes("técnico")
+      ? "specialist"
+      : "customer"
+    : currentUserId && authorUserId && authorUserId === currentUserId
+      ? "specialist"
+      : "customer";
 
   return {
     id: text(message.id ?? message.messageId, `message-${index}`),
-    from: sender.includes("specialist") || sender.includes("especialista") || sender.includes("tecnico") ? "specialist" : "customer",
-    text: text(message.texto ?? message.text ?? message.mensaje ?? message.message, "Mensaje sin contenido."),
-    time: text(message.hora ?? message.time ?? message.fecha ?? message.date ?? message.createdAt, "Ahora"),
+    from,
+    text: text(
+      message.texto ?? message.text ?? message.mensaje ?? message.message ?? message.message_body ?? message.messageBody ?? message.body ?? message.content ?? message.contenido,
+      "Mensaje sin contenido.",
+    ),
+    time: formatChatTime(message.hora ?? message.time ?? message.fecha ?? message.date ?? message.created_at ?? message.createdAt),
   };
 }
 
-export function mapBackendChatToUiChat(chat: SpecialistChat, index: number): SpecialistChatItem {
+function serviceText(chat: SpecialistChat, fallback = "Consulta técnica") {
+  return text(
+    chat.servicio ?? chat.service ?? chat.serviceName ?? chat.service_name ?? chat.subject ?? chat.ticketSubject ?? chat.ticket_subject ?? chat.title,
+    fallback,
+  );
+}
+
+function lastMessageText(chat: SpecialistChat, fallback: string) {
+  return text(
+    chat.ultimoMensaje ?? chat.lastMessage ?? chat.last_message ?? chat.latestMessage ?? chat.latest_message ?? chat.messageBody ?? chat.message_body ?? chat.text ?? chat.content,
+    fallback,
+  );
+}
+
+export function mapBackendChatToUiChat(chat: SpecialistChat, index: number, currentUserId?: string): SpecialistChatItem {
   const customer = text(chat.cliente ?? chat.customer ?? chat.clientName, "Cliente no especificado");
-  const messages = (chat.mensajes ?? chat.messages ?? []).map(mapMessage);
-  const lastMessage = text(chat.ultimoMensaje ?? chat.lastMessage, messages.at(-1)?.text ?? "Sin mensajes recientes");
+  const messages = extractMessages(chat).map((message, messageIndex) => mapMessage(message, messageIndex, currentUserId));
+  const lastMessage = lastMessageText(chat, messages.at(-1)?.text ?? "Sin mensajes recientes");
 
   return {
     id: text(chat.id ?? chat.chatId, `chat-${index}`),
     customer,
     initials: text(chat.iniciales ?? chat.initials, initialsFromName(customer)),
-    service: text(chat.servicio ?? chat.service, "Servicio no especificado"),
+    service: serviceText(chat),
     status: text(chat.estado ?? chat.status, "Disponible"),
     lastMessage,
-    time: text(chat.hora ?? chat.time ?? chat.fecha ?? chat.date, "Fecha no disponible"),
+    time: formatChatTime(chat.hora ?? chat.time ?? chat.fecha ?? chat.date ?? chat.ultimaActividad),
     unread: numberValue(chat.noLeidos ?? chat.unread),
     messages,
   };
@@ -93,20 +195,24 @@ export function mapBackendChatToUiChat(chat: SpecialistChat, index: number): Spe
 export function mapBackendChatDetailToUiChat(
   detail: SpecialistChatDetail,
   fallbackChat?: SpecialistChatItem,
+  currentUserId?: string,
 ): SpecialistChatItem {
-  const mapped = mapBackendChatToUiChat(detail, 0);
-  const messages = mapped.messages.length > 0 ? mapped.messages : fallbackChat?.messages ?? [];
+  const payload = unwrapChatPayload(detail);
+  const mapped = !Array.isArray(payload) && payload && typeof payload === "object"
+    ? mapBackendChatToUiChat(payload as SpecialistChat, 0, currentUserId)
+    : undefined;
+  const messages = extractMessages(detail).map((message, index) => mapMessage(message, index, currentUserId));
 
   return {
-    ...mapped,
-    id: fallbackChat?.id ?? mapped.id,
-    customer: mapped.customer === "Cliente no especificado" ? fallbackChat?.customer ?? mapped.customer : mapped.customer,
-    initials: mapped.initials === "CL" ? fallbackChat?.initials ?? mapped.initials : mapped.initials,
-    service: mapped.service === "Servicio no especificado" ? fallbackChat?.service ?? mapped.service : mapped.service,
-    status: mapped.status,
-    lastMessage: messages.at(-1)?.text ?? mapped.lastMessage,
-    time: mapped.time === "Fecha no disponible" ? fallbackChat?.time ?? mapped.time : mapped.time,
-    unread: mapped.unread,
+    ...(fallbackChat ?? mapped),
+    id: fallbackChat?.id ?? mapped?.id ?? "chat-detail",
+    customer: mapped?.customer && mapped.customer !== "Cliente no especificado" ? mapped.customer : fallbackChat?.customer ?? "Cliente no especificado",
+    initials: mapped?.initials && mapped.initials !== "CL" ? mapped.initials : fallbackChat?.initials ?? "CL",
+    service: mapped?.service && mapped.service !== "Consulta técnica" ? mapped.service : fallbackChat?.service ?? "Consulta técnica",
+    status: mapped?.status ?? fallbackChat?.status ?? "Disponible",
+    lastMessage: messages.at(-1)?.text ?? mapped?.lastMessage ?? fallbackChat?.lastMessage ?? "Sin mensajes recientes",
+    time: mapped?.time && mapped.time !== "Fecha no disponible" ? mapped.time : fallbackChat?.time ?? "Fecha no disponible",
+    unread: mapped?.unread ?? fallbackChat?.unread ?? 0,
     messages,
   };
 }
@@ -133,16 +239,22 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
   files: SpecialistFileItem[];
   loading: boolean;
   error: string | null;
+  detailError: string | null;
+  chatsSource: DatasetSource;
+  filesSource: DatasetSource;
   selectedChatId: string;
   setSelectedChatId: Dispatch<SetStateAction<string>>;
 } {
-  const [chats, setChats] = useState<SpecialistChatItem[]>(specialistChats);
-  const [activeChat, setActiveChat] = useState<SpecialistChatItem | undefined>(specialistChats[0]);
-  const [files, setFiles] = useState<SpecialistFileItem[]>(specialistFiles);
+  const [chats, setChats] = useState<SpecialistChatItem[]>([]);
+  const [activeChat, setActiveChat] = useState<SpecialistChatItem | undefined>();
+  const [files, setFiles] = useState<SpecialistFileItem[]>([]);
   const [selectedChatId, setSelectedChatId] = useState(initialChatId);
   const [auth, setAuth] = useState<{ token: string; userId: string } | null>(null);
+  const [chatsSource, setChatsSource] = useState<DatasetSource>("empty");
+  const [filesSource, setFilesSource] = useState<DatasetSource>("empty");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -153,7 +265,7 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
         setError(null);
 
         const login = await loginTechMarket();
-        const [chatsResponse, filesResponse] = await Promise.all([
+        const [chatsResult, filesResult] = await Promise.allSettled([
           getSpecialistChats(login.accessToken, login.userId),
           getSpecialistFiles(login.accessToken, login.userId),
         ]);
@@ -162,16 +274,28 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
           return;
         }
 
-        const backendChats = normalizeList(chatsResponse);
-        const backendFiles = normalizeList(filesResponse);
-        const uiChats = backendChats.length > 0 ? backendChats.map(mapBackendChatToUiChat) : specialistChats;
+        debugSpecialistResult("[chat raw response]", chatsResult);
+        debugSpecialistResult("[specialist files]", filesResult);
+
+        const backendChats = chatsResult.status === "fulfilled"
+          ? normalizeBackendList<SpecialistChat>(chatsResult.value)
+          : [];
+        const backendFiles = filesResult.status === "fulfilled"
+          ? normalizeBackendList<SpecialistFile>(filesResult.value)
+          : [];
+        const uiChats = chatsResult.status === "fulfilled"
+          ? backendChats.map((chat, index) => mapBackendChatToUiChat(chat, index, login.userId))
+          : specialistChats;
+        debugSpecialistResult("[chat mapped]", uiChats);
         const nextSelectedChatId = initialChatId || uiChats[0]?.id || "";
 
         setAuth({ token: login.accessToken, userId: login.userId });
         setChats(uiChats);
+        setChatsSource(chatsResult.status === "fulfilled" ? getDatasetSource(backendChats) : "fallback");
         setSelectedChatId(nextSelectedChatId);
         setActiveChat(uiChats.find((chat) => chat.id === nextSelectedChatId) ?? uiChats[0]);
-        setFiles(backendFiles.length > 0 ? backendFiles.map(mapBackendFileToUiFile) : specialistFiles);
+        setFiles(filesResult.status === "fulfilled" ? backendFiles.map(mapBackendFileToUiFile) : specialistFiles);
+        setFilesSource(filesResult.status === "fulfilled" ? getDatasetSource(backendFiles) : "fallback");
       } catch (err) {
         if (!isMounted) {
           return;
@@ -179,9 +303,11 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
 
         setError(err instanceof Error ? err.message : "Error desconocido al cargar chat y archivos");
         setChats(specialistChats);
+        setChatsSource("fallback");
         setSelectedChatId((current) => current || specialistChats[0]?.id || "");
         setActiveChat(specialistChats.find((chat) => chat.id === initialChatId) ?? specialistChats[0]);
         setFiles(specialistFiles);
+        setFilesSource("fallback");
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -213,15 +339,20 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
       }
 
       try {
+        setDetailError(null);
         const detail = await getSpecialistChatById(auth.token, auth.userId, selectedChatId);
 
         if (!isMounted) {
           return;
         }
 
-        setActiveChat(mapBackendChatDetailToUiChat(detail, fallbackChat));
-      } catch {
+        debugSpecialistResult("[specialist chat detail]", detail);
+        const mappedActiveChat = mapBackendChatDetailToUiChat(detail, fallbackChat, auth.userId);
+        debugSpecialistResult("[mapped active chat]", mappedActiveChat);
+        setActiveChat(mappedActiveChat);
+      } catch (err) {
         if (isMounted) {
+          setDetailError(err instanceof Error ? err.message : "No se pudo cargar el detalle de la conversación.");
           setActiveChat(fallbackChat);
         }
       }
@@ -235,7 +366,7 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
   }, [auth, chats, selectedChatId]);
 
   return useMemo(
-    () => ({ chats, activeChat, files, loading, error, selectedChatId, setSelectedChatId }),
-    [chats, activeChat, files, loading, error, selectedChatId],
+    () => ({ chats, activeChat, files, chatsSource, filesSource, loading, error, detailError, selectedChatId, setSelectedChatId }),
+    [chats, activeChat, files, chatsSource, filesSource, loading, error, detailError, selectedChatId],
   );
 }

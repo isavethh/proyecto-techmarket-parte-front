@@ -60,6 +60,11 @@ export default function EspecialistaArchivosPage() {
         </div>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          {files.length === 0 ? (
+            <article className="rounded-3xl border border-cyan-100/10 bg-white/5 p-5 text-sm text-cyan-100/75 lg:col-span-2">
+              No hay archivos cargados todavía.
+            </article>
+          ) : null}
           {files.map((file) => (
             <article key={file.id} className="rounded-3xl border border-cyan-100/10 bg-white/5 p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">

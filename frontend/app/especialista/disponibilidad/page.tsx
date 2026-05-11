@@ -1,13 +1,15 @@
 "use client";
 
 import { SpecialistShell } from "../components/SpecialistShell";
+import { useSpecialistBackendData } from "../hooks/useSpecialistBackendData";
 import { useSpecialistAvailabilityData } from "../hooks/useSpecialistAvailabilityData";
 
 export default function EspecialistaDisponibilidadPage() {
   const { availability, calendar } = useSpecialistAvailabilityData();
+  const { profile } = useSpecialistBackendData();
 
   return (
-    <SpecialistShell sectionLabel="Disponibilidad" statusMessage="Estado operativo y horarios actualizados">
+    <SpecialistShell sectionLabel="Disponibilidad" statusMessage="Estado operativo y horarios actualizados" profile={profile}>
       <section className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_34%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8">
         <p className="tech-mono text-xs text-cyan-200/75">DISPONIBILIDAD DEL ESPECIALISTA</p>
         <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Agenda y capacidad operativa</h1>
@@ -17,6 +19,11 @@ export default function EspecialistaDisponibilidadPage() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {availability.length === 0 ? (
+          <article className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4 text-sm text-cyan-100/75 sm:col-span-2 xl:col-span-4">
+            No hay disponibilidad configurada todavía.
+          </article>
+        ) : null}
         {availability.map((card) => (
           <article
             key={card.id}
@@ -58,6 +65,11 @@ export default function EspecialistaDisponibilidadPage() {
           y condiciones claras antes de iniciar una conversacion.
         </p>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {calendar.length === 0 ? (
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-3 text-sm text-cyan-100/75 md:col-span-3">
+              No hay eventos de agenda registrados todavía.
+            </article>
+          ) : null}
           {calendar.map((item) => (
             <article key={item.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-3">
               <p className="text-sm font-semibold text-cyan-50">{item.title}</p>

@@ -15,20 +15,7 @@ import {
   type SpecialistCertificationItem,
   type UserReview,
 } from "../specialistData";
-
-type BackendListResponse<T> = {
-  value?: T[];
-  data?: T[];
-  Count?: number;
-};
-
-function normalizeList<T>(response: T[] | BackendListResponse<T>) {
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  return response.value ?? response.data ?? [];
-}
+import { debugSpecialistResult, getDatasetSource, normalizeBackendList, type DatasetSource } from "./specialistBackendHelpers";
 
 function text(value: unknown, fallback: string) {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -74,7 +61,7 @@ export function mapBackendCertificationToUiCertification(
 
 function calculateKpis(reviews: UserReview[]) {
   if (reviews.length === 0) {
-    return specialistKpis;
+      return { ...specialistKpis, averageRating: 0, totalReviews: 0 };
   }
 
   const totalStars = reviews.reduce((total, review) => total + review.stars, 0);
@@ -87,9 +74,11 @@ function calculateKpis(reviews: UserReview[]) {
 }
 
 export function useSpecialistReviewsCertificationsData() {
-  const [reviews, setReviews] = useState<UserReview[]>(specialistReviews);
-  const [certifications, setCertifications] = useState<SpecialistCertificationItem[]>(specialistCertifications);
-  const [kpis, setKpis] = useState(specialistKpis);
+  const [reviews, setReviews] = useState<UserReview[]>([]);
+  const [certifications, setCertifications] = useState<SpecialistCertificationItem[]>([]);
+  const [kpis, setKpis] = useState({ ...specialistKpis, averageRating: 0, totalReviews: 0 });
+  const [reviewsSource, setReviewsSource] = useState<DatasetSource>("empty");
+  const [certificationsSource, setCertificationsSource] = useState<DatasetSource>("empty");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,7 +91,7 @@ export function useSpecialistReviewsCertificationsData() {
         setError(null);
 
         const login = await loginTechMarket();
-        const [reviewsResponse, certificationsResponse] = await Promise.all([
+        const [reviewsResult, certificationsResult] = await Promise.allSettled([
           getSpecialistReviews(login.accessToken, login.userId),
           getSpecialistCertifications(login.accessToken, login.userId),
         ]);
@@ -111,17 +100,29 @@ export function useSpecialistReviewsCertificationsData() {
           return;
         }
 
-        const backendReviews = normalizeList(reviewsResponse);
-        const backendCertifications = normalizeList(certificationsResponse);
-        const uiReviews = backendReviews.length > 0 ? backendReviews.map(mapBackendReviewToUiReview) : specialistReviews;
+        debugSpecialistResult("[specialist reviews]", reviewsResult);
+        debugSpecialistResult("[specialist certifications]", certificationsResult);
 
-        setReviews(uiReviews);
-        setKpis(backendReviews.length > 0 ? calculateKpis(uiReviews) : specialistKpis);
-        setCertifications(
-          backendCertifications.length > 0
-            ? backendCertifications.map(mapBackendCertificationToUiCertification)
-            : specialistCertifications,
-        );
+        if (reviewsResult.status === "fulfilled") {
+          const backendReviews = normalizeBackendList<SpecialistReview>(reviewsResult.value);
+          const uiReviews = backendReviews.map(mapBackendReviewToUiReview);
+          setReviews(uiReviews);
+          setKpis(calculateKpis(uiReviews));
+          setReviewsSource(getDatasetSource(backendReviews));
+        } else {
+          setReviews(specialistReviews);
+          setKpis(specialistKpis);
+          setReviewsSource("fallback");
+        }
+
+        if (certificationsResult.status === "fulfilled") {
+          const backendCertifications = normalizeBackendList<SpecialistCertification>(certificationsResult.value);
+          setCertifications(backendCertifications.map(mapBackendCertificationToUiCertification));
+          setCertificationsSource(getDatasetSource(backendCertifications));
+        } else {
+          setCertifications(specialistCertifications);
+          setCertificationsSource("fallback");
+        }
       } catch (err) {
         if (!isMounted) {
           return;
@@ -131,6 +132,8 @@ export function useSpecialistReviewsCertificationsData() {
         setReviews(specialistReviews);
         setKpis(specialistKpis);
         setCertifications(specialistCertifications);
+        setReviewsSource("fallback");
+        setCertificationsSource("fallback");
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -146,7 +149,7 @@ export function useSpecialistReviewsCertificationsData() {
   }, []);
 
   return useMemo(
-    () => ({ reviews, certifications, kpis, loading, error }),
-    [reviews, certifications, kpis, loading, error],
+    () => ({ reviews, certifications, kpis, reviewsSource, certificationsSource, loading, error }),
+    [reviews, certifications, kpis, reviewsSource, certificationsSource, loading, error],
   );
 }

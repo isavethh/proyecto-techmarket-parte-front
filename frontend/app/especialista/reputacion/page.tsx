@@ -2,7 +2,7 @@
 
 import { SpecialistShell } from "../components/SpecialistShell";
 import { useSpecialistReviewsCertificationsData } from "../hooks/useSpecialistReviewsCertificationsData";
-import { recentActivity, starsLabel } from "../specialistData";
+import { starsLabel } from "../specialistData";
 
 export default function EspecialistaReputacionPage() {
   const { reviews, kpis } = useSpecialistReviewsCertificationsData();
@@ -35,14 +35,19 @@ export default function EspecialistaReputacionPage() {
         </article>
         <article className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Actividad reciente</p>
-          <p className="mt-2 text-sm font-semibold text-cyan-50">{recentActivity[1].title}</p>
-          <p className="mt-1 text-xs text-cyan-100/70">{recentActivity[1].time}</p>
+          <p className="mt-2 text-sm font-semibold text-cyan-50">Sin actividad reciente registrada</p>
+          <p className="mt-1 text-xs text-cyan-100/70">Backend sin registros de actividad</p>
         </article>
       </section>
 
       <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
         <h2 className="text-2xl font-bold text-white">Ultimas resenas</h2>
         <div className="mt-5 grid gap-3 lg:grid-cols-2">
+          {reviews.length === 0 ? (
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4 text-sm text-cyan-100/75 lg:col-span-2">
+              No hay reseñas registradas todavía.
+            </article>
+          ) : null}
           {reviews.map((review) => (
             <article key={review.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">

@@ -5,9 +5,9 @@ import { ChangeEvent, FormEvent, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { SpecialistShell } from "../components/SpecialistShell";
 import { useSpecialistBackendData } from "../hooks/useSpecialistBackendData";
-import { specialistServices } from "../specialistData";
+import type { SpecialistService } from "../specialistData";
 
-type SpecialistServiceItem = (typeof specialistServices)[number];
+type SpecialistServiceItem = SpecialistService;
 
 type ServiceFormData = {
   name: string;
@@ -19,11 +19,19 @@ type ServiceFormData = {
   image: string;
 };
 
+function parseServicePrice(value: string) {
+  const normalized = value.replace(/bs\.?/i, "").replace(/\s/g, "").replace(",", ".");
+  const price = Number(normalized);
+  return Number.isFinite(price) && price >= 0 ? price : null;
+}
+
 export default function EspecialistaServiciosPage() {
-  const { profile, services } = useSpecialistBackendData();
-  const [createdServiceItems, setCreatedServiceItems] = useState<SpecialistServiceItem[]>([]);
+  const { profile, services, loading, error, createService, updateService, deleteService } = useSpecialistBackendData();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createMessage, setCreateMessage] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [editingService, setEditingService] = useState<SpecialistServiceItem | null>(null);
   const [uploadedImagePreview, setUploadedImagePreview] = useState("");
   const [uploadedImageName, setUploadedImageName] = useState("");
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -38,11 +46,12 @@ export default function EspecialistaServiciosPage() {
     image: "",
   });
 
-  const serviceItems = [...createdServiceItems, ...(services.length > 0 ? services : specialistServices)];
+  const serviceItems = services;
   const featuredServices = serviceItems.filter((service) => service.featured).length;
 
   const closeCreateModal = () => {
     setShowCreateModal(false);
+    setEditingService(null);
     setCreateMessage("");
     setUploadedImagePreview("");
     setUploadedImageName("");
@@ -59,6 +68,7 @@ export default function EspecialistaServiciosPage() {
   };
 
   const handleOpenCreateModal = () => {
+    setEditingService(null);
     setShowCreateModal(true);
     setCreateMessage("");
     setUploadedImagePreview("");
@@ -101,34 +111,86 @@ export default function EspecialistaServiciosPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleCreateServiceSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const openEditModal = (service: SpecialistServiceItem) => {
+    setEditingService(service);
+    setCreateMessage("");
+    setUploadedImagePreview("");
+    setUploadedImageName("");
+    setFormData({
+      name: service.name,
+      type: service.type,
+      description: service.description,
+      technicianName: service.technicianName,
+      price: service.price.replace(/^Bs\s*/i, ""),
+      featured: Boolean(service.featured),
+      image: service.image ?? "",
+    });
+    setShowCreateModal(true);
+  };
+
+  const handleDeleteService = async (service: SpecialistServiceItem) => {
+    if (!window.confirm(`Eliminar el servicio "${service.name}"?`)) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setActionMessage("");
+      await deleteService(service.id);
+      setActionMessage("Servicio eliminado.");
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "No se pudo eliminar el servicio.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCreateServiceSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const name = formData.name.trim();
     const type = formData.type.trim();
     const description = formData.description.trim();
-    const technicianName = formData.technicianName.trim();
     const price = formData.price.trim();
-    const image = uploadedImagePreview || "/productos/laptop-pro-14.jpg";
 
-    if (!name || !type || !description || !technicianName) {
-      setCreateMessage("Completa nombre, tipo, descripcion y tecnico.");
+    if (!name || !type) {
+      setCreateMessage("Completa nombre y tipo.");
       return;
     }
 
-    const newService: SpecialistServiceItem = {
-      id: `service-${Date.now()}`,
-      name,
-      type,
-      description,
-      technicianName,
-      price: price || "Consultar",
-      featured: formData.featured,
-      image,
-    };
+    const numericPrice = parseServicePrice(price);
+    if (numericPrice === null) {
+      setCreateMessage("Ingresa un precio numerico valido, por ejemplo 120 o 120.50.");
+      return;
+    }
 
-    setCreatedServiceItems((current) => [newService, ...current]);
-    closeCreateModal();
+    try {
+      setActionLoading(true);
+      setCreateMessage("");
+      const payload = {
+        nombre: name,
+        descripcion: description || undefined,
+        precio: numericPrice,
+        moneda: "Bs",
+        tipo: type,
+        destacado: formData.featured,
+      };
+
+      if (editingService) {
+        await updateService(editingService.id, payload);
+        setActionMessage("Servicio actualizado.");
+      } else {
+        await createService(payload);
+        setActionMessage("Servicio creado.");
+      }
+
+      setEditingService(null);
+      closeCreateModal();
+    } catch (err) {
+      setCreateMessage(err instanceof Error ? err.message : "No se pudo guardar el servicio.");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
@@ -162,9 +224,21 @@ export default function EspecialistaServiciosPage() {
             <p className="mt-2 text-2xl font-bold text-cyan-50">{featuredServices}</p>
           </article>
         </div>
+        {error ? <p className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-400/10 p-3 text-sm text-amber-100">{error}</p> : null}
+        {actionMessage ? <p className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-400/10 p-3 text-sm text-cyan-100">{actionMessage}</p> : null}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
+        {loading ? (
+          <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5 text-sm text-cyan-100/75 lg:col-span-2">
+            Cargando servicios...
+          </article>
+        ) : null}
+        {!loading && serviceItems.length === 0 ? (
+          <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5 text-sm text-cyan-100/75 lg:col-span-2">
+            No hay servicios registrados todavía.
+          </article>
+        ) : null}
         {serviceItems.map((service) => (
           <article key={service.id} className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4">
             <div className="grid gap-4 sm:grid-cols-[140px_1fr]">
@@ -204,12 +278,30 @@ export default function EspecialistaServiciosPage() {
                   <span className="font-semibold text-white">Precio:</span> {service.price}
                 </p>
 
-                <Link
-                  href={`/especialista/chat?service=${encodeURIComponent(service.name)}`}
-                  className="mt-1 inline-flex w-full items-center justify-center rounded-xl border border-cyan-300/45 bg-cyan-300/20 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
-                >
-                  Ir al chat
-                </Link>
+                <div className="mt-1 grid gap-2 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(service)}
+                    disabled={actionLoading}
+                    className="rounded-xl border border-cyan-300/45 bg-cyan-300/20 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-300/30 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteService(service)}
+                    disabled={actionLoading}
+                    className="rounded-xl border border-rose-300/35 bg-rose-400/10 px-4 py-2.5 text-sm font-semibold text-rose-50 transition hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Eliminar
+                  </button>
+                  <Link
+                    href={`/especialista/chat?service=${encodeURIComponent(service.name)}`}
+                    className="inline-flex items-center justify-center rounded-xl border border-cyan-300/45 bg-cyan-300/20 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                  >
+                    Ir al chat
+                  </Link>
+                </div>
               </div>
             </div>
           </article>
@@ -241,7 +333,7 @@ export default function EspecialistaServiciosPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">SERVICIO</p>
-                  <h2 className="mt-2 text-2xl font-bold text-white">Agregar servicio</h2>
+                  <h2 className="mt-2 text-2xl font-bold text-white">{editingService ? "Editar servicio" : "Agregar servicio"}</h2>
                 </div>
 
                 <button
@@ -352,9 +444,10 @@ export default function EspecialistaServiciosPage() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <button
                   type="submit"
-                  className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                  disabled={actionLoading}
+                  className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Guardar servicio
+                  {actionLoading ? "Guardando..." : "Guardar servicio"}
                 </button>
 
                 <button

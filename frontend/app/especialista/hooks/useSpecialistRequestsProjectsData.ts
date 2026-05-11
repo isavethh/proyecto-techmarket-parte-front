@@ -18,20 +18,7 @@ import {
   type SpecialistProjectItem,
   type SpecialistRequestItem,
 } from "../specialistData";
-
-type BackendListResponse<T> = {
-  value?: T[];
-  data?: T[];
-  Count?: number;
-};
-
-function normalizeList<T>(response: T[] | BackendListResponse<T>) {
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  return response.value ?? response.data ?? [];
-}
+import { debugSpecialistResult, getDatasetSource, normalizeBackendList, type DatasetSource } from "./specialistBackendHelpers";
 
 function text(value: unknown, fallback: string) {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -90,9 +77,12 @@ export function mapBackendHistoryToUiHistory(
 }
 
 export function useSpecialistRequestsProjectsData() {
-  const [requests, setRequests] = useState<SpecialistRequestItem[]>(specialistRequests);
-  const [projects, setProjects] = useState<SpecialistProjectItem[]>(specialistProjects);
-  const [history, setHistory] = useState<SpecialistProjectHistoryItem[]>(specialistProjectHistory);
+  const [requests, setRequests] = useState<SpecialistRequestItem[]>([]);
+  const [projects, setProjects] = useState<SpecialistProjectItem[]>([]);
+  const [history, setHistory] = useState<SpecialistProjectHistoryItem[]>([]);
+  const [requestsSource, setRequestsSource] = useState<DatasetSource>("empty");
+  const [projectsSource, setProjectsSource] = useState<DatasetSource>("empty");
+  const [historySource, setHistorySource] = useState<DatasetSource>("empty");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -105,7 +95,7 @@ export function useSpecialistRequestsProjectsData() {
         setError(null);
 
         const login = await loginTechMarket();
-        const [requestsResponse, projectsResponse, historyResponse] = await Promise.all([
+        const [requestsResult, projectsResult, historyResult] = await Promise.allSettled([
           getSpecialistRequests(login.accessToken, login.userId),
           getSpecialistProjects(login.accessToken, login.userId),
           getSpecialistProjectsHistory(login.accessToken, login.userId),
@@ -115,17 +105,36 @@ export function useSpecialistRequestsProjectsData() {
           return;
         }
 
-        const backendRequests = normalizeList(requestsResponse);
-        const backendProjects = normalizeList(projectsResponse);
-        const backendHistory = normalizeList(historyResponse);
+        debugSpecialistResult("[specialist requests]", requestsResult);
+        debugSpecialistResult("[specialist projects]", projectsResult);
+        debugSpecialistResult("[specialist projects history]", historyResult);
 
-        setRequests(
-          backendRequests.length > 0 ? backendRequests.map(mapBackendRequestToUiRequest) : specialistRequests,
-        );
-        setProjects(backendProjects.length > 0 ? backendProjects.map(mapBackendProjectToUiProject) : specialistProjects);
-        setHistory(
-          backendHistory.length > 0 ? backendHistory.map(mapBackendHistoryToUiHistory) : specialistProjectHistory,
-        );
+        if (requestsResult.status === "fulfilled") {
+          const backendRequests = normalizeBackendList<SpecialistRequest>(requestsResult.value);
+          setRequests(backendRequests.map(mapBackendRequestToUiRequest));
+          setRequestsSource(getDatasetSource(backendRequests));
+        } else {
+          setRequests(specialistRequests);
+          setRequestsSource("fallback");
+        }
+
+        if (projectsResult.status === "fulfilled") {
+          const backendProjects = normalizeBackendList<SpecialistProject>(projectsResult.value);
+          setProjects(backendProjects.map(mapBackendProjectToUiProject));
+          setProjectsSource(getDatasetSource(backendProjects));
+        } else {
+          setProjects(specialistProjects);
+          setProjectsSource("fallback");
+        }
+
+        if (historyResult.status === "fulfilled") {
+          const backendHistory = normalizeBackendList<SpecialistProjectHistory>(historyResult.value);
+          setHistory(backendHistory.map(mapBackendHistoryToUiHistory));
+          setHistorySource(getDatasetSource(backendHistory));
+        } else {
+          setHistory(specialistProjectHistory);
+          setHistorySource("fallback");
+        }
       } catch (err) {
         if (!isMounted) {
           return;
@@ -135,6 +144,9 @@ export function useSpecialistRequestsProjectsData() {
         setRequests(specialistRequests);
         setProjects(specialistProjects);
         setHistory(specialistProjectHistory);
+        setRequestsSource("fallback");
+        setProjectsSource("fallback");
+        setHistorySource("fallback");
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -150,7 +162,7 @@ export function useSpecialistRequestsProjectsData() {
   }, []);
 
   return useMemo(
-    () => ({ requests, projects, history, loading, error }),
-    [requests, projects, history, loading, error],
+    () => ({ requests, projects, history, requestsSource, projectsSource, historySource, loading, error }),
+    [requests, projects, history, requestsSource, projectsSource, historySource, loading, error],
   );
 }

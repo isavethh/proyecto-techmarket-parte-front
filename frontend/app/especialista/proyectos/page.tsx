@@ -47,6 +47,11 @@ export default function EspecialistaProyectosPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
+        {projects.length === 0 ? (
+          <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5 text-sm text-cyan-100/75 lg:col-span-2">
+            No hay proyectos activos todavía.
+          </article>
+        ) : null}
         {projects.map((project) => (
           <article key={project.id} className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -110,6 +115,11 @@ export default function EspecialistaProyectosPage() {
           Registro de movimientos recientes, cambios de estado y avances reportados en trabajos tecnicos.
         </p>
         <div className="mt-5 grid gap-3 lg:grid-cols-3">
+          {history.length === 0 ? (
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4 text-sm text-cyan-100/75 lg:col-span-3">
+              No hay historial disponible.
+            </article>
+          ) : null}
           {history.map((item) => (
             <article key={item.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">

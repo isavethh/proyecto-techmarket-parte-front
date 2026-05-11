@@ -6,17 +6,16 @@ import { useRouter } from "next/navigation";
 import { SpecialistShell } from "./components/SpecialistShell";
 import { SpecialistAiAssistant } from "./components/SpecialistAiAssistant";
 import { useSpecialistBackendData } from "./hooks/useSpecialistBackendData";
+import { useSpecialistAvailabilityData } from "./hooks/useSpecialistAvailabilityData";
+import { useSpecialistReviewsCertificationsData } from "./hooks/useSpecialistReviewsCertificationsData";
 import { requireAuth } from "@/lib/auth/authGuard";
 import { getUser, getToken } from "@/lib/auth/tokenStore";
-import {
-  recentActivity,
-  specialistKpis,
-  specialistReviews,
-} from "./specialistData";
 
 export default function EspecialistaCorePage() {
   const router = useRouter();
   const { profile, services, portfolio } = useSpecialistBackendData();
+  const { calendar } = useSpecialistAvailabilityData();
+  const { reviews, kpis } = useSpecialistReviewsCertificationsData();
 
   useEffect(() => {
     console.log("[Especialista page] Ejecutando requireAuth desde page.tsx");
@@ -49,14 +48,14 @@ export default function EspecialistaCorePage() {
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Valor diferencial</p>
                 <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-                  Perfil tecnico orientado a confianza, soporte claro y evidencia visible para que el cliente decida con mas seguridad.
+                  {profile.name === "Sin definir" ? "Perfil no configurado todavía." : "Información del perfil obtenida desde backend."}
                 </p>
               </article>
 
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cobertura principal</p>
                 <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-                  Atencion en Santa Cruz con soporte remoto, visitas tecnicas y seguimiento posterior para hogares y pequenos negocios.
+                  {profile.location === "No especificado" ? "No especificado" : profile.location}
                 </p>
               </article>
             </div>
@@ -74,8 +73,8 @@ export default function EspecialistaCorePage() {
             </article>
             <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificacion</p>
-              <p className="mt-2 text-2xl font-bold text-cyan-50">{specialistKpis.averageRating} / 5</p>
-              <p className="mt-1 text-sm text-cyan-100/75">{specialistKpis.totalReviews} resenas</p>
+              <p className="mt-2 text-2xl font-bold text-cyan-50">{kpis.averageRating} / 5</p>
+              <p className="mt-1 text-sm text-cyan-100/75">{kpis.totalReviews} reseñas</p>
             </article>
           </div>
         </div>
@@ -121,7 +120,12 @@ export default function EspecialistaCorePage() {
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {recentActivity.map((item) => (
+          {calendar.length === 0 ? (
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4 text-sm text-cyan-100/75 md:col-span-3">
+              No hay eventos de agenda registrados todavía.
+            </article>
+          ) : null}
+          {calendar.map((item) => (
             <article key={item.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
               <p className="text-sm font-semibold text-cyan-50">{item.title}</p>
               <p className="mt-2 text-sm text-cyan-100/80">{item.detail}</p>
@@ -132,7 +136,9 @@ export default function EspecialistaCorePage() {
 
         <div className="mt-5 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
           <p className="text-sm text-cyan-100/80">
-            {specialistReviews.length} resenas recientes respaldan la calidad del trabajo tecnico.
+            {reviews.length > 0
+              ? `${reviews.length} reseñas recientes respaldan la calidad del trabajo técnico.`
+              : "No hay reseñas registradas todavía."}
           </p>
         </div>
       </section>

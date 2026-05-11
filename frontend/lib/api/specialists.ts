@@ -28,12 +28,43 @@ export type SpecialistService = {
   destacado: boolean;
 };
 
+export type SpecialistServiceInput = {
+  nombre: string;
+  descripcion?: string;
+  precio: number;
+  moneda?: string;
+  tipo: string;
+  destacado?: boolean;
+};
+
 export type SpecialistPortfolioItem = {
   id: string;
   titulo: string;
   servicio: string;
   resultado: string;
   fecha: string;
+};
+
+export type SpecialistPortfolioItemInput = {
+  titulo: string;
+  servicio?: string;
+  resultado?: string;
+  fecha?: string;
+};
+
+export type CreateSpecialistServiceResponse = {
+  id: string;
+  nombre: string;
+  mensaje: string;
+};
+
+export type CreateSpecialistPortfolioItemResponse = {
+  id: string;
+  mensaje: string;
+};
+
+export type MessageResponse = {
+  mensaje: string;
 };
 
 export type SpecialistAvailability = {
@@ -144,16 +175,25 @@ export type SpecialistChatMessage = {
   messageId?: string;
   from?: string;
   sender?: string;
+  remitente?: string;
   role?: string;
   texto?: string;
   text?: string;
   mensaje?: string;
   message?: string;
+  message_body?: string;
+  messageBody?: string;
+  body?: string;
+  content?: string;
+  contenido?: string;
   hora?: string;
   time?: string;
   fecha?: string;
   date?: string;
+  created_at?: string;
   createdAt?: string;
+  author_user_id?: string;
+  authorUserId?: string;
 };
 
 export type SpecialistChat = {
@@ -166,9 +206,22 @@ export type SpecialistChat = {
   initials?: string;
   servicio?: string;
   service?: string;
+  serviceName?: string;
+  service_name?: string;
+  subject?: string;
+  ticketSubject?: string;
+  title?: string;
+  description?: string;
   estado?: string;
   status?: string;
   ultimoMensaje?: string;
+  last_message?: string;
+  latestMessage?: string;
+  latest_message?: string;
+  messageBody?: string;
+  message_body?: string;
+  text?: string;
+  content?: string;
   lastMessage?: string;
   hora?: string;
   time?: string;
@@ -178,11 +231,21 @@ export type SpecialistChat = {
   noLeidos?: number | string;
   messages?: SpecialistChatMessage[];
   mensajes?: SpecialistChatMessage[];
+  ticketMessages?: SpecialistChatMessage[];
+  messageList?: SpecialistChatMessage[];
+  ultimaActividad?: string;
+  ticketCode?: string;
+  ticket_code?: string;
+  ticket_subject?: string;
 };
 
 export type SpecialistChatDetail = SpecialistChat & {
   messages?: SpecialistChatMessage[];
   mensajes?: SpecialistChatMessage[];
+  ticketMessages?: SpecialistChatMessage[];
+  messageList?: SpecialistChatMessage[];
+  value?: SpecialistChatMessage[] | SpecialistChat;
+  data?: SpecialistChatMessage[] | SpecialistChat;
 };
 
 export type SpecialistFile = {
@@ -389,12 +452,60 @@ export async function getSpecialistServices(token: string, userId: string) {
   );
 }
 
+export async function createSpecialistService(
+  token: string,
+  userId: string,
+  body: SpecialistServiceInput,
+) {
+  return apiRequest<CreateSpecialistServiceResponse>("/api/specialists/services", {
+    method: "POST",
+    token,
+    userId,
+    body,
+  });
+}
+
+export async function updateSpecialistService(
+  token: string,
+  userId: string,
+  serviceId: string,
+  body: Partial<SpecialistServiceInput>,
+) {
+  return apiRequest<MessageResponse>(`/api/specialists/services/${serviceId}`, {
+    method: "PUT",
+    token,
+    userId,
+    body,
+  });
+}
+
+export async function deleteSpecialistService(token: string, userId: string, serviceId: string) {
+  return apiRequest<MessageResponse>(`/api/specialists/services/${serviceId}`, {
+    method: "DELETE",
+    token,
+    userId,
+  });
+}
+
 export async function getSpecialistPortfolio(token: string, userId: string) {
   return apiRequest<
     SpecialistPortfolioItem[] | ListResponse<SpecialistPortfolioItem>
   >("/api/specialists/portfolio", {
     token,
     userId,
+  });
+}
+
+export async function createSpecialistPortfolioItem(
+  token: string,
+  userId: string,
+  body: SpecialistPortfolioItemInput,
+) {
+  return apiRequest<CreateSpecialistPortfolioItemResponse>("/api/specialists/portfolio", {
+    method: "POST",
+    token,
+    userId,
+    body,
   });
 }
 

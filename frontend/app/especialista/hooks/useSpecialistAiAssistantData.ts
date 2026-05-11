@@ -114,7 +114,7 @@ export function mapBackendAiInsightsToUiState(
   return {
     recommendedQuestions: stringList(
       payload.recommendedQuestions ?? payload.preguntasRecomendadas,
-      fallback.recommendedQuestions,
+      [],
     ),
     scenarioPrompts: Array.isArray(prompts) && prompts.length > 0
       ? prompts.map((item, index) => ({
@@ -122,13 +122,13 @@ export function mapBackendAiInsightsToUiState(
           prompt: text(item.prompt, fallback.scenarioPrompts[index]?.prompt ?? "Analiza mi operacion tecnica."),
           impact: text(item.impact ?? item.impacto, fallback.scenarioPrompts[index]?.impact ?? "Mejora la operacion."),
         }))
-      : fallback.scenarioPrompts,
+      : [],
     radarBars: Array.isArray(radar) && radar.length > 0
       ? radar.map((item, index) => ({
           label: text(item.label ?? item.etiqueta, fallback.radarBars[index]?.label ?? "Indicador IA"),
           value: numberValue(item.value ?? item.valor, fallback.radarBars[index]?.value ?? 50),
         }))
-      : fallback.radarBars,
+      : [],
     initialInsight: payload.insight ? mapBackendAiQueryToUiInsight(payload.insight, fallbackInsight) : null,
   };
 }

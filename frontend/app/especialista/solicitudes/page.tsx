@@ -49,6 +49,11 @@ export default function EspecialistaSolicitudesPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
+        {requests.length === 0 ? (
+          <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5 text-sm text-cyan-100/75 lg:col-span-2">
+            No hay solicitudes registradas todavía.
+          </article>
+        ) : null}
         {requests.map((request) => (
           <article key={request.id} className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
