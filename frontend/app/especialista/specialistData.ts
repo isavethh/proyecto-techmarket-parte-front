@@ -126,6 +126,15 @@ export type SpecialistTransactionItem = {
   date: string;
 };
 
+export type SpecialistCertificationItem = {
+  id: string;
+  title: string;
+  issuer: string;
+  status: string;
+  date: string;
+  credentialUrl?: string;
+};
+
 export const specialistProfile = {
   name: "Alejandro Torres",
   avatar: "AT",
@@ -493,6 +502,30 @@ export const specialistTransactions: SpecialistTransactionItem[] = [
   },
 ];
 
+export const specialistCertifications: SpecialistCertificationItem[] = [
+  {
+    id: "cert-1",
+    title: "Soporte tecnico certificado",
+    issuer: "TechMarket Academy",
+    status: "Verificada",
+    date: "Abr 2026",
+  },
+  {
+    id: "cert-2",
+    title: "Redes domesticas y pymes",
+    issuer: "Instituto Tecnico Digital",
+    status: "Pendiente de verificacion",
+    date: "Mar 2026",
+  },
+  {
+    id: "cert-3",
+    title: "Mantenimiento preventivo de hardware",
+    issuer: "Hardware Lab Bolivia",
+    status: "Verificada",
+    date: "Ene 2026",
+  },
+];
+
 export const specialistNavLinks = [
   { title: "Resumen", href: "/especialista" },
   { title: "Portafolio", href: "/especialista/portafolio" },
@@ -502,6 +535,7 @@ export const specialistNavLinks = [
   { title: "Chat", href: "/especialista/chat" },
   { title: "Archivos", href: "/especialista/archivos" },
   { title: "Pagos e ingresos", href: "/especialista/pagos" },
+  { title: "Certificaciones", href: "/especialista/certificaciones" },
   { title: "Reputacion", href: "/especialista/reputacion" },
   { title: "Disponibilidad", href: "/especialista/disponibilidad" },
 ];

@@ -116,6 +116,17 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
       "Historial de pagos",
     ],
   },
+  Certificaciones: {
+    eyebrow: "CREDENCIALES TECNICAS",
+    title: "Certificaciones verificables",
+    description:
+      "Esta vista muestra certificaciones, entidades emisoras y estados de validacion asociados al especialista.",
+    points: [
+      "Credenciales visibles",
+      "Estado de verificacion",
+      "Mayor confianza tecnica",
+    ],
+  },
   Reputacion: {
     eyebrow: "CONFIANZA VISIBLE",
     title: "Opiniones y calificaciones",

@@ -260,6 +260,44 @@ export type SpecialistTransaction = {
   currency?: string;
 };
 
+export type SpecialistReview = {
+  id?: string;
+  reviewId?: string;
+  usuario?: string;
+  user?: string;
+  cliente?: string;
+  customer?: string;
+  comentario?: string;
+  comment?: string;
+  rating?: number | string;
+  stars?: number | string;
+  estrellas?: number | string;
+  fecha?: string;
+  date?: string;
+  createdAt?: string;
+  servicio?: string;
+  service?: string;
+};
+
+export type SpecialistCertification = {
+  id?: string;
+  certificationId?: string;
+  titulo?: string;
+  title?: string;
+  nombre?: string;
+  name?: string;
+  entidad?: string;
+  issuer?: string;
+  emisor?: string;
+  estado?: string;
+  status?: string;
+  fecha?: string;
+  date?: string;
+  issuedAt?: string;
+  credentialUrl?: string;
+  url?: string;
+};
+
 type ListResponse<T> = {
   value: T[];
   Count: number;
@@ -391,6 +429,26 @@ export async function getSpecialistEarningsSummary(token: string, userId: string
 export async function getSpecialistTransactions(token: string, userId: string) {
   return apiRequest<SpecialistTransaction[] | ListResponse<SpecialistTransaction> | { data: SpecialistTransaction[] }>(
     "/api/specialists/transactions",
+    {
+      token,
+      userId,
+    }
+  );
+}
+
+export async function getSpecialistReviews(token: string, userId: string) {
+  return apiRequest<SpecialistReview[] | ListResponse<SpecialistReview> | { data: SpecialistReview[] }>(
+    "/api/specialists/reviews",
+    {
+      token,
+      userId,
+    }
+  );
+}
+
+export async function getSpecialistCertifications(token: string, userId: string) {
+  return apiRequest<SpecialistCertification[] | ListResponse<SpecialistCertification> | { data: SpecialistCertification[] }>(
+    "/api/specialists/certifications",
     {
       token,
       userId,
