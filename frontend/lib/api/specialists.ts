@@ -298,6 +298,65 @@ export type SpecialistCertification = {
   url?: string;
 };
 
+export type SpecialistAiInsightPayload = {
+  summary?: string;
+  resumen?: string;
+  dataPoints?: string[];
+  datos?: string[];
+  advice?: string;
+  consejo?: string;
+  nextStep?: string;
+  siguientePaso?: string;
+  actionPlan?: string[];
+  planAccion?: string[];
+  watchItems?: string[];
+  indicadores?: string[];
+  priority?: string;
+  prioridad?: string;
+  confidence?: string;
+  confianza?: string;
+  focusLabel?: string;
+  etiquetaFoco?: string;
+  focusHref?: string;
+  enlaceFoco?: string;
+};
+
+export type SpecialistAiInsights = {
+  recommendedQuestions?: string[];
+  preguntasRecomendadas?: string[];
+  scenarioPrompts?: { title?: string; titulo?: string; prompt?: string; impact?: string; impacto?: string }[];
+  prompts?: { title?: string; titulo?: string; prompt?: string; impact?: string; impacto?: string }[];
+  radarBars?: { label?: string; etiqueta?: string; value?: number | string; valor?: number | string }[];
+  radar?: { label?: string; etiqueta?: string; value?: number | string; valor?: number | string }[];
+  insight?: SpecialistAiInsightPayload;
+  value?: SpecialistAiInsights;
+  data?: SpecialistAiInsights;
+};
+
+export type SpecialistAiQueryRequest = {
+  question: string;
+};
+
+export type SpecialistAiQueryResponse = SpecialistAiInsightPayload & {
+  value?: SpecialistAiInsightPayload;
+  data?: SpecialistAiInsightPayload;
+};
+
+export type PricingSuggestionRequest = {
+  serviceId?: string;
+  serviceName?: string;
+};
+
+export type PricingSuggestionResponse = SpecialistAiQueryResponse;
+
+export type SpecialistImprovementPlanRequest = {
+  focus?: string;
+};
+
+export type SpecialistImprovementPlanResponse = SpecialistAiQueryResponse;
+
+export type SpecialistScheduleOptimizationResponse = SpecialistAiQueryResponse;
+
 type ListResponse<T> = {
   value: T[];
   Count: number;
@@ -454,4 +513,54 @@ export async function getSpecialistCertifications(token: string, userId: string)
       userId,
     }
   );
+}
+
+export async function getSpecialistAiInsights(token: string, userId: string) {
+  return apiRequest<SpecialistAiInsights>("/api/specialists/ai/insights", {
+    token,
+    userId,
+  });
+}
+
+export async function sendSpecialistAiQuery(token: string, userId: string, question: string) {
+  return apiRequest<SpecialistAiQueryResponse>("/api/specialists/ai/query", {
+    method: "POST",
+    token,
+    userId,
+    body: { question } satisfies SpecialistAiQueryRequest,
+  });
+}
+
+export async function getSpecialistPricingSuggestion(
+  token: string,
+  userId: string,
+  body: PricingSuggestionRequest = {},
+) {
+  return apiRequest<PricingSuggestionResponse>("/api/specialists/ai/pricing-suggestion", {
+    method: "POST",
+    token,
+    userId,
+    body,
+  });
+}
+
+export async function getSpecialistImprovementPlan(
+  token: string,
+  userId: string,
+  body: SpecialistImprovementPlanRequest = {},
+) {
+  return apiRequest<SpecialistImprovementPlanResponse>("/api/specialists/ai/improvement-plan", {
+    method: "POST",
+    token,
+    userId,
+    body,
+  });
+}
+
+export async function getSpecialistScheduleOptimization(token: string, userId: string) {
+  return apiRequest<SpecialistScheduleOptimizationResponse>("/api/specialists/ai/schedule-optimization", {
+    method: "POST",
+    token,
+    userId,
+  });
 }

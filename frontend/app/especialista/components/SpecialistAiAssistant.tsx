@@ -1,20 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
-
-type SpecialistAiInsight = {
-  summary: string;
-  dataPoints: string[];
-  advice: string;
-  nextStep: string;
-  actionPlan: string[];
-  watchItems: string[];
-  priority: "Alta" | "Media";
-  confidence: "Alta" | "Media";
-  focusLabel: string;
-  focusHref: string;
-};
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useSpecialistAiAssistantData,
+  type SpecialistAiInsight,
+} from "../hooks/useSpecialistAiAssistantData";
 
 const recommendedAiQuestions = [
   "Que casos debo priorizar hoy para atender mas rapido?",
@@ -225,6 +216,21 @@ function buildSpecialistAiInsight(question: string): SpecialistAiInsight {
 }
 
 export function SpecialistAiAssistant() {
+  const fallbackAiState = useMemo(
+    () => ({
+      recommendedQuestions: recommendedAiQuestions,
+      scenarioPrompts,
+      radarBars: specialistRadarBars,
+    }),
+    [],
+  );
+  const {
+    recommendedQuestions,
+    scenarioPrompts: backendScenarioPrompts,
+    radarBars,
+    initialInsight,
+    askAi,
+  } = useSpecialistAiAssistantData(fallbackAiState, buildSpecialistAiInsight);
   const [aiQuestion, setAiQuestion] = useState("");
   const [lastAiQuestion, setLastAiQuestion] = useState("");
   const [aiInsight, setAiInsight] = useState<SpecialistAiInsight | null>(null);
@@ -251,6 +257,8 @@ export function SpecialistAiAssistant() {
     };
   }, []);
 
+  const displayedAiInsight = aiInsight ?? initialInsight;
+
   const runAiQuestion = (rawQuestion: string) => {
     const trimmedQuestion = rawQuestion.trim();
     if (!trimmedQuestion || isAiThinking) return;
@@ -266,8 +274,9 @@ export function SpecialistAiAssistant() {
     setIsAiThinking(true);
     setThinkingMessageIndex(0);
 
-    aiTimeoutRef.current = setTimeout(() => {
-      setAiInsight(buildSpecialistAiInsight(trimmedQuestion));
+    aiTimeoutRef.current = setTimeout(async () => {
+      const nextInsight = await askAi(trimmedQuestion);
+      setAiInsight(nextInsight);
       setIsAiThinking(false);
       setRecentQuestions((current) => {
         const withoutCurrent = current.filter(
@@ -352,7 +361,7 @@ export function SpecialistAiAssistant() {
             <div className="mt-5">
               <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/65">Preguntas recomendadas</p>
               <div className="mt-3 grid gap-2">
-                {recommendedAiQuestions.map((question) => (
+                {recommendedQuestions.map((question) => (
                   <button
                     key={question}
                     type="button"
@@ -413,7 +422,7 @@ export function SpecialistAiAssistant() {
                   />
                 </div>
               </div>
-            ) : aiInsight ? (
+            ) : displayedAiInsight ? (
               <div className="mt-4 space-y-4">
                 <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-4">
                   <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/70">Consulta</p>
@@ -425,24 +434,24 @@ export function SpecialistAiAssistant() {
                     <p className="text-sm font-semibold text-cyan-50">Diagnostico rapido</p>
                     <span
                       className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                        aiInsight.priority === "Alta"
+                        displayedAiInsight.priority === "Alta"
                           ? "border-rose-300/35 bg-rose-300/12 text-rose-100"
                           : "border-cyan-100/20 bg-white/5 text-cyan-100/80"
                       }`}
                     >
-                      Prioridad {aiInsight.priority}
+                      Prioridad {displayedAiInsight.priority}
                     </span>
                     <span className="rounded-full border border-cyan-100/20 bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-cyan-100/80">
-                      Confianza {aiInsight.confidence}
+                      Confianza {displayedAiInsight.confidence}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm leading-7 text-cyan-100/85">{aiInsight.summary}</p>
+                  <p className="mt-2 text-sm leading-7 text-cyan-100/85">{displayedAiInsight.summary}</p>
                 </div>
 
                 <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-4">
                   <p className="text-sm font-semibold text-cyan-50">Datos detectados</p>
                   <ul className="mt-2 space-y-2">
-                    {aiInsight.dataPoints.map((point) => (
+                    {displayedAiInsight.dataPoints.map((point) => (
                       <li key={point} className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-xs text-cyan-100/82">
                         {point}
                       </li>
@@ -453,7 +462,7 @@ export function SpecialistAiAssistant() {
                 <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-4">
                   <p className="text-sm font-semibold text-cyan-50">Plan de accion</p>
                   <div className="mt-2 space-y-2">
-                    {aiInsight.actionPlan.map((step, index) => (
+                    {displayedAiInsight.actionPlan.map((step, index) => (
                       <div
                         key={step}
                         className="flex gap-3 rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-xs text-cyan-100/82"
@@ -469,20 +478,20 @@ export function SpecialistAiAssistant() {
 
                 <div className="rounded-2xl border border-emerald-200/20 bg-emerald-300/10 p-4">
                   <p className="text-xs uppercase tracking-[0.14em] text-emerald-100/80">Consejo IA</p>
-                  <p className="mt-2 text-sm leading-7 text-emerald-50/90">{aiInsight.advice}</p>
-                  <p className="mt-3 text-xs text-emerald-100/85">Siguiente paso: {aiInsight.nextStep}</p>
+                  <p className="mt-2 text-sm leading-7 text-emerald-50/90">{displayedAiInsight.advice}</p>
+                  <p className="mt-3 text-xs text-emerald-100/85">Siguiente paso: {displayedAiInsight.nextStep}</p>
                   <Link
-                    href={aiInsight.focusHref}
+                    href={displayedAiInsight.focusHref}
                     className="mt-3 inline-flex rounded-xl border border-emerald-200/25 bg-emerald-300/18 px-3 py-2 text-xs font-semibold text-emerald-50 transition hover:bg-emerald-200/24"
                   >
-                    {aiInsight.focusLabel}
+                    {displayedAiInsight.focusLabel}
                   </Link>
                 </div>
 
                 <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-4">
                   <p className="text-sm font-semibold text-cyan-50">Indicadores a vigilar</p>
                   <ul className="mt-2 space-y-2">
-                    {aiInsight.watchItems.map((item) => (
+                    {displayedAiInsight.watchItems.map((item) => (
                       <li key={item} className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-xs text-cyan-100/82">
                         {item}
                       </li>
@@ -506,7 +515,7 @@ export function SpecialistAiAssistant() {
               Acciones rápidas para agenda, diagnostico, reputacion y enfoque comercial del especialista.
             </p>
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {scenarioPrompts.map((scenario) => (
+              {backendScenarioPrompts.map((scenario) => (
                 <article
                   key={scenario.title}
                   className="flex h-full min-h-[390px] flex-col rounded-2xl border border-cyan-100/12 bg-slate-950/40 p-4"
@@ -553,7 +562,7 @@ export function SpecialistAiAssistant() {
             </p>
 
             <div className="mt-4 space-y-3">
-              {specialistRadarBars.map((bar) => (
+              {radarBars.map((bar) => (
                 <div key={bar.label}>
                   <div className="mb-1 flex items-center justify-between text-xs text-cyan-100/75">
                     <span>{bar.label}</span>
