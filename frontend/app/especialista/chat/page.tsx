@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SpecialistShell } from "../components/SpecialistShell";
 import { useSpecialistChatFilesData } from "../hooks/useSpecialistChatFilesData";
@@ -16,7 +16,18 @@ function normalizeText(value: string) {
 export default function EspecialistaChatPage() {
   const searchParams = useSearchParams();
   const serviceFromQuery = searchParams.get("service") ?? "";
-  const { chats, activeChat, detailError, selectedChatId, setSelectedChatId } = useSpecialistChatFilesData();
+  const {
+    chats,
+    activeChat,
+    actionError,
+    actionLoading,
+    detailError,
+    selectedChatId,
+    setSelectedChatId,
+    sendMessage,
+  } = useSpecialistChatFilesData();
+  const [draftMessage, setDraftMessage] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const orderedChats = useMemo(() => {
     if (!serviceFromQuery) {
@@ -32,8 +43,27 @@ export default function EspecialistaChatPage() {
     });
   }, [chats, serviceFromQuery]);
 
-  const [draftMessage, setDraftMessage] = useState("");
   const displayedActiveChat = activeChat ?? orderedChats.find((chat) => chat.id === selectedChatId) ?? orderedChats[0];
+  const messageText = draftMessage.trim();
+  const canSendMessage = Boolean(displayedActiveChat && messageText && !actionLoading);
+
+  async function handleSendMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!displayedActiveChat) {
+      setSendError("Selecciona una conversacion para enviar el mensaje.");
+      return;
+    }
+
+    if (!messageText) {
+      setSendError("Escribe un mensaje antes de enviar.");
+      return;
+    }
+
+    setSendError(null);
+    await sendMessage(displayedActiveChat.id, messageText);
+    setDraftMessage("");
+  }
 
   return (
     <SpecialistShell sectionLabel="Chat" statusMessage="Chat especialista activo">
@@ -167,20 +197,25 @@ export default function EspecialistaChatPage() {
               </div>
 
               <footer className="mt-3 shrink-0 rounded-3xl border border-cyan-100/10 bg-white/5 px-4 py-3">
-                <div className="flex gap-3">
+                <form onSubmit={handleSendMessage} className="flex gap-3">
                   <input
                     value={draftMessage}
                     onChange={(event) => setDraftMessage(event.target.value)}
                     placeholder="Escribe un mensaje para el cliente..."
+                    disabled={actionLoading}
                     className="flex-1 rounded-full border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                   />
                   <button
-                    type="button"
-                    className="rounded-full border border-cyan-100/10 bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+                    type="submit"
+                    disabled={!canSendMessage}
+                    className="rounded-full border border-cyan-100/10 bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Enviar
+                    {actionLoading ? "Enviando..." : "Enviar"}
                   </button>
-                </div>
+                </form>
+                {sendError || actionError ? (
+                  <p className="mt-2 text-sm text-rose-200">{sendError ?? actionError}</p>
+                ) : null}
               </footer>
             </>
           ) : (

@@ -287,6 +287,16 @@ export type SpecialistChatDetail = SpecialistChat & {
   data?: SpecialistChatMessage[] | SpecialistChat;
 };
 
+export type CreateSpecialistChatMessageInput = {
+  contenido: string;
+  tipo?: string;
+};
+
+export type CreateSpecialistChatMessageResponse = {
+  id: string;
+  fecha: string;
+};
+
 export type SpecialistFile = {
   id?: string;
   fileId?: string;
@@ -308,6 +318,18 @@ export type SpecialistFile = {
   project?: string;
   relatedTo?: string;
   url?: string;
+};
+
+export type CreateSpecialistFileInput = {
+  url: string;
+  nombre: string;
+  tipo?: string;
+  tamano?: string;
+};
+
+export type CreateSpecialistFileResponse = {
+  id: string;
+  mensaje: string;
 };
 
 export type SpecialistWallet = {
@@ -680,6 +702,20 @@ export async function getSpecialistChatById(token: string, userId: string, chatI
   });
 }
 
+export async function sendSpecialistChatMessage(
+  token: string,
+  userId: string,
+  chatId: string,
+  body: CreateSpecialistChatMessageInput,
+) {
+  return apiRequest<CreateSpecialistChatMessageResponse>(`/api/specialists/chats/${chatId}/messages`, {
+    method: "POST",
+    token,
+    userId,
+    body,
+  });
+}
+
 export async function getSpecialistFiles(token: string, userId: string) {
   return apiRequest<SpecialistFile[] | ListResponse<SpecialistFile> | { data: SpecialistFile[] }>(
     "/api/specialists/files",
@@ -688,6 +724,23 @@ export async function getSpecialistFiles(token: string, userId: string) {
       userId,
     }
   );
+}
+
+export async function createSpecialistFile(token: string, userId: string, body: CreateSpecialistFileInput) {
+  return apiRequest<CreateSpecialistFileResponse>("/api/specialists/files", {
+    method: "POST",
+    token,
+    userId,
+    body,
+  });
+}
+
+export async function deleteSpecialistFile(token: string, userId: string, fileId: string) {
+  return apiRequest<MessageResponse>(`/api/specialists/files/${fileId}`, {
+    method: "DELETE",
+    token,
+    userId,
+  });
 }
 
 export async function getSpecialistWallet(token: string, userId: string) {
