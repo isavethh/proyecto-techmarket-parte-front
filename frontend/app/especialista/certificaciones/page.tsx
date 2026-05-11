@@ -1,5 +1,6 @@
 "use client";
 
+import { FormEvent, useState } from "react";
 import { SpecialistShell } from "../components/SpecialistShell";
 import { useSpecialistReviewsCertificationsData } from "../hooks/useSpecialistReviewsCertificationsData";
 
@@ -18,7 +19,48 @@ function getStatusClass(status: string) {
 }
 
 export default function EspecialistaCertificacionesPage() {
-  const { certifications } = useSpecialistReviewsCertificationsData();
+  const { certifications, actionError, actionLoading, actionSuccess, createCertification, deleteCertification } = useSpecialistReviewsCertificationsData();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [certificationName, setCertificationName] = useState("");
+  const [certificationInstitution, setCertificationInstitution] = useState("");
+  const [certificationDate, setCertificationDate] = useState("");
+  const [certificationUrl, setCertificationUrl] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deletingCertificationId, setDeletingCertificationId] = useState<string | null>(null);
+
+  async function handleCreateCertification(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const nombre = certificationName.trim();
+    const institucion = certificationInstitution.trim();
+    const fechaObtencion = certificationDate.trim();
+    const archivoUrl = certificationUrl.trim();
+
+    if (!nombre) {
+      setFormError("Ingresa el nombre de la certificacion.");
+      return;
+    }
+
+    setFormError(null);
+    await createCertification({
+      nombre,
+      institucion: institucion || undefined,
+      fechaObtencion: fechaObtencion || undefined,
+      archivoUrl: archivoUrl || undefined,
+    });
+    setCertificationName("");
+    setCertificationInstitution("");
+    setCertificationDate("");
+    setCertificationUrl("");
+    setIsFormOpen(false);
+  }
+
+  async function handleDeleteCertification(certificationId: string) {
+    setFormError(null);
+    setDeletingCertificationId(certificationId);
+    await deleteCertification(certificationId);
+    setDeletingCertificationId(null);
+  }
 
   return (
     <SpecialistShell sectionLabel="Certificaciones" statusMessage="Certificaciones tecnicas del especialista">
@@ -34,13 +76,71 @@ export default function EspecialistaCertificacionesPage() {
 
           <button
             type="button"
-            disabled
-            className="cursor-not-allowed self-start rounded-full border border-cyan-300/35 bg-cyan-300/10 px-5 py-2.5 text-sm font-semibold text-cyan-100/70 opacity-70"
+            disabled={actionLoading}
+            onClick={() => {
+              setIsFormOpen((current) => !current);
+              setFormError(null);
+            }}
+            className="self-start rounded-full border border-cyan-300/35 bg-cyan-300/10 px-5 py-2.5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Agregar certificacion
+            {isFormOpen ? "Cerrar formulario" : "Agregar certificacion"}
           </button>
         </div>
       </section>
+
+      {isFormOpen ? (
+        <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+          <h2 className="text-2xl font-bold text-white">Agregar certificacion</h2>
+          <form onSubmit={handleCreateCertification} className="mt-4 grid gap-3 lg:grid-cols-4">
+            <input
+              value={certificationName}
+              onChange={(event) => setCertificationName(event.target.value)}
+              placeholder="Nombre de certificacion"
+              disabled={actionLoading}
+              className="rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+            />
+            <input
+              value={certificationInstitution}
+              onChange={(event) => setCertificationInstitution(event.target.value)}
+              placeholder="Institucion emisora"
+              disabled={actionLoading}
+              className="rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+            />
+            <input
+              value={certificationDate}
+              onChange={(event) => setCertificationDate(event.target.value)}
+              placeholder="Fecha de obtencion"
+              disabled={actionLoading}
+              className="rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+            />
+            <input
+              value={certificationUrl}
+              onChange={(event) => setCertificationUrl(event.target.value)}
+              placeholder="URL de credencial"
+              disabled={actionLoading}
+              className="rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+            />
+            <div className="lg:col-span-4">
+              <button
+                type="submit"
+                disabled={actionLoading || !certificationName.trim()}
+                className="rounded-full border border-cyan-300/35 bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {actionLoading && !deletingCertificationId ? "Guardando..." : "Guardar certificacion"}
+              </button>
+            </div>
+          </form>
+          {formError || actionError ? (
+            <p className="mt-3 text-sm text-rose-200">{formError ?? actionError}</p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {actionSuccess ? (
+        <p className="rounded-2xl border border-emerald-300/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+          {actionSuccess}
+        </p>
+      ) : null}
 
       <section className="grid gap-4 sm:grid-cols-3">
         <article className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
@@ -55,8 +155,8 @@ export default function EspecialistaCertificacionesPage() {
         </article>
         <article className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Modo</p>
-          <p className="mt-2 text-sm font-semibold text-cyan-50">Solo lectura</p>
-          <p className="mt-1 text-xs text-cyan-100/70">POST, PATCH y DELETE pendientes</p>
+          <p className="mt-2 text-sm font-semibold text-cyan-50">Conectado</p>
+          <p className="mt-1 text-xs text-cyan-100/70">POST y DELETE reales</p>
         </article>
       </section>
 
@@ -109,10 +209,11 @@ export default function EspecialistaCertificacionesPage() {
               </button>
               <button
                 type="button"
-                disabled
-                className="cursor-not-allowed rounded-full border border-rose-300/30 bg-rose-400/10 px-4 py-2 text-sm font-semibold text-rose-100/70 opacity-70"
+                onClick={() => handleDeleteCertification(certification.id)}
+                disabled={actionLoading}
+                className="rounded-full border border-rose-300/30 bg-rose-400/10 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Eliminar
+                {deletingCertificationId === certification.id ? "Eliminando..." : "Eliminar"}
               </button>
             </div>
           </article>

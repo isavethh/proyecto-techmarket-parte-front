@@ -1,11 +1,31 @@
 "use client";
 
+import { FormEvent, useState } from "react";
 import { SpecialistShell } from "../components/SpecialistShell";
 import { useSpecialistReviewsCertificationsData } from "../hooks/useSpecialistReviewsCertificationsData";
 import { starsLabel } from "../specialistData";
 
 export default function EspecialistaReputacionPage() {
-  const { reviews, kpis } = useSpecialistReviewsCertificationsData();
+  const { reviews, kpis, actionError, actionLoading, actionSuccess, respondReview } = useSpecialistReviewsCertificationsData();
+  const [activeReviewId, setActiveReviewId] = useState<string | null>(null);
+  const [responseText, setResponseText] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  async function handleSubmitResponse(event: FormEvent<HTMLFormElement>, reviewId: string) {
+    event.preventDefault();
+
+    const trimmedResponse = responseText.trim();
+
+    if (!trimmedResponse) {
+      setFormError("Escribe una respuesta antes de guardar.");
+      return;
+    }
+
+    setFormError(null);
+    await respondReview(reviewId, trimmedResponse);
+    setResponseText("");
+    setActiveReviewId(null);
+  }
 
   return (
     <SpecialistShell sectionLabel="Reputacion" statusMessage="Indicadores de confianza y resenas activas">
@@ -57,13 +77,58 @@ export default function EspecialistaReputacionPage() {
               <p className="mt-1 text-xs uppercase tracking-[0.2em] text-cyan-200/70">{review.service}</p>
               <p className="mt-2 text-sm leading-7 text-cyan-100/85">{review.comment}</p>
               <p className="mt-2 text-xs text-cyan-100/65">{review.date}</p>
-              <button
-                type="button"
-                disabled
-                className="mt-4 cursor-not-allowed rounded-full border border-cyan-300/35 bg-cyan-300/10 px-4 py-2 text-xs font-semibold text-cyan-100/70 opacity-70"
-              >
-                Responder resena
-              </button>
+              {activeReviewId === review.id ? (
+                <form onSubmit={(event) => handleSubmitResponse(event, review.id)} className="mt-4 space-y-3">
+                  <textarea
+                    value={responseText}
+                    onChange={(event) => setResponseText(event.target.value)}
+                    placeholder="Escribe tu respuesta para el cliente..."
+                    disabled={actionLoading}
+                    rows={3}
+                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                  />
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="submit"
+                      disabled={actionLoading || !responseText.trim()}
+                      className="rounded-full border border-cyan-300/35 bg-cyan-300 px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {actionLoading ? "Guardando..." : "Guardar respuesta"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={actionLoading}
+                      onClick={() => {
+                        setActiveReviewId(null);
+                        setResponseText("");
+                        setFormError(null);
+                      }}
+                      className="rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  disabled={actionLoading}
+                  onClick={() => {
+                    setActiveReviewId(review.id);
+                    setResponseText("");
+                    setFormError(null);
+                  }}
+                  className="mt-4 rounded-full border border-cyan-300/35 bg-cyan-300/10 px-4 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Responder resena
+                </button>
+              )}
+              {activeReviewId === review.id && (formError || actionError) ? (
+                <p className="mt-3 text-sm text-rose-200">{formError ?? actionError}</p>
+              ) : null}
+              {activeReviewId !== review.id && actionSuccess ? (
+                <p className="mt-3 text-sm text-emerald-200">{actionSuccess}</p>
+              ) : null}
             </article>
           ))}
         </div>

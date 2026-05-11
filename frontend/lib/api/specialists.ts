@@ -403,6 +403,15 @@ export type SpecialistReview = {
   service?: string;
 };
 
+export type RespondSpecialistReviewInput = {
+  respuesta: string;
+};
+
+export type SpecialistReviewRespondResponse = {
+  respuesta?: string;
+  mensaje?: string;
+};
+
 export type SpecialistCertification = {
   id?: string;
   certificationId?: string;
@@ -410,16 +419,31 @@ export type SpecialistCertification = {
   title?: string;
   nombre?: string;
   name?: string;
+  institucion?: string;
   entidad?: string;
   issuer?: string;
   emisor?: string;
   estado?: string;
   status?: string;
+  fechaObtencion?: string;
   fecha?: string;
   date?: string;
   issuedAt?: string;
+  archivoUrl?: string;
   credentialUrl?: string;
   url?: string;
+};
+
+export type CreateSpecialistCertificationInput = {
+  nombre: string;
+  institucion?: string;
+  fechaObtencion?: string;
+  archivoUrl?: string;
+};
+
+export type CreateSpecialistCertificationResponse = {
+  id: string;
+  mensaje: string;
 };
 
 export type SpecialistAiInsightPayload = {
@@ -777,6 +801,20 @@ export async function getSpecialistReviews(token: string, userId: string) {
   );
 }
 
+export async function respondSpecialistReview(
+  token: string,
+  userId: string,
+  reviewId: string,
+  body: RespondSpecialistReviewInput,
+) {
+  return apiRequest<SpecialistReviewRespondResponse>(`/api/specialists/reviews/${reviewId}/respond`, {
+    method: "POST",
+    token,
+    userId,
+    body,
+  });
+}
+
 export async function getSpecialistCertifications(token: string, userId: string) {
   return apiRequest<SpecialistCertification[] | ListResponse<SpecialistCertification> | { data: SpecialistCertification[] }>(
     "/api/specialists/certifications",
@@ -785,6 +823,27 @@ export async function getSpecialistCertifications(token: string, userId: string)
       userId,
     }
   );
+}
+
+export async function createSpecialistCertification(
+  token: string,
+  userId: string,
+  body: CreateSpecialistCertificationInput,
+) {
+  return apiRequest<CreateSpecialistCertificationResponse>("/api/specialists/certifications", {
+    method: "POST",
+    token,
+    userId,
+    body,
+  });
+}
+
+export async function deleteSpecialistCertification(token: string, userId: string, certificationId: string) {
+  return apiRequest<MessageResponse>(`/api/specialists/certifications/${certificationId}`, {
+    method: "DELETE",
+    token,
+    userId,
+  });
 }
 
 export async function getSpecialistAiInsights(token: string, userId: string) {
