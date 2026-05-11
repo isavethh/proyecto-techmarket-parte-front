@@ -3,83 +3,7 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SpecialistShell } from "../components/SpecialistShell";
-
-type SpecialistChatItem = {
-  id: string;
-  customer: string;
-  initials: string;
-  service: string;
-  status: string;
-  lastMessage: string;
-  time: string;
-  unread: number;
-  messages: {
-    id: string;
-    from: "customer" | "specialist";
-    text: string;
-    time: string;
-  }[];
-};
-
-const specialistChatsSeed: SpecialistChatItem[] = [
-  {
-    id: "chat-1",
-    customer: "Carlos M.",
-    initials: "CM",
-    service: "Reparacion de laptops",
-    status: "En linea",
-    lastMessage: "Quisiera saber si pueden revisar mi laptop hoy.",
-    time: "Hace 5 min",
-    unread: 2,
-    messages: [
-      { id: "m-1", from: "customer", text: "Hola, necesito ayuda con mi laptop.", time: "11:02" },
-      { id: "m-2", from: "specialist", text: "Claro, cuéntame qué problema presenta.", time: "11:04" },
-      { id: "m-3", from: "customer", text: "Se apaga sola y se calienta mucho.", time: "11:05" },
-    ],
-  },
-  {
-    id: "chat-2",
-    customer: "Laura P.",
-    initials: "LP",
-    service: "Mantenimiento preventivo",
-    status: "Disponible",
-    lastMessage: "Me interesa agendar mantenimiento para esta semana.",
-    time: "Hace 20 min",
-    unread: 1,
-    messages: [
-      { id: "m-4", from: "customer", text: "Hola, quisiera hacer mantenimiento preventivo.", time: "10:30" },
-      { id: "m-5", from: "specialist", text: "Sí, tengo disponibilidad esta semana.", time: "10:34" },
-    ],
-  },
-  {
-    id: "chat-3",
-    customer: "Andres T.",
-    initials: "AT",
-    service: "Instalacion y configuracion de redes",
-    status: "Disponible",
-    lastMessage: "Necesito red estable para oficina pequeña.",
-    time: "Hace 1 h",
-    unread: 0,
-    messages: [
-      { id: "m-6", from: "customer", text: "Busco instalación de red para mi oficina.", time: "09:10" },
-      { id: "m-7", from: "specialist", text: "Perfecto, ¿cuántos equipos necesitas conectar?", time: "09:15" },
-    ],
-  },
-  {
-    id: "chat-4",
-    customer: "Sofia R.",
-    initials: "SR",
-    service: "Soporte tecnico remoto",
-    status: "Disponible",
-    lastMessage: "¿Atienden problemas de configuración por videollamada?",
-    time: "Hace 2 h",
-    unread: 0,
-    messages: [
-      { id: "m-8", from: "customer", text: "Tengo problemas con software y configuración.", time: "08:20" },
-      { id: "m-9", from: "specialist", text: "Sí, puedo ayudarte por chat o videollamada.", time: "08:24" },
-    ],
-  },
-];
+import { useSpecialistChatFilesData } from "../hooks/useSpecialistChatFilesData";
 
 function normalizeText(value: string) {
   return value
@@ -92,26 +16,24 @@ function normalizeText(value: string) {
 export default function EspecialistaChatPage() {
   const searchParams = useSearchParams();
   const serviceFromQuery = searchParams.get("service") ?? "";
+  const { chats, activeChat, selectedChatId, setSelectedChatId } = useSpecialistChatFilesData();
 
   const orderedChats = useMemo(() => {
     if (!serviceFromQuery) {
-      return specialistChatsSeed;
+      return chats;
     }
 
     const normalizedTarget = normalizeText(serviceFromQuery);
 
-    return [...specialistChatsSeed].sort((a, b) => {
+    return [...chats].sort((a, b) => {
       const aMatch = normalizeText(a.service).includes(normalizedTarget) ? 1 : 0;
       const bMatch = normalizeText(b.service).includes(normalizedTarget) ? 1 : 0;
       return bMatch - aMatch;
     });
-  }, [serviceFromQuery]);
+  }, [chats, serviceFromQuery]);
 
-  const [activeChatId, setActiveChatId] = useState(orderedChats[0]?.id ?? "");
   const [draftMessage, setDraftMessage] = useState("");
-
-  const activeChat =
-    orderedChats.find((chat) => chat.id === activeChatId) ?? orderedChats[0];
+  const displayedActiveChat = activeChat ?? orderedChats.find((chat) => chat.id === selectedChatId) ?? orderedChats[0];
 
   return (
     <SpecialistShell sectionLabel="Chat" statusMessage="Chat especialista activo">
@@ -137,13 +59,13 @@ export default function EspecialistaChatPage() {
 
           <div className="chat-scrollbar mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
             {orderedChats.map((chat) => {
-              const isActive = chat.id === activeChat?.id;
+              const isActive = chat.id === displayedActiveChat?.id;
 
               return (
                 <button
                   key={chat.id}
                   type="button"
-                  onClick={() => setActiveChatId(chat.id)}
+                  onClick={() => setSelectedChatId(chat.id)}
                   className={`w-full rounded-3xl border p-3 text-left transition ${
                     isActive
                       ? "border-cyan-300/40 bg-cyan-300/12"
@@ -180,26 +102,26 @@ export default function EspecialistaChatPage() {
         </aside>
 
         <section className="flex min-h-[420px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-4 md:p-5 lg:h-[calc(100vh-300px)]">
-          {activeChat ? (
+          {displayedActiveChat ? (
             <>
               <div className="flex items-center justify-between gap-4 border-b border-cyan-100/10 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                    {activeChat.initials}
+                    {displayedActiveChat.initials}
                   </div>
                   <div>
-                    <p className="text-base font-semibold text-white">{activeChat.customer}</p>
-                    <p className="text-xs text-cyan-100/70">{activeChat.service}</p>
+                    <p className="text-base font-semibold text-white">{displayedActiveChat.customer}</p>
+                    <p className="text-xs text-cyan-100/70">{displayedActiveChat.service}</p>
                   </div>
                 </div>
 
                 <span className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-                  {activeChat.status}
+                  {displayedActiveChat.status}
                 </span>
               </div>
 
               <div className="chat-scrollbar mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto rounded-3xl bg-slate-950/30 p-4">
-                {activeChat.messages.map((message) => (
+                {displayedActiveChat.messages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex ${

@@ -94,6 +94,17 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
       "Canal de cierre comercial",
     ],
   },
+  Archivos: {
+    eyebrow: "ARCHIVOS TECNICOS",
+    title: "Evidencia y documentos",
+    description:
+      "Esta vista agrupa documentos, evidencias y archivos asociados a clientes o proyectos tecnicos del especialista.",
+    points: [
+      "Evidencia centralizada",
+      "Relacion con clientes",
+      "Documentos consultables",
+    ],
+  },
   Reputacion: {
     eyebrow: "CONFIANZA VISIBLE",
     title: "Opiniones y calificaciones",

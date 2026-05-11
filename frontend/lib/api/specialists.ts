@@ -139,6 +139,75 @@ export type SpecialistProjectHistory = {
   createdAt?: string;
 };
 
+export type SpecialistChatMessage = {
+  id?: string;
+  messageId?: string;
+  from?: string;
+  sender?: string;
+  role?: string;
+  texto?: string;
+  text?: string;
+  mensaje?: string;
+  message?: string;
+  hora?: string;
+  time?: string;
+  fecha?: string;
+  date?: string;
+  createdAt?: string;
+};
+
+export type SpecialistChat = {
+  id?: string;
+  chatId?: string;
+  cliente?: string;
+  customer?: string;
+  clientName?: string;
+  iniciales?: string;
+  initials?: string;
+  servicio?: string;
+  service?: string;
+  estado?: string;
+  status?: string;
+  ultimoMensaje?: string;
+  lastMessage?: string;
+  hora?: string;
+  time?: string;
+  fecha?: string;
+  date?: string;
+  unread?: number | string;
+  noLeidos?: number | string;
+  messages?: SpecialistChatMessage[];
+  mensajes?: SpecialistChatMessage[];
+};
+
+export type SpecialistChatDetail = SpecialistChat & {
+  messages?: SpecialistChatMessage[];
+  mensajes?: SpecialistChatMessage[];
+};
+
+export type SpecialistFile = {
+  id?: string;
+  fileId?: string;
+  nombre?: string;
+  name?: string;
+  filename?: string;
+  tipo?: string;
+  type?: string;
+  mimeType?: string;
+  tamano?: string | number;
+  size?: string | number;
+  fechaCarga?: string;
+  uploadedAt?: string;
+  createdAt?: string;
+  cliente?: string;
+  customer?: string;
+  clientName?: string;
+  proyecto?: string;
+  project?: string;
+  relatedTo?: string;
+  url?: string;
+};
+
 type ListResponse<T> = {
   value: T[];
   Count: number;
@@ -224,4 +293,31 @@ export async function getSpecialistProjectsHistory(token: string, userId: string
     token,
     userId,
   });
+}
+
+export async function getSpecialistChats(token: string, userId: string) {
+  return apiRequest<SpecialistChat[] | ListResponse<SpecialistChat> | { data: SpecialistChat[] }>(
+    "/api/specialists/chats",
+    {
+      token,
+      userId,
+    }
+  );
+}
+
+export async function getSpecialistChatById(token: string, userId: string, chatId: string) {
+  return apiRequest<SpecialistChatDetail>(`/api/specialists/chats/${chatId}`, {
+    token,
+    userId,
+  });
+}
+
+export async function getSpecialistFiles(token: string, userId: string) {
+  return apiRequest<SpecialistFile[] | ListResponse<SpecialistFile> | { data: SpecialistFile[] }>(
+    "/api/specialists/files",
+    {
+      token,
+      userId,
+    }
+  );
 }

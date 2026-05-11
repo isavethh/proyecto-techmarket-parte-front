@@ -70,6 +70,35 @@ export type SpecialistProjectHistoryItem = {
   date: string;
 };
 
+export type SpecialistChatMessageItem = {
+  id: string;
+  from: "customer" | "specialist";
+  text: string;
+  time: string;
+};
+
+export type SpecialistChatItem = {
+  id: string;
+  customer: string;
+  initials: string;
+  service: string;
+  status: string;
+  lastMessage: string;
+  time: string;
+  unread: number;
+  messages: SpecialistChatMessageItem[];
+};
+
+export type SpecialistFileItem = {
+  id: string;
+  name: string;
+  type: string;
+  size?: string;
+  uploadedAt: string;
+  relatedTo: string;
+  url?: string;
+};
+
 export const specialistProfile = {
   name: "Alejandro Torres",
   avatar: "AT",
@@ -315,6 +344,79 @@ export const specialistProjectHistory: SpecialistProjectHistoryItem[] = [
   },
 ];
 
+export const specialistChats: SpecialistChatItem[] = [
+  {
+    id: "chat-1",
+    customer: "Carlos M.",
+    initials: "CM",
+    service: "Reparacion de laptops",
+    status: "En linea",
+    lastMessage: "Quisiera saber si pueden revisar mi laptop hoy.",
+    time: "Hace 5 min",
+    unread: 2,
+    messages: [
+      { id: "m-1", from: "customer", text: "Hola, necesito ayuda con mi laptop.", time: "11:02" },
+      { id: "m-2", from: "specialist", text: "Claro, cuentame que problema presenta.", time: "11:04" },
+      { id: "m-3", from: "customer", text: "Se apaga sola y se calienta mucho.", time: "11:05" },
+    ],
+  },
+  {
+    id: "chat-2",
+    customer: "Laura P.",
+    initials: "LP",
+    service: "Mantenimiento preventivo",
+    status: "Disponible",
+    lastMessage: "Me interesa agendar mantenimiento para esta semana.",
+    time: "Hace 20 min",
+    unread: 1,
+    messages: [
+      { id: "m-4", from: "customer", text: "Hola, quisiera hacer mantenimiento preventivo.", time: "10:30" },
+      { id: "m-5", from: "specialist", text: "Si, tengo disponibilidad esta semana.", time: "10:34" },
+    ],
+  },
+  {
+    id: "chat-3",
+    customer: "Andres T.",
+    initials: "AT",
+    service: "Instalacion y configuracion de redes",
+    status: "Disponible",
+    lastMessage: "Necesito red estable para oficina pequena.",
+    time: "Hace 1 h",
+    unread: 0,
+    messages: [
+      { id: "m-6", from: "customer", text: "Busco instalacion de red para mi oficina.", time: "09:10" },
+      { id: "m-7", from: "specialist", text: "Perfecto, cuantos equipos necesitas conectar?", time: "09:15" },
+    ],
+  },
+];
+
+export const specialistFiles: SpecialistFileItem[] = [
+  {
+    id: "file-1",
+    name: "diagnostico-laptop-carlos.pdf",
+    type: "PDF",
+    size: "1.2 MB",
+    uploadedAt: "Hoy",
+    relatedTo: "Carlos M. - Reparacion de laptops",
+  },
+  {
+    id: "file-2",
+    name: "evidencia-red-oficina.jpg",
+    type: "Imagen",
+    size: "860 KB",
+    uploadedAt: "Ayer",
+    relatedTo: "Empresa Norte - Configuracion de red local",
+  },
+  {
+    id: "file-3",
+    name: "reporte-mantenimiento.docx",
+    type: "Documento",
+    size: "540 KB",
+    uploadedAt: "Hace 3 dias",
+    relatedTo: "Laura P. - Mantenimiento preventivo",
+  },
+];
+
 export const specialistNavLinks = [
   { title: "Resumen", href: "/especialista" },
   { title: "Portafolio", href: "/especialista/portafolio" },
@@ -322,6 +424,7 @@ export const specialistNavLinks = [
   { title: "Solicitudes", href: "/especialista/solicitudes" },
   { title: "Proyectos", href: "/especialista/proyectos" },
   { title: "Chat", href: "/especialista/chat" },
+  { title: "Archivos", href: "/especialista/archivos" },
   { title: "Reputacion", href: "/especialista/reputacion" },
   { title: "Disponibilidad", href: "/especialista/disponibilidad" },
 ];
