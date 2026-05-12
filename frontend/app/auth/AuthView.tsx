@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 
 type Mode = "login" | "register";
-type AccountType = "cliente" | "empresa" | "especialista";
+export type AccountType = "cliente" | "empresa" | "especialista" | "embajador";
 
 type AuthViewProps = {
   initialMode: Mode;
@@ -42,6 +42,8 @@ export default function AuthView({
         return "Crea tu cuenta de negocio";
       case "especialista":
         return "Crea tu cuenta de técnico";
+      case "embajador":
+        return "Crea tu cuenta de embajador";
       default:
         return "Crea tu cuenta de cliente";
     }
@@ -95,8 +97,13 @@ export default function AuthView({
     const trimmedPais = "";
     const trimmedCiudad = "";
 
-    if (!trimmedNombre || !trimmedApellido || !trimmedEmail || !password) {
-      setFeedback("Completa nombre, apellido, correo y contraseña.");
+    if (!trimmedNombre || !trimmedApellido || !trimmedEmail || !trimmedPhone || !password) {
+      setFeedback("Completa nombre, apellido, correo, telefono y contraseña.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setFeedback("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
@@ -196,6 +203,13 @@ export default function AuthView({
                       >
                         Técnico
                       </button>
+                      <button
+                        type="button"
+                        className={`auth-pill ${accountType === "embajador" ? "active" : ""}`}
+                        onClick={() => handleSelectAccountType("embajador")}
+                      >
+                        Embajador
+                      </button>
                     </div>
                   </div>
               )}
@@ -247,6 +261,7 @@ export default function AuthView({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+57 300 000 0000"
+                    required
                   />
                 </div>
               )}
@@ -279,6 +294,7 @@ export default function AuthView({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="********"
+                  minLength={8}
                   required
                 />
               </div>

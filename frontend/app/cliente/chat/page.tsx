@@ -3,8 +3,17 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ClientPageHeader } from "../../components/ClientPageSections";
+import {
+  createConversationMessage,
+  getConversationMessages,
+  listConversations,
+  markConversationRead,
+  readCurrentUserId,
+  type ConversationMessage,
+  type ConversationSummary,
+} from "@/lib/api/iaApi";
 
 
 
@@ -191,6 +200,56 @@ const formatRelativeTime = (isoDate: string): string => {
   return `Hace ${diffDays} d`;
 };
 
+const normalizeRemoteUserId = (value: string): string => {
+  const trimmed = value.trim();
+  if (trimmed.toUpperCase().startsWith("USR-")) {
+    return trimmed.slice(4);
+  }
+  return trimmed;
+};
+
+const buildThreadFromConversation = (conversation: ConversationSummary): ChatThread => {
+  const nowIso = new Date().toISOString();
+  const seedMessage = conversation.ultimoMensaje
+    ? [
+        {
+          id: `${conversation.id}-last`,
+          author: "empresa" as const,
+          text: conversation.ultimoMensaje,
+          createdAt: nowIso,
+        },
+      ]
+    : [];
+
+  return {
+    id: conversation.id,
+    sellerId: conversation.id,
+    sellerName: conversation.titulo,
+    company: conversation.titulo,
+    product: "Conversacion",
+    avatar: createAvatar(conversation.titulo),
+    unread: conversation.mensajesSinLeer ?? 0,
+    online: true,
+    messages: seedMessage,
+    updatedAt: nowIso,
+  };
+};
+
+const buildMessageFromConversation = (
+  message: ConversationMessage,
+  currentUserId: string | null,
+): ChatMessage => {
+  const senderId = normalizeRemoteUserId(message.remitenteId);
+  const isFromCurrentUser = Boolean(currentUserId && senderId === currentUserId);
+
+  return {
+    id: message.id,
+    author: isFromCurrentUser ? "cliente" : "empresa",
+    text: message.contenido,
+    createdAt: message.fecha,
+  };
+};
+
 const readStoredThreads = (): ChatThread[] => {
   if (typeof window === "undefined") {
     return sortThreadsByRecent(seedThreads);
@@ -278,7 +337,7 @@ const upsertThreadFromMarketplace = (
   };
 };
 
-export default function ClienteChatPage() {
+function ClienteChatContent() {
   const searchParams = useSearchParams();
 
   const pathname = usePathname();
@@ -308,6 +367,10 @@ export default function ClienteChatPage() {
     };
   }, [searchParams]);
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [threads, setThreads] = useState<ChatThread[]>(() => {
     const initialThreads = readStoredThreads();
 
@@ -330,6 +393,72 @@ export default function ClienteChatPage() {
   const [draftMessage, setDraftMessage] = useState(() => marketplaceIntent?.message ?? "");
 
   const messageListRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setCurrentUserId(readCurrentUserId());
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadConversations = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        const conversations = await listConversations();
+        const mappedThreads = conversations.map(buildThreadFromConversation);
+        let nextThreads = mappedThreads.length ? mappedThreads : readStoredThreads();
+
+        if (marketplaceIntent) {
+          nextThreads = upsertThreadFromMarketplace(nextThreads, marketplaceIntent).threads;
+        }
+
+        if (!active) {
+          return;
+        }
+
+        setThreads(nextThreads);
+        setActiveThreadId((current) => {
+          if (current && nextThreads.some((thread) => thread.id === current)) {
+            return current;
+          }
+
+          return nextThreads[0]?.id ?? null;
+        });
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+
+        const fallbackThreads = marketplaceIntent
+          ? upsertThreadFromMarketplace(readStoredThreads(), marketplaceIntent).threads
+          : readStoredThreads();
+
+        setThreads(fallbackThreads);
+        setActiveThreadId((current) => {
+          if (current && fallbackThreads.some((thread) => thread.id === current)) {
+            return current;
+          }
+
+          return fallbackThreads[0]?.id ?? null;
+        });
+        setLoadError(
+          error instanceof Error ? error.message : "No se pudo cargar conversaciones",
+        );
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadConversations();
+
+    return () => {
+      active = false;
+    };
+  }, [marketplaceIntent]);
 
   useEffect(() => {
     writeStoredThreads(threads);
@@ -362,6 +491,46 @@ export default function ClienteChatPage() {
   }, [searchQuery, threads]);
 
   useEffect(() => {
+    if (!activeThread || !activeThread.id.startsWith("CONV-")) {
+      return;
+    }
+
+    let active = true;
+
+    getConversationMessages(activeThread.id)
+      .then((messages) => {
+        if (!active) {
+          return;
+        }
+
+        const mappedMessages = messages.map((message) =>
+          buildMessageFromConversation(message, currentUserId),
+        );
+        const updatedAt =
+          mappedMessages[mappedMessages.length - 1]?.createdAt ?? activeThread.updatedAt;
+
+        setThreads((current) =>
+          current.map((thread) =>
+            thread.id === activeThread.id
+              ? {
+                  ...thread,
+                  messages: mappedMessages,
+                  updatedAt,
+                }
+              : thread,
+          ),
+        );
+      })
+      .catch(() => {
+        // ignore message load errors
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeThread, currentUserId]);
+
+  useEffect(() => {
     if (!activeThread) {
       return;
     }
@@ -385,9 +554,15 @@ export default function ClienteChatPage() {
           : thread,
       ),
     );
+
+    if (threadId.startsWith("CONV-")) {
+      markConversationRead(threadId).catch(() => {
+        // ignore read marker errors
+      });
+    }
   };
 
-  const handleSendMessage = (event: FormEvent<HTMLFormElement>) => {
+  const handleSendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!activeThread) {
@@ -397,6 +572,43 @@ export default function ClienteChatPage() {
     const normalizedMessage = draftMessage.trim();
 
     if (normalizedMessage.length < 2) {
+      return;
+    }
+
+    if (activeThread.id.startsWith("CONV-")) {
+      try {
+        const response = await createConversationMessage(activeThread.id, normalizedMessage);
+        const nowIso = new Date().toISOString();
+
+        setThreads((current) => {
+          const nextThreads = current.map((thread) => {
+            if (thread.id !== activeThread.id) {
+              return thread;
+            }
+
+            const nextMessage: ChatMessage = {
+              id: response.id,
+              author: "cliente",
+              text: response.contenido,
+              createdAt: nowIso,
+            };
+
+            return {
+              ...thread,
+              messages: [...thread.messages, nextMessage],
+              unread: 0,
+              updatedAt: nowIso,
+            };
+          });
+
+          return sortThreadsByRecent(nextThreads);
+        });
+
+        setDraftMessage("");
+      } catch {
+        // ignore send errors
+      }
+
       return;
     }
 
@@ -487,6 +699,12 @@ export default function ClienteChatPage() {
             <p className="mt-2 text-sm text-cyan-100/75">
               Vista completa para revisar todos tus chats, abrir cada hilo y responder rapido.
             </p>
+            {isLoading ? (
+              <p className="mt-2 text-xs text-cyan-200/75">Cargando conversaciones...</p>
+            ) : null}
+            {loadError ? (
+              <p className="mt-2 text-xs text-rose-200/85">{loadError}</p>
+            ) : null}
 
             <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
               <div className="rounded-xl border border-cyan-100/12 bg-slate-950/35 p-3">
@@ -638,5 +856,13 @@ export default function ClienteChatPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function ClienteChatPage() {
+  return (
+    <Suspense fallback={<div className="flex-1 pb-0" />}>
+      <ClienteChatContent />
+    </Suspense>
   );
 }
