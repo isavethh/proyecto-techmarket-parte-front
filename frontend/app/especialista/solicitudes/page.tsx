@@ -19,19 +19,39 @@ function getStatusClass(status: string) {
   return "border-cyan-200/25 bg-cyan-300/10 text-cyan-100";
 }
 
+function getUrgencyClass(urgency: string) {
+  return urgency.toLowerCase().includes("alta")
+    ? "border-rose-300/40 bg-rose-400/15 text-rose-100"
+    : "border-cyan-200/25 bg-cyan-300/10 text-cyan-100";
+}
+
+type RequestItem = ReturnType<typeof useSpecialistRequestsProjectsData>["requests"][number];
+type RequestAction = "aceptar" | "rechazar";
+
 export default function EspecialistaSolicitudesPage() {
   const { requests, loading, error, respondRequest } = useSpecialistRequestsProjectsData();
   const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [detailRequest, setDetailRequest] = useState<RequestItem | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ request: RequestItem; action: RequestAction } | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  async function handleRespondRequest(requestId: string, action: "aceptar" | "rechazar") {
-    setProcessingRequestId(requestId);
+  async function handleRespondRequest() {
+    if (!pendingAction) return;
+
+    setProcessingRequestId(pendingAction.request.id);
     setSuccessMessage(null);
+    setActionError(null);
 
-    await respondRequest(requestId, action);
-
-    setSuccessMessage(action === "aceptar" ? "Solicitud aceptada correctamente." : "Solicitud rechazada correctamente.");
-    setProcessingRequestId(null);
+    try {
+      await respondRequest(pendingAction.request.id, pendingAction.action);
+      setSuccessMessage(pendingAction.action === "aceptar" ? "Solicitud aceptada correctamente." : "Solicitud rechazada correctamente.");
+      setPendingAction(null);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "No se pudo responder la solicitud.");
+    } finally {
+      setProcessingRequestId(null);
+    }
   }
 
   return (
@@ -75,7 +95,7 @@ export default function EspecialistaSolicitudesPage() {
       ) : null}
 
       <section className="grid gap-4 lg:grid-cols-2">
-        {requests.length === 0 ? (
+        {!loading && requests.length === 0 ? (
           <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5 text-sm text-cyan-100/75 lg:col-span-2">
             No hay solicitudes registradas todavía.
           </article>
@@ -100,6 +120,13 @@ export default function EspecialistaSolicitudesPage() {
                 <p className="mt-2 text-sm font-semibold text-cyan-50">{request.service}</p>
               </div>
 
+              <div className="mt-3 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Urgencia</p>
+                <span className={`mt-2 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getUrgencyClass(request.urgency)}`}>
+                  {request.urgency}
+                </span>
+              </div>
+
               <div className="mt-3 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Mensaje o propuesta</p>
                 <p className="mt-2 text-sm leading-7 text-cyan-100/85">{request.message}</p>
@@ -110,8 +137,19 @@ export default function EspecialistaSolicitudesPage() {
               <div className="mt-5 flex flex-wrap gap-3">
                 <button
                   type="button"
+                  onClick={() => setDetailRequest(request)}
+                  className="rounded-full border border-cyan-300/35 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/60 hover:bg-cyan-300/20"
+                >
+                  Ver detalle
+                </button>
+                <button
+                  type="button"
                   disabled={isProcessing}
-                  onClick={() => handleRespondRequest(request.id, "aceptar")}
+                  onClick={() => {
+                    setPendingAction({ request, action: "aceptar" });
+                    setActionError(null);
+                    setSuccessMessage(null);
+                  }}
                   className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:border-emerald-200/60 hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Aceptar
@@ -119,7 +157,11 @@ export default function EspecialistaSolicitudesPage() {
                 <button
                   type="button"
                   disabled={isProcessing}
-                  onClick={() => handleRespondRequest(request.id, "rechazar")}
+                  onClick={() => {
+                    setPendingAction({ request, action: "rechazar" });
+                    setActionError(null);
+                    setSuccessMessage(null);
+                  }}
                   className="rounded-full border border-rose-300/30 bg-rose-400/10 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:border-rose-200/60 hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Rechazar
@@ -129,6 +171,69 @@ export default function EspecialistaSolicitudesPage() {
           );
         })}
       </section>
+
+      {detailRequest ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4 py-6 backdrop-blur-sm" onClick={(event) => event.target === event.currentTarget && setDetailRequest(null)}>
+          <article className="w-full max-w-2xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="tech-mono text-xs text-cyan-200/75">DETALLE DE SOLICITUD</p>
+                <h2 className="mt-2 text-2xl font-bold text-white">{detailRequest.service}</h2>
+              </div>
+              <button type="button" onClick={() => setDetailRequest(null)} className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10">
+                Cerrar
+              </button>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <DetailField label="Cliente" value={detailRequest.customer} />
+              <DetailField label="Servicio solicitado" value={detailRequest.service} />
+              <DetailField label="Fecha" value={detailRequest.date} />
+              <DetailField label="Estado" value={detailRequest.status} />
+              <DetailField label="Urgencia" value={detailRequest.urgency} />
+              <DetailField label="ID solicitud" value={detailRequest.id} />
+            </div>
+            <div className="mt-3 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Mensaje o propuesta</p>
+              <p className="mt-2 text-sm leading-7 text-cyan-100/85">{detailRequest.message}</p>
+            </div>
+          </article>
+        </div>
+      ) : null}
+
+      {pendingAction ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4 py-6 backdrop-blur-sm" onClick={(event) => event.target === event.currentTarget && !processingRequestId && setPendingAction(null)}>
+          <article className="w-full max-w-lg rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40">
+            <p className="tech-mono text-xs text-cyan-200/75">CONFIRMACION</p>
+            <h2 className="mt-2 text-2xl font-bold text-white">{pendingAction.action === "aceptar" ? "Aceptar solicitud" : "Rechazar solicitud"}</h2>
+            <p className="mt-3 text-sm leading-6 text-cyan-100/80">
+              {pendingAction.action === "aceptar" ? "¿Deseas aceptar esta solicitud y continuar con su gestión?" : "¿Seguro que deseas rechazar esta solicitud?"}
+            </p>
+            <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Solicitud</p>
+              <p className="mt-2 text-sm font-semibold text-cyan-50">{pendingAction.request.service}</p>
+              <p className="mt-1 text-xs text-cyan-100/70">Cliente: {pendingAction.request.customer}</p>
+            </div>
+            {actionError ? <p className="mt-4 rounded-2xl border border-rose-300/25 bg-rose-400/10 p-3 text-sm text-rose-100">{actionError}</p> : null}
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button type="button" disabled={Boolean(processingRequestId)} onClick={() => setPendingAction(null)} className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10 disabled:cursor-not-allowed disabled:opacity-60">
+                Cancelar
+              </button>
+              <button type="button" disabled={Boolean(processingRequestId)} onClick={handleRespondRequest} className={`rounded-full border px-5 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${pendingAction.action === "aceptar" ? "border-emerald-300/30 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/20" : "border-rose-300/30 bg-rose-400/10 text-rose-100 hover:bg-rose-400/20"}`}>
+                {processingRequestId ? "Procesando..." : pendingAction.action === "aceptar" ? "Aceptar solicitud" : "Rechazar solicitud"}
+              </button>
+            </div>
+          </article>
+        </div>
+      ) : null}
     </SpecialistShell>
+  );
+}
+
+function DetailField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-cyan-50">{value}</p>
+    </div>
   );
 }

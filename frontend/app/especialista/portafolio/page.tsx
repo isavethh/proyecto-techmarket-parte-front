@@ -5,6 +5,17 @@ import { AnimatePresence, motion } from "motion/react";
 import { SpecialistShell } from "../components/SpecialistShell";
 import { useSpecialistBackendData } from "../hooks/useSpecialistBackendData";
 
+const SERVICE_TYPE_OPTIONS = [
+  "Reparacion",
+  "Mantenimiento",
+  "Instalacion",
+  "Diagnostico",
+  "Soporte tecnico",
+  "Asesoria",
+  "Actualizacion",
+  "Configuracion",
+];
+
 export default function EspecialistaPortafolioPage() {
   const { profile, portfolio, loading, error, createPortfolioItem } = useSpecialistBackendData();
   const [showPortfolioForm, setShowPortfolioForm] = useState(false);
@@ -55,7 +66,7 @@ export default function EspecialistaPortafolioPage() {
     const workDescription = portfolioForm.workDescription.trim();
 
     if (!workDescription) {
-      setPortfolioMessage("Completa el titulo o descripcion del trabajo.");
+      setPortfolioMessage("Completa el titulo del trabajo.");
       return;
     }
 
@@ -160,38 +171,44 @@ export default function EspecialistaPortafolioPage() {
 
                   <div className="mt-6 grid gap-4 md:grid-cols-2">
                     <label className="space-y-2 text-sm text-cyan-100/85">
-                      <span>Tipo de servicio aplicado</span>
-                      <input
+                      <span>Servicio asociado</span>
+                      <select
                         value={portfolioForm.serviceType}
                         onChange={(event) =>
                           setPortfolioForm((current) => ({ ...current, serviceType: event.target.value }))
                         }
-                        placeholder="Ej: Reparacion tecnica"
                         className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                      />
+                      >
+                        <option value="">Selecciona un tipo</option>
+                        {SERVICE_TYPE_OPTIONS.map((serviceType) => (
+                          <option key={serviceType} value={serviceType}>
+                            {serviceType}
+                          </option>
+                        ))}
+                      </select>
                     </label>
 
                     <label className="space-y-2 text-sm text-cyan-100/85">
                       <span>Fecha (opcional)</span>
                       <input
+                        type="date"
                         value={portfolioForm.date}
                         onChange={(event) =>
                           setPortfolioForm((current) => ({ ...current, date: event.target.value }))
                         }
-                        placeholder="Ej: Abr 2026"
                         className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                       />
                     </label>
 
                     <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                      <span>Problema o trabajo realizado</span>
+                      <span>Título del trabajo</span>
                       <textarea
                         value={portfolioForm.workDescription}
                         onChange={(event) =>
                           setPortfolioForm((current) => ({ ...current, workDescription: event.target.value }))
                         }
                         rows={3}
-                        placeholder="Describe que se atendio y que se hizo tecnicamente"
+                        placeholder="Ej. Optimización de laptop de trabajo"
                         className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                       />
                     </label>
@@ -271,38 +288,53 @@ export default function EspecialistaPortafolioPage() {
                 No hay elementos de portafolio registrados todavía.
               </article>
             ) : null}
-            {portfolioItems.map((item) => (
+            {portfolioItems.map((item) => {
+              const portfolioItem = item as typeof item & {
+                titulo?: string;
+                servicio?: string;
+                resultado?: string;
+                fecha?: string;
+              };
+              const itemTitle = portfolioItem.titulo?.trim() || item.workDescription?.trim() || "Trabajo sin título";
+              const itemService = portfolioItem.servicio?.trim() || item.serviceType?.trim();
+              const itemResult = portfolioItem.resultado?.trim() || item.result?.trim();
+              const itemDate = portfolioItem.fecha?.trim() || item.date?.trim();
+
+              return (
               <article key={item.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-white/5">
                 <div className="flex h-56 w-full items-center justify-center bg-slate-100">
                   <img
                     src={item.image}
-                    alt={item.serviceType}
+                    alt={itemTitle}
                     className="h-full w-full object-contain object-center"
                     loading="lazy"
                   />
                 </div>
                 <div className="space-y-4 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100">
-                      {item.serviceType}
-                    </p>
-                    {item.date ? <p className="text-xs text-cyan-200/70">{item.date}</p> : null}
+                    {itemService ? (
+                      <p className="rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                        {itemService}
+                      </p>
+                    ) : null}
+                    {itemDate ? <p className="text-xs text-cyan-200/70">{itemDate}</p> : null}
                   </div>
 
                   <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
-                    <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Trabajo realizado</p>
-                    <p className="mt-2 text-sm leading-7 text-cyan-100/85">{item.workDescription}</p>
+                    <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Título del trabajo</p>
+                    <p className="mt-2 text-base font-semibold leading-7 text-cyan-50">{itemTitle}</p>
                   </div>
 
-                  {item.result ? (
+                  {itemResult ? (
                     <div className="rounded-2xl border border-emerald-300/30 bg-emerald-400/10 p-3">
                       <p className="text-xs uppercase tracking-[0.24em] text-emerald-100/80">Resultado</p>
-                      <p className="mt-2 text-sm leading-7 text-emerald-100/90">{item.result}</p>
+                      <p className="mt-2 text-sm leading-7 text-emerald-100/90">{itemResult}</p>
                     </div>
                   ) : null}
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         </section>
       </SpecialistShell>

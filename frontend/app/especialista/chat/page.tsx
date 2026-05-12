@@ -21,7 +21,11 @@ export default function EspecialistaChatPage() {
     activeChat,
     actionError,
     actionLoading,
+    chatsError,
     detailError,
+    hasLoadedChats,
+    isLoadingChats,
+    isLoadingMessages,
     selectedChatId,
     setSelectedChatId,
     sendMessage,
@@ -44,6 +48,10 @@ export default function EspecialistaChatPage() {
   }, [chats, serviceFromQuery]);
 
   const displayedActiveChat = activeChat ?? orderedChats.find((chat) => chat.id === selectedChatId) ?? orderedChats[0];
+  const showInitialChatsLoading = isLoadingChats && !hasLoadedChats && orderedChats.length === 0;
+  const showChatsError = Boolean(chatsError && !isLoadingChats && orderedChats.length === 0);
+  const showEmptyChats = hasLoadedChats && !isLoadingChats && !chatsError && orderedChats.length === 0;
+  const showEmptyMessages = !isLoadingMessages && !detailError && displayedActiveChat && displayedActiveChat.messages.length === 0;
   const messageText = draftMessage.trim();
   const canSendMessage = Boolean(displayedActiveChat && messageText && !actionLoading);
 
@@ -88,7 +96,17 @@ export default function EspecialistaChatPage() {
           </div>
 
           <div className="chat-scrollbar mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-            {orderedChats.length === 0 ? (
+            {showInitialChatsLoading ? (
+              <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/30 p-4 text-sm text-cyan-100/75">
+                Cargando conversaciones...
+              </div>
+            ) : null}
+            {showChatsError ? (
+              <div className="rounded-3xl border border-amber-300/25 bg-amber-300/10 p-4 text-sm text-amber-100">
+                No se pudieron cargar las conversaciones.
+              </div>
+            ) : null}
+            {showEmptyChats ? (
               <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/30 p-4 text-sm text-cyan-100/75">
                 No hay conversaciones registradas todavía.
               </div>
@@ -164,7 +182,12 @@ export default function EspecialistaChatPage() {
                     No se pudo cargar el detalle de la conversación.
                   </div>
                 ) : null}
-                {!detailError && displayedActiveChat.messages.length === 0 ? (
+                {isLoadingMessages ? (
+                  <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4 text-sm text-cyan-100/75">
+                    Cargando mensajes...
+                  </div>
+                ) : null}
+                {showEmptyMessages ? (
                   <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4 text-sm text-cyan-100/75">
                     No hay mensajes registrados todavía.
                   </div>
@@ -220,7 +243,7 @@ export default function EspecialistaChatPage() {
             </>
           ) : (
             <div className="flex min-h-0 flex-1 items-center justify-center rounded-3xl bg-slate-950/30 p-5 text-center text-sm text-cyan-100/75">
-              No hay conversaciones registradas todavía.
+              {showInitialChatsLoading ? "Cargando conversaciones..." : "No hay conversaciones registradas todavía."}
             </div>
           )}
         </section>

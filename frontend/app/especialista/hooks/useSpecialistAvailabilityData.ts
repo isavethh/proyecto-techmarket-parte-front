@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createSpecialistCalendarBlock,
+  deleteSpecialistCalendarBlock,
   getSpecialistAvailability,
   getSpecialistCalendar,
   loginTechMarket,
@@ -13,7 +14,6 @@ import {
   type SpecialistCalendarItem,
 } from "@/lib/api/specialists";
 import {
-  recentActivity,
   specialistAvailabilityCards,
   type ActivityItem,
   type AvailabilityCard,
@@ -178,8 +178,9 @@ export function useSpecialistAvailabilityData() {
         setCalendarSource(getDatasetSource(calendarItems));
       } else {
         setCalendarDetail([]);
-        setCalendar(recentActivity);
-        setCalendarSource("fallback");
+        setCalendar([]);
+        setCalendarSource("empty");
+        setError(calendarResult.reason instanceof Error ? calendarResult.reason.message : "No se pudieron cargar los bloques de calendario.");
       }
     } catch (err) {
       if (!isMounted()) {
@@ -190,9 +191,9 @@ export function useSpecialistAvailabilityData() {
       setAvailabilityDetail(null);
       setCalendarDetail([]);
       setAvailability(specialistAvailabilityCards);
-      setCalendar(recentActivity);
+      setCalendar([]);
       setAvailabilitySource("fallback");
-      setCalendarSource("fallback");
+      setCalendarSource("empty");
     } finally {
       if (isMounted()) {
         setLoading(false);
@@ -247,6 +248,22 @@ export function useSpecialistAvailabilityData() {
     }
   }, [ensureAuth, refreshAvailabilityData]);
 
+  const deleteCalendarBlock = useCallback(async (blockId: string) => {
+    try {
+      setActionLoading(true);
+      setActionError(null);
+      const currentAuth = await ensureAuth();
+      await deleteSpecialistCalendarBlock(currentAuth.token, currentAuth.userId, blockId);
+      await refreshAvailabilityData();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "No se pudo eliminar bloque de calendario";
+      setActionError(message);
+      throw err;
+    } finally {
+      setActionLoading(false);
+    }
+  }, [ensureAuth, refreshAvailabilityData]);
+
   useEffect(() => {
     let isMounted = true;
     loadAvailabilityData(() => isMounted);
@@ -270,8 +287,9 @@ export function useSpecialistAvailabilityData() {
       actionError,
       updateAvailability,
       createCalendarBlock,
+      deleteCalendarBlock,
       refreshAvailabilityData,
     }),
-    [availability, availabilityDetail, calendar, calendarDetail, availabilitySource, calendarSource, loading, actionLoading, error, actionError, updateAvailability, createCalendarBlock, refreshAvailabilityData],
+    [availability, availabilityDetail, calendar, calendarDetail, availabilitySource, calendarSource, loading, actionLoading, error, actionError, updateAvailability, createCalendarBlock, deleteCalendarBlock, refreshAvailabilityData],
   );
 }

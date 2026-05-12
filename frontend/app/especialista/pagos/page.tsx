@@ -30,19 +30,31 @@ export default function EspecialistaPagosPage() {
   const [isWithdrawalFormOpen, setIsWithdrawalFormOpen] = useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [withdrawalSuccessMessage, setWithdrawalSuccessMessage] = useState<string | null>(null);
   const availableBalance = parseMoneyAmount(wallet.availableBalance);
+
+  function closeWithdrawalModal() {
+    if (actionLoading) {
+      return;
+    }
+
+    setIsWithdrawalFormOpen(false);
+    setWithdrawalAmount("");
+    setFormError(null);
+  }
 
   async function handleRequestWithdrawal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const monto = Number(withdrawalAmount.trim());
+    const trimmedAmount = withdrawalAmount.trim();
+    const monto = parseMoneyAmount(trimmedAmount);
 
-    if (!withdrawalAmount.trim()) {
-      setFormError("Ingresa el monto a retirar.");
+    if (!trimmedAmount) {
+      setFormError("Ingresa un monto para solicitar el retiro.");
       return;
     }
 
-    if (!Number.isFinite(monto)) {
+    if (monto === undefined) {
       setFormError("Ingresa un monto numerico valido.");
       return;
     }
@@ -53,14 +65,22 @@ export default function EspecialistaPagosPage() {
     }
 
     if (availableBalance !== undefined && monto > availableBalance) {
-      setFormError("El monto no puede ser mayor al saldo disponible.");
+      setFormError("El monto no puede superar el saldo disponible.");
       return;
     }
 
     setFormError(null);
-    await requestWithdrawal({ monto });
-    setWithdrawalAmount("");
-    setIsWithdrawalFormOpen(false);
+    setWithdrawalSuccessMessage(null);
+
+    try {
+      const response = await requestWithdrawal({ monto });
+      const estimatedDate = response?.fechaEstimada ? ` Fecha estimada: ${response.fechaEstimada}.` : "";
+      setWithdrawalSuccessMessage(`Solicitud de retiro enviada.${estimatedDate}`);
+      setWithdrawalAmount("");
+      setIsWithdrawalFormOpen(false);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "No se pudo solicitar el retiro.");
+    }
   }
 
   return (
@@ -79,46 +99,20 @@ export default function EspecialistaPagosPage() {
             type="button"
             disabled={actionLoading}
             onClick={() => {
-              setIsWithdrawalFormOpen((current) => !current);
+              setIsWithdrawalFormOpen(true);
               setFormError(null);
+              setWithdrawalSuccessMessage(null);
             }}
             className="self-start rounded-full border border-cyan-300/35 bg-cyan-300/10 px-5 py-2.5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isWithdrawalFormOpen ? "Cerrar retiro" : "Solicitar retiro"}
+            Solicitar retiro
           </button>
         </div>
       </section>
 
-      {isWithdrawalFormOpen ? (
-        <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-          <h2 className="text-2xl font-bold text-white">Solicitar retiro</h2>
-          <p className="mt-2 text-sm text-cyan-100/75">Saldo disponible: {wallet.availableBalance}</p>
-          <form onSubmit={handleRequestWithdrawal} className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <input
-              value={withdrawalAmount}
-              onChange={(event) => setWithdrawalAmount(event.target.value)}
-              placeholder="Monto a retirar"
-              disabled={actionLoading}
-              inputMode="decimal"
-              className="flex-1 rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-            />
-            <button
-              type="submit"
-              disabled={actionLoading || !withdrawalAmount.trim()}
-              className="rounded-full border border-cyan-300/35 bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {actionLoading ? "Solicitando..." : "Solicitar retiro"}
-            </button>
-          </form>
-          {formError || actionError ? (
-            <p className="mt-3 text-sm text-rose-200">{formError ?? actionError}</p>
-          ) : null}
-        </section>
-      ) : null}
-
-      {actionSuccess ? (
+      {withdrawalSuccessMessage || actionSuccess ? (
         <p className="rounded-2xl border border-emerald-300/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
-          {actionSuccess}
+          {withdrawalSuccessMessage ?? actionSuccess}
         </p>
       ) : null}
 
@@ -130,7 +124,7 @@ export default function EspecialistaPagosPage() {
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Pendiente</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">En proceso</p>
               <p className="mt-2 text-xl font-bold text-cyan-50">{wallet.pendingBalance}</p>
             </article>
             <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
@@ -160,14 +154,18 @@ export default function EspecialistaPagosPage() {
               <span className="text-sm text-cyan-100/75">Servicios pagados</span>
               <strong className="text-cyan-50">{earnings.paidServices}</strong>
             </div>
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-cyan-100/10 bg-white/5 p-3">
+              <span className="text-sm text-cyan-100/75">Promedio por servicio</span>
+              <strong className="text-cyan-50">{earnings.averagePerService}</strong>
+            </div>
           </div>
         </article>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
-          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Pagos pendientes</p>
-          <p className="mt-2 text-2xl font-bold text-white">{earnings.pendingPayments}</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">En proceso</p>
+          <p className="mt-2 text-2xl font-bold text-white">{wallet.pendingBalance}</p>
         </article>
         <article className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Comisiones</p>
@@ -230,6 +228,74 @@ export default function EspecialistaPagosPage() {
           ))}
         </div>
       </section>
+
+      {isWithdrawalFormOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-6 backdrop-blur-sm" onClick={(event) => event.target === event.currentTarget && closeWithdrawalModal()}>
+          <section className="w-full max-w-xl rounded-3xl border border-cyan-100/20 bg-slate-950 p-6 shadow-2xl shadow-slate-950/70">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="tech-mono text-xs text-cyan-200/75">RETIRO</p>
+                <h2 className="mt-2 text-2xl font-bold text-white">Solicitar retiro</h2>
+              </div>
+              <button
+                type="button"
+                onClick={closeWithdrawalModal}
+                disabled={actionLoading}
+                className="rounded-full border border-cyan-100/10 bg-white/5 px-3 py-1 text-sm font-semibold text-cyan-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Saldo disponible actual</p>
+              <p className="mt-2 text-2xl font-bold text-cyan-50">{wallet.availableBalance}</p>
+            </div>
+
+            {wallet.withdrawMethod.toLowerCase().includes("no") || wallet.withdrawMethod.toLowerCase().includes("pend") ? (
+              <p className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-400/10 p-3 text-sm text-cyan-100">
+                Método de retiro pendiente de configuración. La solicitud será registrada para revisión.
+              </p>
+            ) : null}
+
+            <form onSubmit={handleRequestWithdrawal} className="mt-5 space-y-4">
+              <label className="space-y-2 text-sm text-cyan-100/85">
+                <span>Monto a retirar</span>
+                <input
+                  value={withdrawalAmount}
+                  onChange={(event) => setWithdrawalAmount(event.target.value)}
+                  placeholder="Ej. Bs 100"
+                  disabled={actionLoading}
+                  inputMode="decimal"
+                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                />
+              </label>
+
+              {formError || actionError ? (
+                <p className="rounded-2xl border border-rose-300/25 bg-rose-400/10 p-3 text-sm text-rose-100">{formError ?? actionError}</p>
+              ) : null}
+
+              <div className="flex flex-wrap justify-end gap-3 border-t border-cyan-100/10 pt-4">
+                <button
+                  type="button"
+                  onClick={closeWithdrawalModal}
+                  disabled={actionLoading}
+                  className="rounded-full border border-cyan-100/10 bg-white/5 px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading || !withdrawalAmount.trim()}
+                  className="rounded-full border border-cyan-300/35 bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {actionLoading ? "Solicitando..." : "Solicitar retiro"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
     </SpecialistShell>
   );
 }

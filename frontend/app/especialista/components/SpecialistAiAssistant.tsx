@@ -7,12 +7,12 @@ import {
   type SpecialistAiInsight,
 } from "../hooks/useSpecialistAiAssistantData";
 
-const recommendedAiQuestions = [
-  "Que casos debo priorizar hoy para atender mas rapido?",
-  "Que guion uso para diagnostico remoto en menos de 5 minutos?",
-  "Como responder una resena media con propuesta concreta?",
-  "Que evidencia mostrar en portafolio para cerrar mas servicios?",
-  "Que ajuste de disponibilidad me conviene esta semana?",
+const defaultRecommendedQuestions = [
+  "¿Qué casos debo priorizar hoy?",
+  "¿Qué servicios tienen mayor oportunidad de cierre?",
+  "¿Cómo puedo mejorar mi reputación esta semana?",
+  "¿Qué agenda o bloqueos debo revisar?",
+  "¿Qué debo responder primero a mis clientes?",
 ];
 
 const aiThinkingStates = [
@@ -24,26 +24,26 @@ const aiThinkingStates = [
 
 const aiSignals = ["DIAG", "INTENT", "ROUTE", "ACTION"];
 
-const scenarioPrompts = [
+const defaultReadyPrompts = [
   {
-    title: "Triaging de agenda",
-    prompt: "Disename un triaging de 3 pasos para ordenar casos urgentes hoy.",
-    impact: "Mejora velocidad de atencion.",
+    title: "Priorizar agenda",
+    prompt: "Analiza mi agenda, bloqueos y solicitudes activas. Recomiéndame qué casos priorizar hoy y por qué.",
   },
   {
-    title: "Diagnostico remoto",
-    prompt: "Que preguntas debo hacer para confirmar si una falla se resuelve remoto o en visita?",
-    impact: "Reduce visitas innecesarias.",
+    title: "Mejorar reputación",
+    prompt: "Revisa mis reseñas, respuestas pendientes y señales de confianza. Indícame acciones concretas para mejorar mi reputación esta semana.",
   },
   {
-    title: "Recuperar reputacion",
-    prompt: "Escribeme una respuesta profesional para una resena de 3 estrellas y un plan de seguimiento.",
-    impact: "Protege confianza del cliente.",
+    title: "Revisar oportunidades comerciales",
+    prompt: "Analiza mis servicios, solicitudes y proyectos recientes. Identifica oportunidades de cierre o seguimiento comercial.",
   },
   {
-    title: "Priorizar servicios",
-    prompt: "Que servicio debo impulsar esta semana segun demanda, reputacion y facilidad de cierre?",
-    impact: "Enfoca mejor el esfuerzo comercial.",
+    title: "Preparar seguimiento a clientes",
+    prompt: "Ayúdame a preparar mensajes de seguimiento para clientes recientes, priorizando casos con mayor impacto.",
+  },
+  {
+    title: "Optimizar portafolio",
+    prompt: "Revisa mi portafolio y recomiéndame qué evidencia, casos o certificaciones debería destacar para generar más confianza.",
   },
 ];
 
@@ -218,8 +218,8 @@ function buildSpecialistAiInsight(question: string): SpecialistAiInsight {
 export function SpecialistAiAssistant() {
   const fallbackAiState = useMemo(
     () => ({
-      recommendedQuestions: recommendedAiQuestions,
-      scenarioPrompts,
+      recommendedQuestions: defaultRecommendedQuestions,
+      scenarioPrompts: defaultReadyPrompts,
       radarBars: specialistRadarBars,
     }),
     [],
@@ -235,9 +235,12 @@ export function SpecialistAiAssistant() {
   const [lastAiQuestion, setLastAiQuestion] = useState("");
   const [aiInsight, setAiInsight] = useState<SpecialistAiInsight | null>(null);
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [aiError, setAiError] = useState("");
   const [thinkingMessageIndex, setThinkingMessageIndex] = useState(0);
   const [recentQuestions, setRecentQuestions] = useState<string[]>([]);
   const aiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const visibleRecommendedQuestions = recommendedQuestions.length > 0 ? recommendedQuestions : defaultRecommendedQuestions;
+  const visibleReadyPrompts = backendScenarioPrompts.length > 0 ? backendScenarioPrompts : defaultReadyPrompts;
 
   useEffect(() => {
     if (!isAiThinking) return;
@@ -261,7 +264,12 @@ export function SpecialistAiAssistant() {
 
   const runAiQuestion = (rawQuestion: string) => {
     const trimmedQuestion = rawQuestion.trim();
-    if (!trimmedQuestion || isAiThinking) return;
+    if (!trimmedQuestion) {
+      setAiError("Escribe una consulta antes de preguntar a la IA.");
+      return;
+    }
+
+    if (isAiThinking) return;
 
     if (aiTimeoutRef.current) {
       clearTimeout(aiTimeoutRef.current);
@@ -271,20 +279,26 @@ export function SpecialistAiAssistant() {
     setAiQuestion(trimmedQuestion);
     setLastAiQuestion(trimmedQuestion);
     setAiInsight(null);
+    setAiError("");
     setIsAiThinking(true);
     setThinkingMessageIndex(0);
 
     aiTimeoutRef.current = setTimeout(async () => {
-      const nextInsight = await askAi(trimmedQuestion);
-      setAiInsight(nextInsight);
-      setIsAiThinking(false);
-      setRecentQuestions((current) => {
-        const withoutCurrent = current.filter(
-          (item) => item.toLowerCase() !== trimmedQuestion.toLowerCase(),
-        );
-        return [trimmedQuestion, ...withoutCurrent].slice(0, 4);
-      });
-      aiTimeoutRef.current = null;
+      try {
+        const nextInsight = await askAi(trimmedQuestion);
+        setAiInsight(nextInsight);
+        setRecentQuestions((current) => {
+          const withoutCurrent = current.filter(
+            (item) => item.toLowerCase() !== trimmedQuestion.toLowerCase(),
+          );
+          return [trimmedQuestion, ...withoutCurrent].slice(0, 4);
+        });
+      } catch (err) {
+        setAiError(err instanceof Error ? err.message : "No se pudo consultar a la IA.");
+      } finally {
+        setIsAiThinking(false);
+        aiTimeoutRef.current = null;
+      }
     }, 1650);
   };
 
@@ -334,11 +348,21 @@ export function SpecialistAiAssistant() {
             <form onSubmit={handleSubmit} className="mt-5 space-y-3">
               <textarea
                 value={aiQuestion}
-                onChange={(event) => setAiQuestion(event.target.value)}
+                onChange={(event) => {
+                  setAiQuestion(event.target.value);
+                  if (aiError) {
+                    setAiError("");
+                  }
+                }}
                 placeholder="Ej: que casos debo priorizar hoy para atender mas rapido?"
                 rows={4}
                 className="w-full resize-none rounded-2xl border border-cyan-100/15 bg-slate-950/45 px-4 py-3 text-sm leading-6 text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/35"
               />
+              {aiError ? (
+                <p className="rounded-2xl border border-rose-300/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+                  {aiError}
+                </p>
+              ) : null}
 
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -361,11 +385,11 @@ export function SpecialistAiAssistant() {
             <div className="mt-5">
               <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/65">Preguntas recomendadas</p>
               <div className="mt-3 grid gap-2">
-                {recommendedQuestions.map((question) => (
+                {visibleRecommendedQuestions.map((question) => (
                   <button
                     key={question}
                     type="button"
-                    onClick={() => runAiQuestion(question)}
+                    onClick={() => setAiQuestion(question)}
                     disabled={isAiThinking}
                     className="rounded-2xl border border-cyan-100/15 bg-white/5 px-4 py-3 text-left text-sm text-cyan-100/88 transition hover:bg-cyan-100/10 disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -515,7 +539,7 @@ export function SpecialistAiAssistant() {
               Acciones rápidas para agenda, diagnostico, reputacion y enfoque comercial del especialista.
             </p>
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {backendScenarioPrompts.map((scenario) => (
+              {visibleReadyPrompts.map((scenario) => (
                 <article
                   key={scenario.title}
                   className="flex h-full min-h-[390px] flex-col rounded-2xl border border-cyan-100/12 bg-slate-950/40 p-4"
@@ -523,11 +547,11 @@ export function SpecialistAiAssistant() {
                   <p className="text-sm font-semibold text-cyan-50">{scenario.title}</p>
                   <p className="mt-2 text-xs leading-6 text-cyan-100/78">{scenario.prompt}</p>
 
-                  <p className="mt-3 text-[11px] text-emerald-200/88">{scenario.impact}</p>
+                  {"impact" in scenario && scenario.impact ? <p className="mt-3 text-[11px] text-emerald-200/88">{scenario.impact}</p> : null}
 
                   <button
                     type="button"
-                    onClick={() => runAiQuestion(scenario.prompt)}
+                    onClick={() => setAiQuestion(scenario.prompt)}
                     disabled={isAiThinking}
                     className="mt-auto inline-flex w-full items-center justify-center rounded-xl border border-cyan-100/15 bg-cyan-400/15 px-3 py-2.5 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
                   >

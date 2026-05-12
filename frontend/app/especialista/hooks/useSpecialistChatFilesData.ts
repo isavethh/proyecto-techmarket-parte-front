@@ -1,6 +1,6 @@
 "use client";
 
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createSpecialistFile,
   deleteSpecialistFile,
@@ -17,7 +17,6 @@ import {
 } from "@/lib/api/specialists";
 import {
   specialistChats,
-  specialistFiles,
   type SpecialistChatItem,
   type SpecialistChatMessageItem,
   type SpecialistFileItem,
@@ -232,7 +231,7 @@ export function mapBackendFileToUiFile(file: SpecialistFile, index: number): Spe
       ? `${file.tamano ?? file.size} bytes`
       : text(file.tamano ?? file.size, "Tamano no disponible"),
     uploadedAt: text(file.fechaCarga ?? file.uploadedAt ?? file.createdAt, "Fecha no disponible"),
-    relatedTo: text(relatedTo, "Sin relacion asociada"),
+    relatedTo: text(relatedTo, "Sin relación asociada"),
     url: typeof file.url === "string" ? file.url : undefined,
   };
 }
@@ -242,6 +241,13 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
   activeChat: SpecialistChatItem | undefined;
   files: SpecialistFileItem[];
   loading: boolean;
+  isLoadingFiles: boolean;
+  hasLoadedFiles: boolean;
+  filesError: string | null;
+  isLoadingChats: boolean;
+  hasLoadedChats: boolean;
+  chatsError: string | null;
+  isLoadingMessages: boolean;
   actionLoading: boolean;
   error: string | null;
   actionError: string | null;
@@ -264,18 +270,35 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
   const [chatsSource, setChatsSource] = useState<DatasetSource>("empty");
   const [filesSource, setFilesSource] = useState<DatasetSource>("empty");
   const [loading, setLoading] = useState(true);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(true);
+  const [hasLoadedFiles, setHasLoadedFiles] = useState(false);
+  const [filesError, setFilesError] = useState<string | null>(null);
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [hasLoadedChats, setHasLoadedChats] = useState(false);
+  const [chatsError, setChatsError] = useState<string | null>(null);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
 
+  const authRef = useRef(auth);
+
+  useEffect(() => {
+    authRef.current = auth;
+  }, [auth]);
+
   const refreshChatFilesData = useCallback(async () => {
     try {
       setLoading(true);
+      setIsLoadingChats(true);
+      setIsLoadingFiles(true);
       setError(null);
+      setChatsError(null);
+      setFilesError(null);
 
-      const currentAuth = auth ?? (await loginTechMarket().then((login) => ({ token: login.accessToken, userId: login.userId })));
+      const currentAuth = authRef.current ?? (await loginTechMarket().then((login) => ({ token: login.accessToken, userId: login.userId })));
       const [chatsResult, filesResult] = await Promise.allSettled([
         getSpecialistChats(currentAuth.token, currentAuth.userId),
         getSpecialistFiles(currentAuth.token, currentAuth.userId),
@@ -299,24 +322,32 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
       setChats(uiChats);
       setChatsSource(chatsResult.status === "fulfilled" ? getDatasetSource(backendChats) : "fallback");
       setSelectedChatId((current) => {
-        const nextSelectedChatId = current || initialChatId || uiChats[0]?.id || "";
-        setActiveChat(uiChats.find((chat) => chat.id === nextSelectedChatId) ?? uiChats[0]);
+        const preferredChatId = current || initialChatId;
+        const selectedChatStillExists = preferredChatId && uiChats.some((chat) => chat.id === preferredChatId);
+        const nextSelectedChatId = selectedChatStillExists ? preferredChatId : uiChats[0]?.id || "";
         return nextSelectedChatId;
       });
-      setFiles(filesResult.status === "fulfilled" ? backendFiles.map(mapBackendFileToUiFile) : specialistFiles);
-      setFilesSource(filesResult.status === "fulfilled" ? getDatasetSource(backendFiles) : "fallback");
+      if (filesResult.status === "fulfilled") {
+        setFiles(backendFiles.map(mapBackendFileToUiFile));
+        setFilesSource(getDatasetSource(backendFiles));
+      } else {
+        setFilesError(filesResult.reason instanceof Error ? filesResult.reason.message : "No se pudieron cargar los archivos.");
+        setFilesSource("empty");
+      }
+      setHasLoadedFiles(true);
+      setHasLoadedChats(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido al cargar chat y archivos");
-      setChats(specialistChats);
-      setChatsSource("fallback");
-      setSelectedChatId((current) => current || specialistChats[0]?.id || "");
-      setActiveChat(specialistChats.find((chat) => chat.id === initialChatId) ?? specialistChats[0]);
-      setFiles(specialistFiles);
-      setFilesSource("fallback");
+      const message = err instanceof Error ? err.message : "Error desconocido al cargar chat y archivos";
+      setError(message);
+      setChatsError(message);
+      setFilesError(message);
+      setFilesSource("empty");
     } finally {
       setLoading(false);
+      setIsLoadingChats(false);
+      setIsLoadingFiles(false);
     }
-  }, [auth, initialChatId]);
+  }, [initialChatId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -351,6 +382,7 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
       }
 
       try {
+        setIsLoadingMessages(true);
         setDetailError(null);
         const detail = await getSpecialistChatById(auth.token, auth.userId, selectedChatId);
 
@@ -366,6 +398,10 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
         if (isMounted) {
           setDetailError(err instanceof Error ? err.message : "No se pudo cargar el detalle de la conversación.");
           setActiveChat(fallbackChat);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingMessages(false);
         }
       }
     }
@@ -406,8 +442,9 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
   const uploadFile = useCallback(
     async (input: CreateSpecialistFileInput) => {
       if (!auth?.token || !auth.userId) {
-        setActionError("No hay sesion activa para registrar el archivo.");
-        return;
+        const message = "No hay sesion activa para registrar el archivo.";
+        setActionError(message);
+        throw new Error(message);
       }
 
       try {
@@ -418,7 +455,9 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
         await refreshChatFilesData();
         setActionSuccess("Archivo registrado correctamente.");
       } catch (err) {
-        setActionError(err instanceof Error ? err.message : "No se pudo registrar el archivo.");
+        const message = err instanceof Error ? err.message : "No se pudo registrar el archivo.";
+        setActionError(message);
+        throw new Error(message);
       } finally {
         setActionLoading(false);
       }
@@ -457,6 +496,13 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
       chatsSource,
       filesSource,
       loading,
+      isLoadingFiles,
+      hasLoadedFiles,
+      filesError,
+      isLoadingChats,
+      hasLoadedChats,
+      chatsError,
+      isLoadingMessages,
       actionLoading,
       error,
       actionError,
@@ -476,6 +522,13 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
       chatsSource,
       filesSource,
       loading,
+      isLoadingFiles,
+      hasLoadedFiles,
+      filesError,
+      isLoadingChats,
+      hasLoadedChats,
+      chatsError,
+      isLoadingMessages,
       actionLoading,
       error,
       actionError,

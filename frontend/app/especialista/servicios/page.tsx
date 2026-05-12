@@ -19,6 +19,17 @@ type ServiceFormData = {
   image: string;
 };
 
+const SERVICE_TYPE_OPTIONS = [
+  "Reparacion",
+  "Mantenimiento",
+  "Instalacion",
+  "Diagnostico",
+  "Soporte tecnico",
+  "Asesoria",
+  "Actualizacion",
+  "Configuracion",
+];
+
 function parseServicePrice(value: string) {
   const normalized = value.replace(/bs\.?/i, "").replace(/\s/g, "").replace(",", ".");
   const price = Number(normalized);
@@ -32,6 +43,8 @@ export default function EspecialistaServiciosPage() {
   const [actionMessage, setActionMessage] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [editingService, setEditingService] = useState<SpecialistServiceItem | null>(null);
+  const [serviceToDelete, setServiceToDelete] = useState<SpecialistServiceItem | null>(null);
+  const [deleteMessage, setDeleteMessage] = useState("");
   const [uploadedImagePreview, setUploadedImagePreview] = useState("");
   const [uploadedImageName, setUploadedImageName] = useState("");
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -128,18 +141,18 @@ export default function EspecialistaServiciosPage() {
     setShowCreateModal(true);
   };
 
-  const handleDeleteService = async (service: SpecialistServiceItem) => {
-    if (!window.confirm(`Eliminar el servicio "${service.name}"?`)) {
-      return;
-    }
+  const handleDeleteService = async () => {
+    if (!serviceToDelete) return;
 
     try {
       setActionLoading(true);
       setActionMessage("");
-      await deleteService(service.id);
+      setDeleteMessage("");
+      await deleteService(serviceToDelete.id);
       setActionMessage("Servicio eliminado.");
+      setServiceToDelete(null);
     } catch (err) {
-      setActionMessage(err instanceof Error ? err.message : "No se pudo eliminar el servicio.");
+      setDeleteMessage(err instanceof Error ? err.message : "No se pudo eliminar el servicio.");
     } finally {
       setActionLoading(false);
     }
@@ -289,17 +302,21 @@ export default function EspecialistaServiciosPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDeleteService(service)}
+                    onClick={() => {
+                      setServiceToDelete(service);
+                      setDeleteMessage("");
+                      setActionMessage("");
+                    }}
                     disabled={actionLoading}
                     className="rounded-xl border border-rose-300/35 bg-rose-400/10 px-4 py-2.5 text-sm font-semibold text-rose-50 transition hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Eliminar
                   </button>
                   <Link
-                    href={`/especialista/chat?service=${encodeURIComponent(service.name)}`}
+                    href="/especialista/chat"
                     className="inline-flex items-center justify-center rounded-xl border border-cyan-300/45 bg-cyan-300/20 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
                   >
-                    Ir al chat
+                    Ver conversaciones
                   </Link>
                 </div>
               </div>
@@ -309,6 +326,62 @@ export default function EspecialistaServiciosPage() {
       </section>
 
       <AnimatePresence>
+        {serviceToDelete ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget && !actionLoading) {
+                setServiceToDelete(null);
+                setDeleteMessage("");
+              }
+            }}
+          >
+            <motion.div
+              className="w-full max-w-lg rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
+              initial={{ opacity: 0, y: 28, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28, mass: 0.92 }}
+            >
+              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">CONFIRMACION</p>
+              <h2 className="mt-2 text-2xl font-bold text-white">Eliminar servicio</h2>
+              <p className="mt-3 text-sm leading-6 text-cyan-100/80">
+                ¿Seguro que deseas eliminar este servicio de tu catálogo?
+              </p>
+              <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/65">Servicio seleccionado</p>
+                <p className="mt-2 text-base font-semibold text-cyan-50">{serviceToDelete.name}</p>
+              </div>
+              {deleteMessage ? <p className="mt-4 rounded-2xl border border-rose-300/20 bg-rose-400/10 p-3 text-sm text-rose-100">{deleteMessage}</p> : null}
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setServiceToDelete(null);
+                    setDeleteMessage("");
+                  }}
+                  disabled={actionLoading}
+                  className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteService}
+                  disabled={actionLoading}
+                  className="rounded-full border border-rose-300/35 bg-rose-400/10 px-5 py-2 text-sm font-semibold text-rose-50 transition hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {actionLoading ? "Eliminando..." : "Eliminar servicio"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+
         {showCreateModal ? (
           <motion.div
             className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
@@ -358,20 +431,30 @@ export default function EspecialistaServiciosPage() {
 
                 <label className="space-y-2 text-sm text-cyan-100/85">
                   <span>Tipo</span>
-                  <input
+                  <select
                     value={formData.type}
                     onChange={(event) => setFormData((current) => ({ ...current, type: event.target.value }))}
-                    placeholder="Ej: Reparacion"
                     className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                  />
+                  >
+                    <option value="">Selecciona un tipo</option>
+                    {SERVICE_TYPE_OPTIONS.map((serviceType) => (
+                      <option key={serviceType} value={serviceType}>
+                        {serviceType}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 <label className="space-y-2 text-sm text-cyan-100/85">
                   <span>Precio</span>
                   <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
                     value={formData.price}
                     onChange={(event) => setFormData((current) => ({ ...current, price: event.target.value }))}
-                    placeholder="Ej: Bs 120.000"
+                    placeholder="Ej: 120"
                     className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                   />
                 </label>
@@ -391,11 +474,9 @@ export default function EspecialistaServiciosPage() {
                   <span>Tecnico</span>
                   <input
                     value={formData.technicianName}
-                    onChange={(event) =>
-                      setFormData((current) => ({ ...current, technicianName: event.target.value }))
-                    }
-                    placeholder="Ej: Alejandro Torres"
-                    className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                    readOnly
+                    aria-readonly="true"
+                    className="w-full cursor-not-allowed rounded-2xl border border-cyan-100/10 bg-slate-950/60 px-4 py-3 text-sm text-cyan-50/80 placeholder:text-cyan-100/40 focus:outline-none"
                   />
                 </label>
 

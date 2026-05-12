@@ -11,11 +11,37 @@ import { useSpecialistReviewsCertificationsData } from "./hooks/useSpecialistRev
 import { requireAuth } from "@/lib/auth/authGuard";
 import { getUser, getToken } from "@/lib/auth/tokenStore";
 
+type CalendarActivityItem = {
+  id?: string;
+  servicio?: string;
+  cliente?: string;
+  fecha?: string;
+  hora?: string;
+  estado?: string;
+  modalidad?: string;
+  title?: string;
+  detail?: string;
+  time?: string;
+};
+
+function getActivityView(item: CalendarActivityItem) {
+  const id = item.id ?? "";
+  const isProject = id.startsWith("PROJ-");
+  const isBlock = id.startsWith("BLK-");
+  const label = isProject ? "Servicio agendado" : isBlock ? "Bloqueo" : "Actividad";
+  const title = item.servicio?.trim() || item.title?.trim() || label;
+  const fecha = item.fecha?.trim() || item.time?.trim();
+  const hora = item.hora?.trim();
+
+  return { label, title, fecha, hora };
+}
+
 export default function EspecialistaCorePage() {
   const router = useRouter();
   const { profile, services, portfolio } = useSpecialistBackendData();
-  const { calendar } = useSpecialistAvailabilityData();
+  const { calendar, calendarDetail } = useSpecialistAvailabilityData();
   const { reviews, kpis } = useSpecialistReviewsCertificationsData();
+  const profileWithBackendLocation = profile as typeof profile & { ubicacion?: string; location?: string };
 
   useEffect(() => {
     console.log("[Especialista page] Ejecutando requireAuth desde page.tsx");
@@ -26,6 +52,14 @@ export default function EspecialistaCorePage() {
   }, [router]);
 
   const featuredServices = services.filter((service) => service.featured).length;
+  const recentActivity = (calendarDetail.length > 0 ? calendarDetail : calendar) as CalendarActivityItem[];
+  const profileLocation =
+    profileWithBackendLocation.ubicacion?.trim() ||
+    (profileWithBackendLocation.location?.trim() && profileWithBackendLocation.location !== "No especificado"
+      ? profileWithBackendLocation.location.trim()
+      : "Información pendiente de completar");
+  const profileBio = profile.bio?.trim();
+  const shouldShowProfileBio = profileBio && profileBio !== "No especificado" && profileBio !== "Información pendiente de completar";
 
   return (
     <SpecialistShell sectionLabel="Resumen especialista" statusMessage="Resumen de especialista independiente activo" profile={profile}>
@@ -40,10 +74,10 @@ export default function EspecialistaCorePage() {
               <div>
                 <h1 className="text-3xl font-bold text-cyan-50 md:text-4xl">{profile.name}</h1>
                 <p className="text-sm text-cyan-100/80">{profile.specialization}</p>
-                <p className="text-sm text-cyan-100/80">{profile.location}</p>
+                <p className="text-sm text-cyan-100/80">{profileLocation}</p>
               </div>
             </div>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">{profile.bio}</p>
+            {shouldShowProfileBio ? <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">{profileBio}</p> : null}
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Valor diferencial</p>
@@ -55,7 +89,7 @@ export default function EspecialistaCorePage() {
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cobertura principal</p>
                 <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-                  {profile.location === "No especificado" ? "No especificado" : profile.location}
+                  {profileLocation}
                 </p>
               </article>
             </div>
@@ -120,18 +154,28 @@ export default function EspecialistaCorePage() {
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {calendar.length === 0 ? (
+          {recentActivity.length === 0 ? (
             <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4 text-sm text-cyan-100/75 md:col-span-3">
-              No hay eventos de agenda registrados todavía.
+              No hay actividad reciente registrada.
             </article>
           ) : null}
-          {calendar.map((item) => (
-            <article key={item.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-              <p className="text-sm font-semibold text-cyan-50">{item.title}</p>
-              <p className="mt-2 text-sm text-cyan-100/80">{item.detail}</p>
-              <p className="mt-2 text-xs text-cyan-100/65">{item.time}</p>
+          {recentActivity.map((item, index) => {
+            const activity = getActivityView(item);
+
+            return (
+            <article key={item.id ?? `activity-${index}`} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <span className="inline-flex rounded-full border border-cyan-300/35 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100">
+                {activity.label}
+              </span>
+              <p className="mt-3 text-sm font-semibold text-cyan-50">{activity.title}</p>
+              {activity.fecha || activity.hora ? (
+                <p className="mt-2 text-xs text-cyan-100/65">
+                  {[activity.fecha, activity.hora].filter(Boolean).join(" · ")}
+                </p>
+              ) : null}
             </article>
-          ))}
+            );
+          })}
         </div>
 
         <div className="mt-5 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">

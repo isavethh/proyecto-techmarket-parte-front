@@ -492,7 +492,7 @@ export type SpecialistAiInsights = {
 };
 
 export type SpecialistAiQueryRequest = {
-  question: string;
+  consulta: string;
 };
 
 export type SpecialistAiQueryResponse = SpecialistAiInsightPayload & {
@@ -662,6 +662,14 @@ export async function createSpecialistCalendarBlock(
   });
 }
 
+export async function deleteSpecialistCalendarBlock(token: string, userId: string, blockId: string) {
+  return apiRequest<MessageResponse>(`/api/specialists/calendar/blocks/${encodeURIComponent(blockId)}`, {
+    method: "DELETE",
+    token,
+    userId,
+  });
+}
+
 export async function getSpecialistRequests(token: string, userId: string) {
   return apiRequest<SpecialistRequest[] | ListResponse<SpecialistRequest> | { data: SpecialistRequest[] }>(
     "/api/specialists/requests",
@@ -702,7 +710,7 @@ export async function updateSpecialistProjectStatus(
   projectId: string,
   body: UpdateSpecialistProjectStatusInput,
 ) {
-  return apiRequest<SpecialistProjectStatusResponse>(`/api/specialists/projects/${projectId}/status`, {
+  return apiRequest<SpecialistProjectStatusResponse>(`/api/specialists/projects/${encodeURIComponent(projectId)}/status`, {
     method: "PATCH",
     token,
     userId,
@@ -881,7 +889,7 @@ export async function sendSpecialistAiQuery(token: string, userId: string, quest
     method: "POST",
     token,
     userId,
-    body: { question } satisfies SpecialistAiQueryRequest,
+    body: { consulta: question.trim() } satisfies SpecialistAiQueryRequest,
   });
 }
 

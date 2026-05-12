@@ -41,19 +41,50 @@ function numberValue(value: unknown) {
   return undefined;
 }
 
-export function mapBackendRequestToUiRequest(request: SpecialistRequest, index: number): SpecialistRequestItem {
+type SpecialistRequestWithUrgency = SpecialistRequestItem & { urgency: string };
+type SpecialistProjectWithAssignment = SpecialistProjectItem & { assignmentDate: string; estimatedEndDate?: string };
+type SpecialistProjectHistoryWithBackendData = SpecialistProjectHistoryItem & {
+  customer: string;
+  service: string;
+  total?: string;
+};
+
+function withFallbackProjectFields(project: SpecialistProjectItem): SpecialistProjectWithAssignment {
+  return {
+    ...project,
+    assignmentDate: project.startDate || "Fecha no disponible",
+    estimatedEndDate: project.endDate && project.endDate !== "Fin no definido" ? project.endDate : undefined,
+  };
+}
+
+function withFallbackHistoryFields(history: SpecialistProjectHistoryItem): SpecialistProjectHistoryWithBackendData {
+  return {
+    ...history,
+    service: history.project,
+    customer: "Cliente no especificado",
+    total: undefined,
+  };
+}
+
+export function mapBackendRequestToUiRequest(request: SpecialistRequest, index: number): SpecialistRequestWithUrgency {
+  const requestWithUrgency = request as SpecialistRequest & { urgencia?: unknown };
+
   return {
     id: text(request.id ?? request.requestId, `request-${index}`),
     customer: text(request.cliente ?? request.customer ?? request.clientName, "Cliente no especificado"),
     service: text(request.servicio ?? request.service, "Servicio no especificado"),
-    message: text(request.propuesta ?? request.proposal ?? request.mensaje ?? request.message, "Solicitud sin mensaje."),
+    message: text(request.propuesta ?? request.proposal ?? request.mensaje ?? request.message, "Sin mensaje del cliente"),
     status: text(request.estado ?? request.status, "Pendiente"),
     date: text(request.fecha ?? request.date ?? request.createdAt, "Fecha no disponible"),
+    urgency: text(requestWithUrgency.urgencia, "No registrada"),
   };
 }
 
-export function mapBackendProjectToUiProject(project: SpecialistProject, index: number): SpecialistProjectItem {
+export function mapBackendProjectToUiProject(project: SpecialistProject, index: number): SpecialistProjectWithAssignment {
+  const projectWithBackendDates = project as SpecialistProject & { fechaAsignacion?: unknown; finEstimado?: unknown; total?: unknown };
   const title = project.nombre ?? project.name ?? project.titulo ?? project.title ?? project.servicio ?? project.service;
+  const assignmentDate = text(projectWithBackendDates.fechaAsignacion ?? project.fechaInicio ?? project.startDate, "Fecha no disponible");
+  const estimatedEndDate = text(projectWithBackendDates.finEstimado ?? project.fechaFin ?? project.endDate, "");
 
   return {
     id: text(project.id ?? project.projectId, `project-${index}`),
@@ -61,8 +92,10 @@ export function mapBackendProjectToUiProject(project: SpecialistProject, index: 
     title: text(title, "Proyecto tecnico"),
     service: text(project.servicio ?? project.service, "Servicio no especificado"),
     status: text(project.estado ?? project.status, "Activo"),
-    startDate: text(project.fechaInicio ?? project.startDate, "Inicio no definido"),
-    endDate: text(project.fechaFin ?? project.endDate, "Fin no definido"),
+    startDate: assignmentDate,
+    endDate: estimatedEndDate || "No disponible",
+    assignmentDate,
+    estimatedEndDate: estimatedEndDate || undefined,
     progress: numberValue(project.progreso ?? project.progress),
   };
 }
@@ -70,21 +103,33 @@ export function mapBackendProjectToUiProject(project: SpecialistProject, index: 
 export function mapBackendHistoryToUiHistory(
   history: SpecialistProjectHistory,
   index: number,
-): SpecialistProjectHistoryItem {
+): SpecialistProjectHistoryWithBackendData {
+  const historyWithBackendData = history as SpecialistProjectHistory & {
+    cliente?: unknown;
+    customer?: unknown;
+    servicio?: unknown;
+    service?: unknown;
+    total?: unknown;
+  };
+  const service = text(historyWithBackendData.servicio ?? historyWithBackendData.service ?? history.proyecto ?? history.project ?? history.titulo ?? history.title, "Proyecto tecnico");
+
   return {
     id: text(history.id ?? history.historyId, `history-${index}`),
-    project: text(history.proyecto ?? history.project ?? history.titulo ?? history.title, "Proyecto tecnico"),
+    project: service,
+    service,
+    customer: text(historyWithBackendData.cliente ?? historyWithBackendData.customer, "Cliente no especificado"),
     detail: text(history.detalle ?? history.detail ?? history.descripcion ?? history.description, "Movimiento registrado."),
     status: text(history.estado ?? history.status, "Actualizado"),
     date: text(history.fecha ?? history.date ?? history.createdAt, "Fecha no disponible"),
+    total: text(historyWithBackendData.total, ""),
   };
 }
 
 export function useSpecialistRequestsProjectsData() {
   const authRef = useRef<{ token: string; userId: string } | null>(null);
-  const [requests, setRequests] = useState<SpecialistRequestItem[]>([]);
-  const [projects, setProjects] = useState<SpecialistProjectItem[]>([]);
-  const [history, setHistory] = useState<SpecialistProjectHistoryItem[]>([]);
+  const [requests, setRequests] = useState<SpecialistRequestWithUrgency[]>([]);
+  const [projects, setProjects] = useState<SpecialistProjectWithAssignment[]>([]);
+  const [history, setHistory] = useState<SpecialistProjectHistoryWithBackendData[]>([]);
   const [requestsSource, setRequestsSource] = useState<DatasetSource>("empty");
   const [projectsSource, setProjectsSource] = useState<DatasetSource>("empty");
   const [historySource, setHistorySource] = useState<DatasetSource>("empty");
@@ -115,7 +160,7 @@ export function useSpecialistRequestsProjectsData() {
         setRequests(backendRequests.map(mapBackendRequestToUiRequest));
         setRequestsSource(getDatasetSource(backendRequests));
       } else {
-        setRequests(specialistRequests);
+        setRequests(specialistRequests.map((request) => ({ ...request, urgency: "No registrada" })));
         setRequestsSource("fallback");
       }
 
@@ -124,7 +169,7 @@ export function useSpecialistRequestsProjectsData() {
         setProjects(backendProjects.map(mapBackendProjectToUiProject));
         setProjectsSource(getDatasetSource(backendProjects));
       } else {
-        setProjects(specialistProjects);
+        setProjects(specialistProjects.map(withFallbackProjectFields));
         setProjectsSource("fallback");
       }
 
@@ -133,14 +178,14 @@ export function useSpecialistRequestsProjectsData() {
         setHistory(backendHistory.map(mapBackendHistoryToUiHistory));
         setHistorySource(getDatasetSource(backendHistory));
       } else {
-        setHistory(specialistProjectHistory);
+        setHistory(specialistProjectHistory.map(withFallbackHistoryFields));
         setHistorySource("fallback");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido al cargar solicitudes y proyectos");
-      setRequests(specialistRequests);
-      setProjects(specialistProjects);
-      setHistory(specialistProjectHistory);
+      setRequests(specialistRequests.map((request) => ({ ...request, urgency: "No registrada" })));
+      setProjects(specialistProjects.map(withFallbackProjectFields));
+      setHistory(specialistProjectHistory.map(withFallbackHistoryFields));
       setRequestsSource("fallback");
       setProjectsSource("fallback");
       setHistorySource("fallback");
@@ -169,6 +214,7 @@ export function useSpecialistRequestsProjectsData() {
         await refreshRequestsProjectsData();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error desconocido al responder la solicitud");
+        throw err;
       } finally {
         setLoading(false);
       }

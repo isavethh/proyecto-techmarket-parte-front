@@ -34,8 +34,23 @@ const emptyEarnings: SpecialistEarningsSummaryItem = {
   totalEarnings: "Bs 0",
   monthlyEarnings: "Bs 0",
   pendingPayments: "Bs 0",
-  commissions: "Bs 0",
+  commissions: "No disponible",
   paidServices: "0",
+};
+
+type BackendWallet = SpecialistWallet & {
+  ingresosTotales?: number | string;
+  enProceso?: number | string;
+};
+
+type BackendEarningsSummary = SpecialistEarningsSummary & {
+  total?: number | string;
+  serviciosRealizados?: number | string;
+  promedioPorServicio?: number | string;
+};
+
+type UiEarningsSummary = SpecialistEarningsSummaryItem & {
+  averagePerService: string;
 };
 
 function hasObjectData(value: unknown) {
@@ -66,25 +81,29 @@ function formatCount(value: unknown, fallback = "0") {
   return text(value, fallback);
 }
 
-export function mapBackendWalletToUiWallet(wallet: SpecialistWallet): SpecialistWalletItem {
+export function mapBackendWalletToUiWallet(wallet: BackendWallet): SpecialistWalletItem {
   const currency = text(wallet.moneda ?? wallet.currency, "BOB");
 
   return {
     availableBalance: formatMoney(wallet.saldoDisponible ?? wallet.availableBalance, currency, emptyWallet.availableBalance),
-    pendingBalance: formatMoney(wallet.saldoPendiente ?? wallet.pendingBalance, currency, emptyWallet.pendingBalance),
+    pendingBalance: formatMoney(wallet.enProceso ?? wallet.saldoPendiente ?? wallet.pendingBalance, currency, emptyWallet.pendingBalance),
     currency,
     withdrawMethod: text(wallet.metodoRetiro ?? wallet.withdrawMethod, "Metodo de retiro no configurado"),
     status: text(wallet.estado ?? wallet.status, "Activa"),
   };
 }
 
-export function mapBackendEarningsToUiEarnings(earnings: SpecialistEarningsSummary): SpecialistEarningsSummaryItem {
+export function mapBackendEarningsToUiEarnings(
+  earnings: BackendEarningsSummary,
+  wallet?: BackendWallet,
+): UiEarningsSummary {
   return {
-    totalEarnings: formatMoney(earnings.ingresosTotales ?? earnings.totalEarnings, "BOB", emptyEarnings.totalEarnings),
-    monthlyEarnings: formatMoney(earnings.ingresosMes ?? earnings.monthlyEarnings, "BOB", emptyEarnings.monthlyEarnings),
+    totalEarnings: formatMoney(wallet?.ingresosTotales ?? earnings.ingresosTotales ?? earnings.totalEarnings, "BOB", emptyEarnings.totalEarnings),
+    monthlyEarnings: formatMoney(earnings.total ?? earnings.ingresosMes ?? earnings.monthlyEarnings, "BOB", emptyEarnings.monthlyEarnings),
     pendingPayments: formatMoney(earnings.pagosPendientes ?? earnings.pendingPayments, "BOB", emptyEarnings.pendingPayments),
     commissions: formatMoney(earnings.comisiones ?? earnings.commissions, "BOB", emptyEarnings.commissions),
-    paidServices: formatCount(earnings.serviciosPagados ?? earnings.paidServices, emptyEarnings.paidServices),
+    paidServices: formatCount(earnings.serviciosRealizados ?? earnings.serviciosPagados ?? earnings.paidServices, emptyEarnings.paidServices),
+    averagePerService: formatMoney(earnings.promedioPorServicio, "BOB", "No disponible"),
   };
 }
 
@@ -100,7 +119,7 @@ export function mapBackendTransactionToUiTransaction(
     customer: text(transaction.cliente ?? transaction.customer ?? transaction.clientName, "Cliente no especificado"),
     project: text(project, "Proyecto o servicio no especificado"),
     amount: formatMoney(transaction.monto ?? transaction.amount, currency, "Bs 0"),
-    commission: formatMoney(transaction.comision ?? transaction.commission, currency, "Bs 0"),
+    commission: formatMoney(transaction.comision ?? transaction.commission, currency, "No disponible"),
     status: text(transaction.estado ?? transaction.status, "Pendiente"),
     type: text(transaction.tipo ?? transaction.type, "Movimiento"),
     date: text(transaction.fecha ?? transaction.date ?? transaction.createdAt, "Fecha no disponible"),
@@ -109,7 +128,7 @@ export function mapBackendTransactionToUiTransaction(
 
 export function useSpecialistPaymentsData() {
   const [wallet, setWallet] = useState<SpecialistWalletItem>(emptyWallet);
-  const [earnings, setEarnings] = useState<SpecialistEarningsSummaryItem>(emptyEarnings);
+  const [earnings, setEarnings] = useState<UiEarningsSummary>({ ...emptyEarnings, averagePerService: "No disponible" });
   const [transactions, setTransactions] = useState<SpecialistTransactionItem[]>([]);
   const [auth, setAuth] = useState<{ token: string; userId: string } | null>(null);
   const [walletSource, setWalletSource] = useState<DatasetSource>("empty");
@@ -150,10 +169,11 @@ export function useSpecialistPaymentsData() {
 
       if (earningsResult.status === "fulfilled") {
         const hasEarnings = hasObjectData(earningsResult.value);
-        setEarnings(hasEarnings ? mapBackendEarningsToUiEarnings(earningsResult.value) : emptyEarnings);
+        const backendWallet = walletResult.status === "fulfilled" ? walletResult.value : undefined;
+        setEarnings(hasEarnings ? mapBackendEarningsToUiEarnings(earningsResult.value, backendWallet) : { ...emptyEarnings, averagePerService: "No disponible" });
         setEarningsSource(hasEarnings ? "backend" : "empty");
       } else {
-        setEarnings(specialistEarningsSummary);
+        setEarnings({ ...specialistEarningsSummary, averagePerService: "No disponible" });
         setEarningsSource("fallback");
       }
 
@@ -168,7 +188,7 @@ export function useSpecialistPaymentsData() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido al cargar pagos e ingresos");
       setWallet(specialistWallet);
-      setEarnings(specialistEarningsSummary);
+      setEarnings({ ...specialistEarningsSummary, averagePerService: "No disponible" });
       setTransactions(specialistTransactions);
       setWalletSource("fallback");
       setEarningsSource("fallback");
