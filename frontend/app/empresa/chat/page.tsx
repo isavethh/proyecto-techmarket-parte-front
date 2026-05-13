@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
+import { chatThreadsData, fetchCompanyChats } from "../../lib/companyApi";
 
 type ChatMessage = {
   id: string;
@@ -95,10 +96,19 @@ const chatThreads: ChatThread[] = [
 ];
 
 export default function ChatPage() {
-  const [activeChatId, setActiveChatId] = useState(chatThreads[0].id);
+  const [chatThreadsState, setChatThreadsState] = useState(chatThreadsData);
+  const [activeChatId, setActiveChatId] = useState(chatThreadsData[0].id);
   const [draftMessage, setDraftMessage] = useState("");
 
-  const activeChat = chatThreads.find((chat) => chat.id === activeChatId) ?? chatThreads[0];
+  useEffect(() => {
+    void fetchCompanyChats().then((threads) => {
+      setChatThreadsState(threads);
+      setActiveChatId((current) => threads.find((thread) => thread.id === current)?.id ?? threads[0]?.id ?? current);
+    });
+  }, []);
+
+  const activeChat =
+    chatThreadsState.find((chat) => chat.id === activeChatId) ?? chatThreadsState[0];
 
   return (
     <div className="flex-1 pb-8">
@@ -136,11 +146,11 @@ export default function ChatPage() {
                       <p className="tech-mono text-xs text-cyan-200/75">CHATS ACTIVOS</p>
                       <h1 className="mt-1.5 text-xl font-bold text-white">Conversaciones</h1>
                     </div>
-                    <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">{chatThreads.length}</span>
+                    <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">{chatThreadsState.length}</span>
                   </div>
 
                   <div className="chat-scrollbar mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
-                    {chatThreads.map((chat) => {
+                    {chatThreadsState.map((chat) => {
                       const isActive = chat.id === activeChatId;
 
                       return (

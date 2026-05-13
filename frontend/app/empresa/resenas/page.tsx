@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
+import { customerReviewsData } from "../../lib/companyApi";
 
 type ReviewFilter = "Todas" | "Sin responder" | "5 estrellas" | "Con mejora";
 
@@ -23,86 +24,7 @@ type CustomerReview = {
 
 const reviewFilters: ReviewFilter[] = ["Todas", "Sin responder", "5 estrellas", "Con mejora"];
 
-const customerReviews: CustomerReview[] = [
-  {
-    id: "review-1",
-    customer: "Alejandro",
-    initials: "AL",
-    productOrService: "Laptop Pro 14",
-    chatDate: "17 abr 2026",
-    reviewDate: "18 abr 2026",
-    stars: 5,
-    message: "Excelente atencion en chat. Me ayudaron rapido con disponibilidad, entrega y forma de pago.",
-    tags: ["Rapidez", "Atencion", "Cierre de venta"],
-    needsFollowUp: false,
-    wasResponded: true,
-  },
-  {
-    id: "review-2",
-    customer: "Carlos M.",
-    initials: "CM",
-    productOrService: "Laptop Pro 14",
-    chatDate: "16 abr 2026",
-    reviewDate: "17 abr 2026",
-    stars: 4,
-    message: "Buena explicacion por chat. Solo faltaria mejorar el detalle del tiempo de envio en la publicacion.",
-    tags: ["Claridad", "Envio", "Publicacion"],
-    needsFollowUp: true,
-    wasResponded: false,
-  },
-  {
-    id: "review-3",
-    customer: "Laura P.",
-    initials: "LP",
-    productOrService: "Mantenimiento preventivo",
-    chatDate: "15 abr 2026",
-    reviewDate: "16 abr 2026",
-    stars: 5,
-    message: "Servicio muy profesional. Desde el chat me dieron alcance, costo y horario de visita.",
-    tags: ["Profesionalismo", "Servicio", "Confianza"],
-    needsFollowUp: false,
-    wasResponded: true,
-  },
-  {
-    id: "review-4",
-    customer: "Sofia R.",
-    initials: "SR",
-    productOrService: "Combo empresarial",
-    chatDate: "14 abr 2026",
-    reviewDate: "15 abr 2026",
-    stars: 3,
-    message: "Respondieron bien, pero me hubiera gustado una comparativa mas clara de paquetes para oficina.",
-    tags: ["Comparativa", "Paquetes", "Oportunidad"],
-    needsFollowUp: true,
-    wasResponded: false,
-  },
-  {
-    id: "review-5",
-    customer: "Andres T.",
-    initials: "AT",
-    productOrService: "Monitor UltraWide 34",
-    chatDate: "13 abr 2026",
-    reviewDate: "14 abr 2026",
-    stars: 4,
-    message: "La experiencia por chat fue buena y resolvieron dudas de garantia. Recomendado.",
-    tags: ["Garantia", "Resolucion", "Recomendacion"],
-    needsFollowUp: false,
-    wasResponded: true,
-  },
-  {
-    id: "review-6",
-    customer: "Valentina G.",
-    initials: "VG",
-    productOrService: "Pack limpieza premium",
-    chatDate: "12 abr 2026",
-    reviewDate: "13 abr 2026",
-    stars: 4,
-    message: "El chat fue util y amable. Seria ideal incluir tiempos estimados de atencion en el anuncio.",
-    tags: ["Amabilidad", "Tiempos", "Anuncio"],
-    needsFollowUp: true,
-    wasResponded: true,
-  },
-];
+const customerReviews: CustomerReview[] = customerReviewsData;
 
 function renderStars(stars: number) {
   return "★".repeat(stars) + "☆".repeat(5 - stars);

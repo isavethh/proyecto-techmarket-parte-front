@@ -1,5 +1,12 @@
 import Link from "next/link";
 import { CompanySidebar } from "../CompanySidebar";
+import {
+  growthSeriesData,
+  publicationMetricsData,
+  ratingLevelsData,
+  userCommentsData,
+  userReviewsData,
+} from "../../lib/companyApi";
 
 type PublicationMetric = {
   id: string;
@@ -35,89 +42,15 @@ type GrowthPoint = {
   visits: number;
 };
 
-const publicationMetrics: PublicationMetric[] = [
-  { id: "pm-1", title: "Laptop Pro 14", visits: 2380, conversion: 18 },
-  { id: "pm-2", title: "Monitor UltraWide 34", visits: 1740, conversion: 12 },
-  { id: "pm-3", title: "Mantenimiento preventivo", visits: 1290, conversion: 21 },
-  { id: "pm-4", title: "Combo empresarial", visits: 940, conversion: 15 },
-  { id: "pm-5", title: "Pack limpieza premium", visits: 760, conversion: 9 },
-];
-
-const ratingLevels: RatingLevel[] = [
-  { stars: 5, percent: 62, users: 124 },
-  { stars: 4, percent: 24, users: 48 },
-  { stars: 3, percent: 9, users: 18 },
-  { stars: 2, percent: 3, users: 6 },
-  { stars: 1, percent: 2, users: 4 },
-];
-
-const userReviews: UserReview[] = [
-  {
-    id: "rev-1",
-    user: "Alejandro",
-    stars: 5,
-    text: "Buena atencion por chat y explicacion clara del equipo.",
-    date: "17 abr 2026",
-  },
-  {
-    id: "rev-2",
-    user: "Laura P.",
-    stars: 4,
-    text: "Servicio rapido, me ayudaron con mantenimiento y seguimiento.",
-    date: "16 abr 2026",
-  },
-  {
-    id: "rev-3",
-    user: "Carlos M.",
-    stars: 5,
-    text: "La publicacion tenia toda la info y por chat resolvieron todo.",
-    date: "15 abr 2026",
-  },
-];
-
-const userComments: UserComment[] = [
-  {
-    id: "com-1",
-    user: "Sofia R.",
-    publication: "Combo empresarial",
-    text: "Tienen plan para oficina de 8 equipos?",
-    date: "Hace 1 h",
-  },
-  {
-    id: "com-2",
-    user: "Andres T.",
-    publication: "Monitor UltraWide 34",
-    text: "El precio incluye garantia extendida?",
-    date: "Hace 3 h",
-  },
-  {
-    id: "com-3",
-    user: "Valentina G.",
-    publication: "Pack limpieza premium",
-    text: "En cuanto tiempo hacen el servicio?",
-    date: "Ayer",
-  },
-  {
-    id: "com-4",
-    user: "Alejandro",
-    publication: "Laptop Pro 14",
-    text: "Busque este modelo, hay unidades para entrega inmediata?",
-    date: "Hace 2 min",
-  },
-];
-
-const growthSeries: GrowthPoint[] = [
-  { month: "Nov", visits: 1200 },
-  { month: "Dic", visits: 1360 },
-  { month: "Ene", visits: 1490 },
-  { month: "Feb", visits: 1710 },
-  { month: "Mar", visits: 1980 },
-  { month: "Abr", visits: 2240 },
-];
+const publicationMetrics: PublicationMetric[] = publicationMetricsData;
+const ratingLevels: RatingLevel[] = ratingLevelsData;
+const userReviews: UserReview[] = userReviewsData;
+const userComments: UserComment[] = userCommentsData;
+const growthSeries: GrowthPoint[] = growthSeriesData;
 
 const totalVisits = publicationMetrics.reduce((acc, item) => acc + item.visits, 0);
 const avgConversion = Math.round(
-  publicationMetrics.reduce((acc, item) => acc + item.conversion, 0) / publicationMetrics.length
+  publicationMetrics.reduce((acc, item) => acc + item.conversion, 0) / publicationMetrics.length,
 );
 const ratingAverage = 4.4;
 const growthIndex = 27;

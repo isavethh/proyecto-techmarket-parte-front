@@ -5,6 +5,7 @@ import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CommunityFeedPost, upsertCommunityFeedPosts } from "../../lib/communityFeed";
+import { fetchCompanyPublications } from "../../lib/companyApi";
 import { CompanySidebar } from "../CompanySidebar";
 
 type MainFilter =
@@ -631,6 +632,17 @@ export default function PublicacionesPage() {
     option3: "",
     option4: "",
   });
+
+  useEffect(() => {
+    void fetchCompanyPublications().then((payload) => {
+      setProductItems(payload.products);
+      setServiceItems(payload.services);
+      setOfferItems(payload.offers);
+      setPostItems(payload.posts);
+      setTextPostItems(payload.textPosts);
+      setSurveyItems(payload.surveys);
+    });
+  }, []);
   const isServicesView = activeFilter === "Servicios";
   const isTextView = activeFilter === "Publicaciones de texto";
   const isOfferView = activeFilter === "Ofertas y promociones";

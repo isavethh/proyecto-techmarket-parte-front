@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { CompanySidebar } from "../CompanySidebar";
+import { fetchCompanyProfile } from "../../lib/companyApi";
 
 const businessData = {
   name: "TechMarket Santa Cruz",
@@ -163,6 +164,20 @@ export default function Perfil() {
     reference: locationOverview.reference,
     mapAreas: locationOverview.mapAreas.join(", "),
   });
+
+  useEffect(() => {
+    void fetchCompanyProfile().then((profile) => {
+      const { businessData: profileBusinessData, specialties: profileSpecialties, coverageAreas: profileCoverageAreas, contactChannels: profileContactChannels, schedules: profileSchedules, branches: profileBranches, locationOverview: profileLocation } = profile;
+
+      setBusinessProfile(profileBusinessData);
+      setSpecialtyItems(profileSpecialties);
+      setCoverageItems(profileCoverageAreas);
+      setContactItems(profileContactChannels);
+      setScheduleItems(profileSchedules);
+      setBranchItems(profileBranches);
+      setLocationCard(profileLocation);
+    });
+  }, []);
 
   const openEditModal = () => {
     setEditForm({
