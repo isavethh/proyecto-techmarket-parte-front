@@ -5,7 +5,17 @@ import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CommunityFeedPost, upsertCommunityFeedPosts } from "../../lib/communityFeed";
-import { fetchCompanyPublications } from "../../lib/companyApi";
+import {
+  createCompanyPublication,
+  createCompanyPublicationComment,
+  createCompanySurvey,
+  fetchCompanyPublications,
+  toggleCompanyPublicationLike,
+  updateCompanyOffer,
+  updateCompanyProduct,
+  updateCompanyService,
+  uploadCompanyImage,
+} from "../../lib/companyApi";
 import { CompanySidebar } from "../CompanySidebar";
 
 type MainFilter =
@@ -863,6 +873,9 @@ export default function PublicacionesPage() {
     };
 
   const togglePublicationLike = (publicationId: string) => {
+    const nextLiked = !(publicationSocial[publicationId]?.liked ?? false);
+    void toggleCompanyPublicationLike(publicationId, nextLiked);
+
     setPublicationSocial((current) => {
       const entry =
         current[publicationId] ??
@@ -871,8 +884,6 @@ export default function PublicacionesPage() {
           liked: false,
           comments: [],
         };
-
-      const nextLiked = !entry.liked;
 
       return {
         ...current,
@@ -929,6 +940,8 @@ export default function PublicacionesPage() {
         },
       };
     });
+
+    void createCompanyPublicationComment(selectedPublication.id, text);
 
     setCommentDraft("");
   };
@@ -1034,6 +1047,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
   };
 
   setSurveyItems((current) => [newSurvey, ...current]);
+  void createCompanySurvey({ question, options });
 
   upsertCommunityFeedPosts([
     buildCommunityFeedPost(
@@ -1113,6 +1127,12 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
       setProductEditMessage("");
     };
 
+    void uploadCompanyImage(file, "publicaciones").then((uploaded) => {
+      if (uploaded?.url) {
+        setUploadedImagePreview(uploaded.url);
+      }
+    });
+
     reader.readAsDataURL(file);
   };
 
@@ -1145,6 +1165,14 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
           : item,
       ),
     );
+
+    void updateCompanyProduct(editingProductId, {
+      name: trimmedName,
+      description: trimmedDescription,
+      price: productEditForm.price.trim() || "Consultar",
+      status: productEditForm.status.trim() || "Disponible",
+      imageUrl: productEditForm.image.trim(),
+    });
 
     setShowProductEditModal(false);
     setEditingProductId(null);
@@ -1194,6 +1222,13 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
       ),
     );
 
+    void updateCompanyService(editingServiceId, {
+      name: trimmedName,
+      description: trimmedDescription,
+      price: serviceEditForm.price.trim() || "Consultar",
+      imageUrl: serviceEditForm.image.trim(),
+    });
+
     setShowServiceEditModal(false);
     setEditingServiceId(null);
     setServiceEditMessage("");
@@ -1225,6 +1260,12 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
       setServiceEditImageName(file.name);
       setServiceEditMessage("");
     };
+
+    void uploadCompanyImage(file, "publicaciones").then((uploaded) => {
+      if (uploaded?.url) {
+        setUploadedImagePreview(uploaded.url);
+      }
+    });
 
     reader.readAsDataURL(file);
   };
@@ -1276,6 +1317,15 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
       ),
     );
 
+    void updateCompanyOffer(editingOfferId, {
+      title: trimmedTitle,
+      description: trimmedDescription,
+      currentPrice: offerEditForm.currentPrice.trim() || "Consultar",
+      previousPrice: offerEditForm.previousPrice.trim() || undefined,
+      label: offerEditForm.label.trim() || "Oferta",
+      imageUrl: offerEditForm.image.trim(),
+    });
+
     setShowOfferEditModal(false);
     setEditingOfferId(null);
     setOfferEditMessage("");
@@ -1308,6 +1358,12 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
       setOfferEditMessage("");
     };
 
+    void uploadCompanyImage(file, "publicaciones").then((uploaded) => {
+      if (uploaded?.url) {
+        setUploadedImagePreview(uploaded.url);
+      }
+    });
+
     reader.readAsDataURL(file);
   };
 
@@ -1334,6 +1390,12 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
       setUploadedImageName(file.name);
       setPublishMessage("");
     };
+    void uploadCompanyImage(file, "publicaciones").then((uploaded) => {
+      if (uploaded?.url) {
+        setUploadedImagePreview(uploaded.url);
+      }
+    });
+
     reader.readAsDataURL(file);
   };
 
@@ -1432,6 +1494,18 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
       setActiveFilter("Publicaciones de texto");
       communityTag = "Texto";
     }
+
+    void createCompanyPublication({
+      type: formData.targetFilter,
+      title,
+      description,
+      price,
+      previousPrice,
+      label: formData.label,
+      imageUrl: image,
+      status: "Disponible",
+      options: [],
+    });
 
     upsertCommunityFeedPosts([
       buildCommunityFeedPost(newId, title, description, image, communityTag, new Date().toISOString()),
@@ -2944,3 +3018,10 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
     </div>
   );
 }
+
+
+
+
+
+
+

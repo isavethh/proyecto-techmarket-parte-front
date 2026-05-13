@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { CompanySidebar } from "../CompanySidebar";
-import { fetchCompanyProfile } from "../../lib/companyApi";
+import { fetchCompanyProfile, updateCompanyProfile } from "../../lib/companyApi";
 
 const businessData = {
   name: "TechMarket Santa Cruz",
@@ -42,7 +42,7 @@ const schedules = [
 const branches = [
   {
     name: "Sede Principal",
-    address: "Av. Monseñor Rivero # 120, Santa Cruz de la Sierra",
+    address: "Av. MonseÃ±or Rivero # 120, Santa Cruz de la Sierra",
     phone: "+591 7500 0001",
     hours: "Lunes a viernes 8:00 a. m. - 6:30 p. m.; Sabado 9:00 a. m. - 2:00 p. m.",
   },
@@ -55,8 +55,8 @@ const branches = [
 ];
 
 const locationOverview = {
-  mainAddressShort: "Av. Monseñor Rivero # 120",
-  mainAddressLong: "Av. Monseñor Rivero # 120, Santa Cruz de la Sierra",
+  mainAddressShort: "Av. MonseÃ±or Rivero # 120",
+  mainAddressLong: "Av. MonseÃ±or Rivero # 120, Santa Cruz de la Sierra",
   city: "Santa Cruz de la Sierra",
   zone: "Centro",
   reference: "Cerca del Cristo Redentor",
@@ -113,7 +113,7 @@ function RatingStars({ rating }: { rating: number }) {
             }`}
             aria-hidden="true"
           >
-            ★
+            â˜…
           </span>
         );
       })}
@@ -274,6 +274,55 @@ export default function Perfil() {
       mapAreas: parseList(editForm.mapAreas),
     });
 
+    void updateCompanyProfile({
+      businessData: {
+        name: editForm.name.trim() || businessProfile.name,
+        logo: editForm.logo.trim() || businessProfile.logo,
+        slogan: editForm.slogan.trim() || businessProfile.slogan,
+        specialization: editForm.specialization.trim() || businessProfile.specialization,
+        rating: Number(editForm.rating) > 0 ? Number(editForm.rating) : businessProfile.rating,
+        reviewCount: Number(editForm.reviewCount) >= 0 ? Number(editForm.reviewCount) : businessProfile.reviewCount,
+        category: editForm.category.trim() || businessProfile.category,
+        experienceYears: Number(editForm.experienceYears) >= 0 ? Number(editForm.experienceYears) : businessProfile.experienceYears,
+        businessType: editForm.businessType.trim() || businessProfile.businessType,
+      },
+      specialties: parseList(editForm.specialties),
+      coverageAreas: parseList(editForm.coverageAreas),
+      contactChannels: [
+        { label: "Telefono", value: editForm.phone.trim() },
+        { label: "WhatsApp", value: editForm.whatsapp.trim() },
+        { label: "Correo", value: editForm.email.trim() },
+      ],
+      socialLinks,
+      schedules: [
+        { day: "Lunes a viernes", hours: editForm.scheduleWeek.trim() },
+        { day: "Sabado", hours: editForm.scheduleSaturday.trim() },
+        { day: "Domingo y festivos", hours: editForm.scheduleSunday.trim() },
+      ],
+      branches: [
+        {
+          name: editForm.branchMainName.trim(),
+          address: editForm.branchMainAddress.trim(),
+          phone: editForm.branchMainPhone.trim(),
+          hours: editForm.branchMainHours.trim(),
+        },
+        {
+          name: editForm.branchNorthName.trim(),
+          address: editForm.branchNorthAddress.trim(),
+          phone: editForm.branchNorthPhone.trim(),
+          hours: editForm.branchNorthHours.trim(),
+        },
+      ],
+      locationOverview: {
+        mainAddressShort: editForm.mainAddressShort.trim(),
+        mainAddressLong: editForm.mainAddressLong.trim(),
+        city: editForm.city.trim(),
+        zone: editForm.zone.trim(),
+        reference: editForm.reference.trim(),
+        mapAreas: parseList(editForm.mapAreas),
+      },
+    });
+
     setEditMessage("Perfil actualizado correctamente.");
     setShowEditModal(false);
   };
@@ -347,13 +396,13 @@ export default function Perfil() {
                         </div>
                       </div>
                       <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                        <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Reseñas</p>
+                        <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">ReseÃ±as</p>
                         <p className="mt-3 text-2xl font-bold text-white">{businessProfile.reviewCount}</p>
                         <p className="mt-1 text-sm text-cyan-100/70">Opiniones registradas</p>
                       </div>
                       <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                         <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Experiencia</p>
-                        <p className="mt-3 text-2xl font-bold text-white">{businessProfile.experienceYears} años</p>
+                        <p className="mt-3 text-2xl font-bold text-white">{businessProfile.experienceYears} aÃ±os</p>
                         <p className="mt-1 text-sm text-cyan-100/70">Trayectoria en el sector</p>
                       </div>
                       <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
@@ -404,8 +453,8 @@ export default function Perfil() {
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Informacion general</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Descripcion del negocio</h2>
                   <p className="mt-4 text-sm leading-7 text-cyan-100/80">
-                    plataforma inteligente, social y comercial especializada en Electrónica y Computación,
-                    que conecta empresas, técnicos, usuarios y embajadores para generar confianza, visibilidad, ventas y
+                    plataforma inteligente, social y comercial especializada en ElectrÃ³nica y ComputaciÃ³n,
+                    que conecta empresas, tÃ©cnicos, usuarios y embajadores para generar confianza, visibilidad, ventas y
                     crecimiento sostenible dentro de un ecosistema digital escalable.
                   </p>
 
@@ -550,7 +599,7 @@ export default function Perfil() {
                     <div className="mt-3">
                       <RatingStars rating={businessProfile.rating} />
                     </div>
-                    <p className="mt-4 text-sm text-cyan-100/75">Basado en {businessProfile.reviewCount} reseñas de clientes.</p>
+                    <p className="mt-4 text-sm text-cyan-100/75">Basado en {businessProfile.reviewCount} reseÃ±as de clientes.</p>
                   </div>
                 </article>
 
@@ -600,8 +649,8 @@ export default function Perfil() {
               <label className="space-y-2 text-sm text-cyan-100/85"><span>Categoria</span><input value={editForm.category} onChange={(event) => setEditForm((current) => ({ ...current, category: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
               <label className="space-y-2 text-sm text-cyan-100/85"><span>Tipo de negocio</span><input value={editForm.businessType} onChange={(event) => setEditForm((current) => ({ ...current, businessType: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
               <label className="space-y-2 text-sm text-cyan-100/85"><span>Calificacion</span><input value={editForm.rating} onChange={(event) => setEditForm((current) => ({ ...current, rating: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Reseñas</span><input value={editForm.reviewCount} onChange={(event) => setEditForm((current) => ({ ...current, reviewCount: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Años de experiencia</span><input value={editForm.experienceYears} onChange={(event) => setEditForm((current) => ({ ...current, experienceYears: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
+              <label className="space-y-2 text-sm text-cyan-100/85"><span>ReseÃ±as</span><input value={editForm.reviewCount} onChange={(event) => setEditForm((current) => ({ ...current, reviewCount: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
+              <label className="space-y-2 text-sm text-cyan-100/85"><span>AÃ±os de experiencia</span><input value={editForm.experienceYears} onChange={(event) => setEditForm((current) => ({ ...current, experienceYears: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
               <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Areas de especializacion (separadas por coma)</span><input value={editForm.specialties} onChange={(event) => setEditForm((current) => ({ ...current, specialties: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
               <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Cobertura (separada por coma)</span><input value={editForm.coverageAreas} onChange={(event) => setEditForm((current) => ({ ...current, coverageAreas: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
 
@@ -647,3 +696,5 @@ export default function Perfil() {
     </div>
   );
 }
+
+

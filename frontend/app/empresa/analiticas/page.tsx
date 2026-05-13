@@ -1,4 +1,7 @@
+﻿"use client";
+
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { CompanySidebar } from "../CompanySidebar";
 import {
   growthSeriesData,
@@ -56,7 +59,7 @@ const ratingAverage = 4.4;
 const growthIndex = 27;
 
 function renderStars(stars: number) {
-  return "★".repeat(stars) + "☆".repeat(5 - stars);
+  return "â˜…".repeat(stars) + "â˜†".repeat(5 - stars);
 }
 
 export default function AnaliticasPage() {
@@ -240,3 +243,4 @@ export default function AnaliticasPage() {
     </div>
   );
 }
+

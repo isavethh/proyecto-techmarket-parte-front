@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
-import { customerReviewsData } from "../../lib/companyApi";
+import { customerReviewsData, fetchCompanyReviews, respondCompanyReview } from "../../lib/companyApi";
 
 type ReviewFilter = "Todas" | "Sin responder" | "5 estrellas" | "Con mejora";
 
@@ -27,7 +27,7 @@ const reviewFilters: ReviewFilter[] = ["Todas", "Sin responder", "5 estrellas", 
 const customerReviews: CustomerReview[] = customerReviewsData;
 
 function renderStars(stars: number) {
-  return "★".repeat(stars) + "☆".repeat(5 - stars);
+  return "â˜…".repeat(stars) + "â˜†".repeat(5 - stars);
 }
 
 function statusBadgeClass(review: CustomerReview) {
@@ -56,6 +56,20 @@ function statusLabel(review: CustomerReview) {
 
 export default function ResenasPage() {
   const [activeFilter, setActiveFilter] = useState<ReviewFilter>("Todas");
+  const [customerReviews, setCustomerReviews] = useState<CustomerReview[]>(customerReviewsData);
+
+  useEffect(() => {
+    void fetchCompanyReviews().then(setCustomerReviews);
+  }, []);
+
+  const handleRespondReview = (reviewId: string) => {
+    setCustomerReviews((current) =>
+      current.map((review) =>
+        review.id === reviewId ? { ...review, wasResponded: true } : review,
+      ),
+    );
+    void respondCompanyReview(reviewId, "Respondida desde el panel de empresa.");
+  };
 
   const filteredReviews = useMemo(() => {
     if (activeFilter === "Sin responder") {
@@ -71,13 +85,13 @@ export default function ResenasPage() {
     }
 
     return customerReviews;
-  }, [activeFilter]);
+  }, [activeFilter, customerReviews]);
 
   const totalReviews = customerReviews.length;
   const averageStars = useMemo(() => {
     const total = customerReviews.reduce((sum, review) => sum + review.stars, 0);
     return (total / customerReviews.length).toFixed(1);
-  }, []);
+  }, [customerReviews]);
   const pendingReplies = customerReviews.filter((review) => !review.wasResponded).length;
   const followUpItems = customerReviews.filter((review) => review.needsFollowUp).length;
 
@@ -93,7 +107,7 @@ export default function ResenasPage() {
     return [...counts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 6);
-  }, []);
+  }, [customerReviews]);
 
   return (
     <div className="flex-1 pb-8">
@@ -264,3 +278,6 @@ export default function ResenasPage() {
     </div>
   );
 }
+
+
+

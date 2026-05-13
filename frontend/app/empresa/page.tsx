@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
@@ -9,7 +9,8 @@ import { CompanySidebar } from "./CompanySidebar";
 import {
   alertItems,
   aiThinkingStates,
-  buildAiInsight,
+  askCompanyAi,
+  fetchCompanySummary,
   executiveMetrics,
   recentActivity,
   radarBars,
@@ -25,6 +26,32 @@ export default function EmpresaPage() {
     requireAuth(router);
   }, [router]);
 
+  useEffect(() => {
+    void fetchCompanySummary().then((summary) => {
+      const payload = summary as {
+        metrics?: typeof executiveMetrics;
+        alerts?: typeof alertItems;
+        recentActivity?: typeof recentActivity;
+        radar?: typeof radarBars;
+        recommendedActions?: typeof strategicActions;
+        ai?: { recommendedQuestions?: string[] };
+      };
+
+      setSummaryMetrics(payload.metrics ?? executiveMetrics);
+      setSummaryAlerts(payload.alerts ?? alertItems);
+      setSummaryActivity(payload.recentActivity ?? recentActivity);
+      setSummaryRadar(payload.radar ?? radarBars);
+      setSummaryActions(payload.recommendedActions ?? strategicActions);
+      setSummaryQuestions(payload.ai?.recommendedQuestions ?? recommendedAiQuestions);
+    });
+  }, []);
+
+  const [summaryMetrics, setSummaryMetrics] = useState(executiveMetrics);
+  const [summaryAlerts, setSummaryAlerts] = useState(alertItems);
+  const [summaryActivity, setSummaryActivity] = useState(recentActivity);
+  const [summaryRadar, setSummaryRadar] = useState(radarBars);
+  const [summaryActions, setSummaryActions] = useState(strategicActions);
+  const [summaryQuestions, setSummaryQuestions] = useState(recommendedAiQuestions);
   const [aiQuestion, setAiQuestion] = useState("");
   const [lastAiQuestion, setLastAiQuestion] = useState("");
   const [aiInsight, setAiInsight] = useState<AiBusinessInsight | null>(null);
@@ -66,8 +93,10 @@ export default function EmpresaPage() {
     setThinkingMessageIndex(0);
 
     aiTimeoutRef.current = setTimeout(() => {
-      setAiInsight(buildAiInsight(trimmedQuestion));
-      setIsAiThinking(false);
+      void askCompanyAi(trimmedQuestion).then((insight) => {
+        setAiInsight(insight as AiBusinessInsight);
+        setIsAiThinking(false);
+      });
       aiTimeoutRef.current = null;
     }, 1700);
   };
@@ -105,7 +134,7 @@ export default function EmpresaPage() {
           <section className="tech-card">
             <p className="text-sm font-semibold text-cyan-50">Radar de negocio</p>
             <div className="mt-4 space-y-3">
-              {radarBars.map((bar) => (
+              {summaryRadar.map((bar) => (
                 <div key={bar.label}>
                   <div className="mb-1 flex items-center justify-between text-xs text-cyan-100/75">
                     <span>{bar.label}</span>
@@ -134,7 +163,7 @@ export default function EmpresaPage() {
             </p>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {executiveMetrics.map((metric) => (
+              {summaryMetrics.map((metric) => (
                 <Link
                   key={metric.id}
                   href={metric.href}
@@ -184,7 +213,7 @@ export default function EmpresaPage() {
                 <div className="mt-5">
                   <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/65">Preguntas recomendadas</p>
                   <div className="mt-3 grid gap-2">
-                    {recommendedAiQuestions.map((question) => (
+                    {summaryQuestions.map((question) => (
                       <button
                         key={question}
                         type="button"
@@ -267,7 +296,7 @@ export default function EmpresaPage() {
               </div>
 
               <div className="mt-4 space-y-3">
-                {alertItems.map((alert) => (
+                {summaryAlerts.map((alert) => (
                   <Link
                     key={alert.id}
                     href={alert.href}
@@ -296,7 +325,7 @@ export default function EmpresaPage() {
               <h3 className="mt-2 text-xl font-semibold text-cyan-50">Lo ultimo en tu empresa</h3>
 
               <div className="mt-4 space-y-3">
-                {recentActivity.map((item) => (
+                {summaryActivity.map((item) => (
                   <div key={item.id} className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-4">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-cyan-50">{item.title}</p>
@@ -314,7 +343,7 @@ export default function EmpresaPage() {
             <h3 className="mt-2 text-xl font-semibold text-cyan-50">Siguientes acciones de alto impacto</h3>
 
             <div className="mt-4 grid gap-3 md:grid-cols-3">
-              {strategicActions.map((action) => (
+              {summaryActions.map((action) => (
                 <article
                   key={action.id}
                   className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-4"
@@ -337,3 +366,6 @@ export default function EmpresaPage() {
     </div>
   );
 }
+
+
+

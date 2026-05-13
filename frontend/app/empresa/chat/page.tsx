@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
-import { chatThreadsData, fetchCompanyChats } from "../../lib/companyApi";
+import { chatThreadsData, fetchCompanyChats, markCompanyChatAsRead, sendCompanyChatMessage } from "../../lib/companyApi";
 
 type ChatMessage = {
   id: string;
@@ -109,6 +109,37 @@ export default function ChatPage() {
 
   const activeChat =
     chatThreadsState.find((chat) => chat.id === activeChatId) ?? chatThreadsState[0];
+  const handleSelectChat = (chatId: string) => {
+    setActiveChatId(chatId);
+    void markCompanyChatAsRead(chatId);
+  };
+
+  const handleSendMessage = () => {
+    const text = draftMessage.trim();
+    if (!text || !activeChat) return;
+
+    const newMessage = {
+      id: `local-${Date.now()}`,
+      author: "empresa" as const,
+      text,
+      time: "Ahora",
+    };
+
+    setChatThreadsState((current) =>
+      current.map((chat) =>
+        chat.id === activeChat.id
+          ? {
+              ...chat,
+              lastMessage: text,
+              unread: undefined,
+              messages: [...chat.messages, newMessage],
+            }
+          : chat,
+      ),
+    );
+    setDraftMessage("");
+    void sendCompanyChatMessage(activeChat.id, text);
+  };
 
   return (
     <div className="flex-1 pb-8">
@@ -157,7 +188,7 @@ export default function ChatPage() {
                         <button
                           key={chat.id}
                           type="button"
-                          onClick={() => setActiveChatId(chat.id)}
+                          onClick={() => handleSelectChat(chat.id)}
                           className={`w-full rounded-3xl border p-3 text-left transition ${
                             isActive
                               ? "border-cyan-300/50 bg-cyan-300/12"
@@ -230,7 +261,11 @@ export default function ChatPage() {
                         placeholder="Escribe un mensaje para el cliente..."
                         className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-3.5 py-2.5 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                       />
-                      <button className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-4 py-2.5 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20">
+                      <button
+                        type="button"
+                        onClick={handleSendMessage}
+                        className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-4 py-2.5 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                      >
                         Enviar
                       </button>
                     </div>
@@ -244,3 +279,6 @@ export default function ChatPage() {
     </div>
   );
 }
+
+
+

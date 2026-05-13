@@ -1,4 +1,4 @@
-export type ExecutiveMetric = {
+﻿export type ExecutiveMetric = {
   id: string;
   label: string;
   value: string;
@@ -86,7 +86,7 @@ export const schedules = [
 export const branches = [
   {
     name: "Sede Principal",
-    address: "Av. Monseñor Rivero # 120, Santa Cruz de la Sierra",
+    address: "Av. MonseÃ±or Rivero # 120, Santa Cruz de la Sierra",
     phone: "+591 7500 0001",
     hours:
       "Lunes a viernes 8:00 a. m. - 6:30 p. m.; Sabado 9:00 a. m. - 2:00 p. m.",
@@ -100,8 +100,8 @@ export const branches = [
 ];
 
 export const locationOverview = {
-  mainAddressShort: "Av. Monseñor Rivero # 120",
-  mainAddressLong: "Av. Monseñor Rivero # 120, Santa Cruz de la Sierra",
+  mainAddressShort: "Av. MonseÃ±or Rivero # 120",
+  mainAddressLong: "Av. MonseÃ±or Rivero # 120, Santa Cruz de la Sierra",
   city: "Santa Cruz de la Sierra",
   zone: "Centro",
   reference: "Cerca del Cristo Redentor",
@@ -206,7 +206,7 @@ export const recentActivity: ActivityItem[] = [
   },
   {
     id: "activity-2",
-    title: "Nueva reseña positiva (5/5)",
+    title: "Nueva reseÃ±a positiva (5/5)",
     detail: "Destaca rapidez de atencion y claridad del soporte.",
     time: "Hace 1 h",
   },
@@ -309,6 +309,163 @@ export function buildAiInsight(question: string): AiBusinessInsight {
   };
 }
 
+const COMPANY_API_BASE_URL = (process.env.NEXT_PUBLIC_COMPANY_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+
+function buildCompanyApiUrl(path: string) {
+  return COMPANY_API_BASE_URL ? `${COMPANY_API_BASE_URL}${path}` : path;
+}
+
+async function requestCompanyApi<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(buildCompanyApiUrl(path), {
+    ...options,
+    headers: {
+      ...(options?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+      ...options?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${options?.method ?? "GET"} ${path}: ${response.status}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+async function requestCompanyApiWithFallback<T>(path: string, fallback: T, options?: RequestInit): Promise<T> {
+  try {
+    return await requestCompanyApi<T>(path, options);
+  } catch {
+    return fallback;
+  }
+}
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+
+const asString = (value: unknown, fallback = ""): string =>
+  typeof value === "string" ? value : fallback;
+
+const asNumber = (value: unknown, fallback: number): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : fallback;
+
+function normalizeCompanyProfile(payload: unknown): CompanyProfileData {
+  const source = asRecord(payload);
+
+  if (source.businessData) {
+    return payload as CompanyProfileData;
+  }
+
+  const primaryAddress = asRecord((source.addresses as unknown[])?.[0]);
+  const contactItems = Array.isArray(source.contacts) ? source.contacts.map(asRecord) : [];
+  const findContact = (label: string) =>
+    contactItems.find((item) => asString(item.label).toLowerCase() === label.toLowerCase())?.value;
+
+  return {
+    businessData: {
+      name: asString(source.name, businessData.name),
+      logo: asString(source.logoText, asString(source.logoUrl, businessData.logo)),
+      slogan: asString(source.slogan, businessData.slogan),
+      specialization: asString(source.specialization, businessData.specialization),
+      rating: asNumber(source.rating, businessData.rating),
+      reviewCount: asNumber(source.reviewCount, businessData.reviewCount),
+      category: asString(source.category, businessData.category),
+      experienceYears: asNumber(source.experienceYears, businessData.experienceYears),
+      businessType: asString(source.businessType, businessData.businessType),
+    },
+    specialties: Array.isArray(source.specialties) ? (source.specialties as string[]) : specialties,
+    coverageAreas: Array.isArray(source.coverageAreas) ? (source.coverageAreas as string[]) : coverageAreas,
+    contactChannels: contactItems.length
+      ? contactItems.map((item) => ({
+          label: asString(item.label),
+          value: asString(item.value),
+        }))
+      : [
+          { label: "Telefono", value: asString(findContact("Telefono"), contactChannels[0].value) },
+          { label: "WhatsApp", value: asString(findContact("WhatsApp"), contactChannels[1].value) },
+          { label: "Correo", value: asString(findContact("Correo"), contactChannels[2].value) },
+        ],
+    socialLinks: Array.isArray(source.socialLinks) ? source.socialLinks as CompanyProfileData["socialLinks"] : socialLinks,
+    schedules: Array.isArray(source.schedules) ? source.schedules as CompanyProfileData["schedules"] : schedules,
+    branches: Array.isArray(source.branches) ? source.branches as CompanyProfileData["branches"] : branches,
+    locationOverview: source.locationOverview
+      ? source.locationOverview as CompanyProfileData["locationOverview"]
+      : {
+          mainAddressShort: asString(primaryAddress.short, locationOverview.mainAddressShort),
+          mainAddressLong: asString(primaryAddress.full, locationOverview.mainAddressLong),
+          city: asString(primaryAddress.city, locationOverview.city),
+          zone: asString(primaryAddress.zone, locationOverview.zone),
+          reference: asString(primaryAddress.reference, locationOverview.reference),
+          mapAreas: Array.isArray(source.mapAreas) ? source.mapAreas as string[] : locationOverview.mapAreas,
+        },
+  };
+}
+
+function normalizeSurveyOptions(options: unknown): string[] {
+  if (!Array.isArray(options)) return [];
+
+  return options
+    .map((option) => {
+      if (typeof option === "string") return option;
+      const optionRecord = asRecord(option);
+      return asString(optionRecord.text, asString(optionRecord.label));
+    })
+    .filter(Boolean);
+}
+
+function normalizeCompanyPublications(payload: unknown) {
+  const source = asRecord(payload);
+
+  return {
+    products: (Array.isArray(source.products) ? source.products : productItemsData).map((item) => {
+      const product = asRecord(item);
+      return {
+        ...item as ProductCard,
+        image: asString(product.image, asString(product.imageUrl, "/productos/laptop-pro-14.jpg")),
+      };
+    }),
+    services: (Array.isArray(source.services) ? source.services : serviceItemsData).map((item) => {
+      const service = asRecord(item);
+      return {
+        ...item as ServiceCard,
+        image: asString(service.image, asString(service.imageUrl, "/productos/laptop-pro-14.jpg")),
+      };
+    }),
+    offers: (Array.isArray(source.offers) ? source.offers : offersData).map((item) => {
+      const offer = asRecord(item);
+      return {
+        ...item as OfferCard,
+        image: asString(offer.image, asString(offer.imageUrl, "/productos/laptop-pro-14.jpg")),
+      };
+    }),
+    surveys: (Array.isArray(source.surveys) ? source.surveys : surveyItemsData).map((item) => {
+      const survey = asRecord(item);
+      return {
+        ...item as SurveyCard,
+        options: normalizeSurveyOptions(survey.options),
+      };
+    }),
+    posts: (Array.isArray(source.posts) ? source.posts : postsData).map((item) => {
+      const post = asRecord(item);
+      return {
+        ...item as PostCard,
+        message: asString(post.message, asString(post.description, asString(post.body))),
+        image: asString(post.image, asString(post.imageUrl)),
+      };
+    }),
+    textPosts: (Array.isArray(source.textPosts) ? source.textPosts : textPostsData).map((item) => {
+      const post = asRecord(item);
+      return {
+        ...item as TextPublicationCard,
+        message: asString(post.message, asString(post.description, asString(post.body))),
+        image: asString(post.image, asString(post.imageUrl, "/productos/charla.png")),
+      };
+    }),
+    users: Array.isArray(source.users) ? source.users as UserCard[] : Array.isArray(source.interactingUsers) ? source.interactingUsers as UserCard[] : usersData,
+    latestInteractionNotification: source.latestInteractionNotification
+      ? source.latestInteractionNotification as InteractionNotification
+      : latestInteractionNotificationData,
+  };
+}
 export type CompanyProfileData = {
   businessData: typeof businessData;
   specialties: string[];
@@ -344,7 +501,51 @@ export const companyProfileData: CompanyProfileData = {
 };
 
 export async function fetchCompanyProfile() {
-  return Promise.resolve(companyProfileData);
+  const payload = await requestCompanyApiWithFallback<unknown>("/api/empresa/perfil", companyProfileData);
+  return normalizeCompanyProfile(payload);
+}
+
+function toCompanyProfileEndpointPayload(profile: CompanyProfileData) {
+  return {
+    id: "company-profile",
+    name: profile.businessData.name,
+    logoUrl: "",
+    slogan: profile.businessData.slogan,
+    specialization: profile.businessData.specialization,
+    category: profile.businessData.category,
+    businessType: profile.businessData.businessType,
+    addresses: [
+      {
+        short: profile.locationOverview.mainAddressShort,
+        full: profile.locationOverview.mainAddressLong,
+        city: profile.locationOverview.city,
+        zone: profile.locationOverview.zone,
+        reference: profile.locationOverview.reference,
+      },
+    ],
+    contacts: profile.contactChannels,
+    socialLinks: profile.socialLinks,
+    schedules: profile.schedules,
+    branches: profile.branches,
+    settings: {
+      logoText: profile.businessData.logo,
+      rating: profile.businessData.rating,
+      reviewCount: profile.businessData.reviewCount,
+      experienceYears: profile.businessData.experienceYears,
+      specialties: profile.specialties,
+      coverageAreas: profile.coverageAreas,
+      locationOverview: profile.locationOverview,
+    },
+  };
+}
+
+export async function updateCompanyProfile(profile: CompanyProfileData) {
+  const payload = toCompanyProfileEndpointPayload(profile);
+
+  return requestCompanyApiWithFallback("/api/empresa/perfil", payload, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
 export type ChatMessage = {
@@ -438,7 +639,27 @@ export const chatThreadsData: ChatThread[] = [
 ];
 
 export async function fetchCompanyChats() {
-  return Promise.resolve(chatThreadsData);
+  const payload = await requestCompanyApiWithFallback<unknown>("/api/empresa/chat/conversaciones", chatThreadsData);
+  const source = asRecord(payload);
+  return (Array.isArray(source.conversations) ? source.conversations : payload) as ChatThread[];
+}
+
+export async function fetchCompanyChatMessages(conversationId: string) {
+  return requestCompanyApiWithFallback(`/api/empresa/chat/conversaciones/${conversationId}/mensajes`, null);
+}
+
+export async function sendCompanyChatMessage(conversationId: string, text: string) {
+  return requestCompanyApiWithFallback(`/api/empresa/chat/conversaciones/${conversationId}/mensajes`, null, {
+    method: "POST",
+    body: JSON.stringify({ conversationId, author: "empresa", text }),
+  });
+}
+
+export async function markCompanyChatAsRead(conversationId: string) {
+  return requestCompanyApiWithFallback(`/api/empresa/chat/conversaciones/${conversationId}/leido`, null, {
+    method: "PATCH",
+    body: JSON.stringify({ conversationId, read: true }),
+  });
 }
 
 export type PublicationMetric = {
@@ -532,7 +753,7 @@ export const growthSeriesData: GrowthPoint[] = [
 ];
 
 export async function fetchCompanyAnalytics() {
-  return Promise.resolve({
+  return requestCompanyApiWithFallback("/api/empresa/analiticas", {
     publicationMetrics: publicationMetricsData,
     ratingLevels: ratingLevelsData,
     userReviews: userReviewsData,
@@ -639,7 +860,16 @@ export const customerReviewsData: CustomerReview[] = [
 ];
 
 export async function fetchCompanyReviews() {
-  return Promise.resolve(customerReviewsData);
+  const payload = await requestCompanyApiWithFallback<unknown>("/api/empresa/resenas", customerReviewsData);
+  const source = asRecord(payload);
+  return (Array.isArray(source.reviews) ? source.reviews : payload) as CustomerReview[];
+}
+
+export async function respondCompanyReview(reviewId: string, response: string) {
+  return requestCompanyApiWithFallback(`/api/empresa/resenas/${reviewId}/respuesta`, null, {
+    method: "POST",
+    body: JSON.stringify({ reviewId, response, wasResponded: true }),
+  });
 }
 
 export type ProductCard = {
@@ -718,7 +948,7 @@ export const productItemsData: ProductCard[] = [
   {
     id: "prod-2",
     name: "Monitor UltraWide 34",
-    description: "Pantalla amplia 3440 x 1440 para productividad y diseño.",
+    description: "Pantalla amplia 3440 x 1440 para productividad y diseÃ±o.",
     price: "Bs 1.480.000",
     status: "Disponible",
     image: "/productos/monitor-ultrawide-34.jpg",
@@ -915,7 +1145,7 @@ export const latestInteractionNotificationData: InteractionNotification = {
 };
 
 export async function fetchCompanyPublications() {
-  return Promise.resolve({
+  const payload = await requestCompanyApiWithFallback<unknown>("/api/empresa/publicaciones", {
     products: productItemsData,
     services: serviceItemsData,
     offers: offersData,
@@ -925,4 +1155,93 @@ export async function fetchCompanyPublications() {
     users: usersData,
     latestInteractionNotification: latestInteractionNotificationData,
   });
+
+  return normalizeCompanyPublications(payload);
 }
+
+export async function createCompanyPublication(payload: unknown) {
+  return requestCompanyApiWithFallback("/api/empresa/publicaciones", payload, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateCompanyProduct(id: string, payload: unknown) {
+  return requestCompanyApiWithFallback(`/api/empresa/productos/${id}`, payload, {
+    method: "PUT",
+    body: JSON.stringify({ id, ...asRecord(payload) }),
+  });
+}
+
+export async function updateCompanyService(id: string, payload: unknown) {
+  return requestCompanyApiWithFallback(`/api/empresa/servicios/${id}`, payload, {
+    method: "PUT",
+    body: JSON.stringify({ id, ...asRecord(payload) }),
+  });
+}
+
+export async function updateCompanyOffer(id: string, payload: unknown) {
+  return requestCompanyApiWithFallback(`/api/empresa/ofertas/${id}`, payload, {
+    method: "PUT",
+    body: JSON.stringify({ id, ...asRecord(payload) }),
+  });
+}
+
+export async function createCompanySurvey(payload: unknown) {
+  return requestCompanyApiWithFallback("/api/empresa/encuestas", payload, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function toggleCompanyPublicationLike(publicationId: string, liked: boolean) {
+  return requestCompanyApiWithFallback(`/api/empresa/publicaciones/${publicationId}/likes`, null, {
+    method: "POST",
+    body: JSON.stringify({ publicationId, liked }),
+  });
+}
+
+export async function createCompanyPublicationComment(publicationId: string, text: string) {
+  return requestCompanyApiWithFallback(`/api/empresa/publicaciones/${publicationId}/comentarios`, null, {
+    method: "POST",
+    body: JSON.stringify({ publicationId, authorName: "TechMarket Santa Cruz", text }),
+  });
+}
+
+export async function uploadCompanyImage(file: File, folder: string) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("folder", folder);
+
+  return requestCompanyApiWithFallback<{ id: string; fileName: string; url: string; mimeType: string; size: number } | null>(
+    "/api/empresa/archivos/imagenes",
+    null,
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
+}
+
+export async function askCompanyAi(question: string, context?: unknown) {
+  return requestCompanyApiWithFallback("/api/empresa/ia/consulta", buildAiInsight(question), {
+    method: "POST",
+    body: JSON.stringify({ question, context }),
+  });
+}
+
+export async function fetchCompanySummary() {
+  return requestCompanyApiWithFallback("/api/empresa/resumen", {
+    id: "company-summary",
+    metrics: executiveMetrics,
+    alerts: alertItems,
+    recentActivity,
+    radar: radarBars,
+    recommendedActions: strategicActions,
+    ai: {
+      recommendedQuestions: recommendedAiQuestions,
+    },
+  });
+}
+
+
