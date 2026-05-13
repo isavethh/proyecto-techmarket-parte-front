@@ -11,9 +11,11 @@ export function getRedirectPathByUserType(tipo: unknown): string {
     console.log("[getRedirectPathByUserType] Tipo normalizado:", tipoLower);
     
     switch (tipoLower) {
+      case "empresa_tienda":
       case "empresa":
         console.log("[getRedirectPathByUserType] Retornando /empresa");
         return "/empresa";
+      case "empresa_tecnico":
       case "especialista":
         console.log("[getRedirectPathByUserType] Retornando /especialista");
         return "/especialista";

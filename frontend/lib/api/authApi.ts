@@ -155,8 +155,10 @@ function mapTipoToRoleCookie(tipo: unknown): string | null {
     case "cliente":
       return "cliente";
     case "empresa":
-      return "empresa";
+    case "empresa_tienda":
+      return "empresa_tienda";
     case "especialista":
+    case "empresa_tecnico":
       // La middleware espera 'empresa_tecnico' para especialistas
       return "empresa_tecnico";
     case "embajador":
