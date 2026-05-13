@@ -6,6 +6,21 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { requireAuth } from "@/lib/auth/authGuard";
 import {
+  createSearchHistory,
+  listClientNotifications,
+  listFavoriteCompanies,
+  listFavoriteProducts,
+  searchGlobal,
+  searchSuggestions as fetchSearchSuggestions,
+  searchTrending,
+  type GlobalSearchItem,
+  type ClientNotification,
+  type MarketplaceCompanySummary,
+  type MarketplaceProductSummary,
+  type SearchSuggestion,
+  type SearchTrending,
+} from "@/lib/api/iaApi";
+import {
   COMMUNITY_FEED_UPDATED_EVENT,
   CommunityFeedPost,
   mergeCommunityFeedPosts,
@@ -21,26 +36,57 @@ import {
   PublicationViewerData,
   PublicationViewerModal,
 } from "../components/PublicationViewerModal";
-import { buildClientProfileHref } from "../lib/clientUserProfiles";
-import { getCompanies, getProducts } from "@/lib/api/marketplace";
-import {
-  getClientProfile,
-  getChats,
-  getChatMessages,
-  sendMessage,
-  markChatRead,
-  getFavoriteProducts,
-} from "@/lib/api/clientApi";
-import type {
-  ApiCompany,
-  ApiClientProfile,
-  ApiChat,
-  ApiMessage,
-  ApiFavoriteProduct,
-} from "@/lib/api/types";
 
 type SearchMode = "normal" | "ia";
 type TopView = "feed" | "seguimiento";
+
+const buildClientProfileHref = (name: string): string => {
+  const slug =
+    name
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "perfil";
+
+  return `/cliente/perfil/${slug}`;
+};
+
+type MiniCard = {
+  name: string;
+  imageClass: string;
+};
+
+type SuggestedAccount = {
+  id: string;
+  slug: string;
+  name: string;
+  role: string;
+  city: string;
+  followers: string;
+  rating: string;
+  avatar: string;
+};
+
+type ChatMessage = {
+  id: string;
+  author: "empresa" | "cliente";
+  text: string;
+  time: string;
+};
+
+type ChatThread = {
+  id: string;
+  name: string;
+  company: string;
+  trigger: string;
+  lastMessage: string;
+  time: string;
+  unread?: number;
+  avatar: string;
+  messages: ChatMessage[];
+};
 
 type PostComment = {
   id: string;
@@ -59,34 +105,21 @@ type FollowingPost = {
   tag: string;
   image?: string;
   createdAt: string;
-  comments?: Array<{ id: string; author: string; text: string; time: string }>;
+  comments?: Array<{
+    id: string;
+    author: string;
+    text: string;
+    time: string;
+  }>;
 };
 
-// ─── Datos sin equivalente de API (seguimiento, IA, comentarios base) ────────
+const favorites: MiniCard[] = [];
 
-const aiSuggestions = [
-  {
-    title: "Servicio tecnico laptop a domicilio",
-    match: "Detecta fallas de rendimiento y limpieza interna",
-    rating: "4.9",
-    slug: "servicio-tecnico-laptop-domicilio",
-    imageClass: "from-cyan-300/40 via-blue-500/30 to-slate-900/60",
-  },
-  {
-    title: "Diagnostico y mantenimiento preventivo",
-    match: "Ideal si la laptop se recalienta o va lenta",
-    rating: "4.8",
-    slug: "diagnostico-mantenimiento-preventivo",
-    imageClass: "from-emerald-300/35 via-cyan-400/30 to-slate-900/60",
-  },
-  {
-    title: "Cambio de pasta termica + limpieza",
-    match: "Recomendado cuando hay apagados inesperados",
-    rating: "4.7",
-    slug: "cambio-pasta-termica-limpieza",
-    imageClass: "from-violet-300/35 via-sky-500/30 to-slate-900/60",
-  },
-];
+const savedItems: MiniCard[] = [];
+
+const baseFeedItems: CommunityFeedPost[] = [];
+
+const aiSuggestions: Array<{ title: string; match: string; rating: string; slug: string; imageClass: string }> = [];
 
 const aiThinkingMessages = [
   "Interpretando tu necesidad tecnica...",
@@ -96,6 +129,8 @@ const aiThinkingMessages = [
 ];
 
 const aiThinkingSignals = ["NLP", "SCORE", "MATCH", "RANK"];
+
+const suggestedAccounts: SuggestedAccount[] = [];
 
 const quickActions = [
   { label: "Explorar marketplace", href: "/cliente/marketplace" },
@@ -107,97 +142,60 @@ const quickActions = [
   { label: "Actividad reciente", href: "#feed" },
 ];
 
+const stories: string[] = [];
+
+const activityFallback: string[] = [];
+
 const feedCommentsByPostId: Record<string, PostComment[]> = {};
 
 const feedBaseLikesByPostId: Record<string, number> = {};
 
-const followingPosts: FollowingPost[] = [
-  {
-    id: "follow-1",
-    author: "TechFix Lab",
-    kind: "empresa",
-    followedSince: "Sigues esta cuenta desde hace 3 meses",
-    title: "Promo especial para mantenimiento preventivo",
-    body: "Esta semana tenemos descuento por combo de limpieza + pasta termica.",
-    tag: "Promocion",
-    image: "/productos/kit-limpieza-pc.jpg",
-    createdAt: "2026-04-17T09:00:00.000Z",
-    comments: [
-      {
-        id: "follow-1-comment-1",
-        author: "Nadia P.",
-        text: "Aproveche esta promo la semana pasada y el servicio fue rapido.",
-        time: "Hace 28 min",
-      },
-    ],
-  },
-  {
-    id: "follow-user-1",
-    author: "Andres Cliente",
-    kind: "usuario",
-    followedSince: "Sigues este perfil desde hace 2 semanas",
-    title: "alguien sabe que deberia comprarme, una laptop ultraligera o un setup de escritorio?",
-    body: "Estoy entre una laptop ultraligera y un setup de escritorio. Que recomiendan para trabajar y jugar?",
-    tag: "Consulta",
-    createdAt: "2026-04-17T11:30:00.000Z",
-    comments: [
-      {
-        id: "comment-1",
-        author: "Carla M.",
-        text: "Si te mueves mucho, laptop ultraligera. Si trabajas siempre en casa, setup de escritorio.",
-        time: "Hace 19 min",
-      },
-    ],
-  },
-];
+const activeClientName = "";
 
-// ─── Utilidades ───────────────────────────────────────────────────────────────
+const clientChatThreads: ChatThread[] = [];
 
-function getInitials(name: string): string {
-  return (
-    name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((t) => t[0]?.toUpperCase() ?? "")
-      .join("") || "TM"
-  );
-}
+const emptyFeedSnapshot: CommunityFeedPost[] = [];
 
-function formatPrice(price: number): string {
-  return `Bs. ${price.toLocaleString("es-BO", { minimumFractionDigits: 0 })}`;
-}
+const subscribeCommunityFeed = (onStoreChange: () => void) => {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
 
-function productToFeedPost(product: {
-  id: string;
-  nombre: string;
-  precio: number;
-  imagenPrincipal: string;
-  calificacion: number;
-}): CommunityFeedPost {
-  return {
-    id: product.id,
-    author: "TechMarket",
-    role: "Marketplace",
-    time: "Reciente",
-    title: product.nombre,
-    body: `${formatPrice(product.precio)} · Calificacion: ${product.calificacion.toFixed(1)}/5`,
-    tag: "Producto",
-    location: "Bolivia",
-    image: product.imagenPrincipal || undefined,
-    createdAt: new Date().toISOString(),
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === "techmarket.community.feed") {
+      onStoreChange();
+    }
   };
-}
+
+  const handleFeedUpdate = () => {
+    onStoreChange();
+  };
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
+  };
+};
+
+const followingPosts: FollowingPost[] = [];
 
 const formatPublishedAt = (isoDate: string): string => {
   const parsed = Date.parse(isoDate);
-  if (Number.isNaN(parsed)) return "Reciente";
+
+  if (Number.isNaN(parsed)) {
+    return "Reciente";
+  }
+
   const date = new Date(parsed);
   const day = String(date.getUTCDate()).padStart(2, "0");
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const year = date.getUTCFullYear();
   const hours = String(date.getUTCHours()).padStart(2, "0");
   const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+
   return `${day}/${month}/${year} ${hours}:${minutes} UTC`;
 };
 
@@ -212,10 +210,11 @@ const getFeedSaleMeta = (
     normalizedText.includes("oferta") ||
     normalizedText.includes("promoc") ||
     normalizedText.includes("precio") ||
-    normalizedText.includes("stock") ||
-    normalizedText.includes("bs.");
+    normalizedText.includes("stock");
 
-  if (!hasSaleSignals) return { variant: "normal" };
+  if (!hasSaleSignals) {
+    return { variant: "normal" };
+  }
 
   const saleKind =
     normalizedText.includes("servicio") ||
@@ -225,6 +224,7 @@ const getFeedSaleMeta = (
       : "producto";
 
   const priceMatch = `${item.title} ${item.body}`.match(/(bs\.?\s?[\d.,]+|\$\s?[\d.,]+)/i);
+
   const conditionLabel = normalizedText.includes("seminuevo")
     ? "Seminuevo"
     : normalizedText.includes("usado")
@@ -242,24 +242,6 @@ const getFeedSaleMeta = (
   };
 };
 
-const emptyFeedSnapshot: CommunityFeedPost[] = [];
-
-const subscribeCommunityFeed = (onStoreChange: () => void) => {
-  if (typeof window === "undefined") return () => {};
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key === "techmarket.community.feed") onStoreChange();
-  };
-  const handleFeedUpdate = () => onStoreChange();
-  window.addEventListener("storage", handleStorage);
-  window.addEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
-  return () => {
-    window.removeEventListener("storage", handleStorage);
-    window.removeEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
-  };
-};
-
-// ─── Componente principal ─────────────────────────────────────────────────────
-
 export default function ClientePage() {
   const router = useRouter();
 
@@ -270,90 +252,151 @@ export default function ClientePage() {
   const [topView, setTopView] = useState<TopView>("feed");
   const [searchMode, setSearchMode] = useState<SearchMode>("normal");
   const [query, setQuery] = useState<string>("");
+  const [headerQuery, setHeaderQuery] = useState<string>("");
+  const [lastSearchQuery, setLastSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<GlobalSearchItem[]>([]);
+  const [searchTotal, setSearchTotal] = useState<number | null>(null);
+  const [searchStatus, setSearchStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
+  const [trendingSearches, setTrendingSearches] = useState<SearchTrending[]>([]);
   const [aiQuery, setAiQuery] = useState<string>("");
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [hasAiSearchRun, setHasAiSearchRun] = useState<boolean>(false);
   const [aiThinkingMessageIndex, setAiThinkingMessageIndex] = useState(0);
   const [aiResults, setAiResults] = useState<typeof aiSuggestions>([]);
   const aiSearchTimerRef = useRef<number | null>(null);
-
   const companyFeedPosts = useSyncExternalStore(
     subscribeCommunityFeed,
     readCommunityFeedPosts,
     () => emptyFeedSnapshot,
   );
-
-  // ─── Estado de datos de la API ────────────────────────────────────────────
-  const [apiProfile, setApiProfile] = useState<ApiClientProfile | null>(null);
-  const [apiCompanies, setApiCompanies] = useState<ApiCompany[]>([]);
-  const [apiChats, setApiChats] = useState<ApiChat[]>([]);
-  const [apiChatMessages, setApiChatMessages] = useState<Record<string, ApiMessage[]>>({});
-  const [apiFavoriteProducts, setApiFavoriteProducts] = useState<ApiFavoriteProduct[]>([]);
-  const [apiFeedPosts, setApiFeedPosts] = useState<CommunityFeedPost[]>([]);
-
-  // Chat widget state
-  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [activeChatId, setActiveChatId] = useState("");
   const [draftMessage, setDraftMessage] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(true);
-
-  // Feed engagement state
   const [likedFeedPostIds, setLikedFeedPostIds] = useState<string[]>([]);
   const [activeFeedCommentPostId, setActiveFeedCommentPostId] = useState<string | null>(null);
   const [feedCommentDraftByPostId, setFeedCommentDraftByPostId] = useState<Record<string, string>>({});
   const [customFeedCommentsByPostId, setCustomFeedCommentsByPostId] = useState<Record<string, PostComment[]>>({});
   const [auraLikePostId, setAuraLikePostId] = useState<string | null>(null);
   const [activePublication, setActivePublication] = useState<PublicationViewerData | null>(null);
+  const [favoriteProducts, setFavoriteProducts] = useState<MarketplaceProductSummary[]>([]);
+  const [favoriteCompanies, setFavoriteCompanies] = useState<MarketplaceCompanySummary[]>([]);
+  const [notifications, setNotifications] = useState<ClientNotification[]>([]);
+  const [clientApiError, setClientApiError] = useState<string | null>(null);
 
-  // ─── Carga inicial desde la API ───────────────────────────────────────────
+  const activeChat = clientChatThreads.find((chat) => chat.id === activeChatId) ?? null;
+
   useEffect(() => {
-    async function loadApiData() {
-      const [profile, companies, chats, favorites, productsRes] = await Promise.all([
-        getClientProfile(),
-        getCompanies(),
-        getChats(),
-        getFavoriteProducts(),
-        getProducts(),
-      ]);
+    let active = true;
 
-      if (profile) setApiProfile(profile);
-      if (companies) setApiCompanies(companies);
-      if (chats) {
-        setApiChats(chats);
-        if (chats.length > 0) setActiveChatId(chats[0].id);
-      }
-      if (favorites) setApiFavoriteProducts(favorites);
-      if (productsRes) {
-        setApiFeedPosts(productsRes.productos.map(productToFeedPost));
-      }
-    }
+    Promise.all([
+      listFavoriteProducts(),
+      listFavoriteCompanies(),
+      listClientNotifications(),
+    ])
+      .then(([products, companies, notificationItems]) => {
+        if (!active) {
+          return;
+        }
+        setFavoriteProducts(products);
+        setFavoriteCompanies(companies);
+        setNotifications(notificationItems);
+        setClientApiError(null);
+      })
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
+        setFavoriteProducts([]);
+        setFavoriteCompanies([]);
+        setNotifications([]);
+        setClientApiError(error instanceof Error ? error.message : "No se pudo cargar datos cliente");
+      });
 
-    loadApiData();
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // Cargar mensajes cuando cambia el chat activo
-  useEffect(() => {
-    if (!activeChatId || apiChatMessages[activeChatId]) return;
+  const visibleFavorites = useMemo<MiniCard[]>(
+    () =>
+      favoriteProducts.map((product) => ({
+        name: product.nombre,
+        imageClass: "from-cyan-300/40 via-blue-500/30 to-slate-900/60",
+      })),
+    [favoriteProducts],
+  );
 
-    async function loadMessages() {
-      const msgs = await getChatMessages(activeChatId!);
-      if (msgs) {
-        setApiChatMessages((prev) => ({ ...prev, [activeChatId!]: msgs }));
-      }
-      await markChatRead(activeChatId!);
-      setApiChats((prev) =>
-        prev.map((c) => (c.id === activeChatId ? { ...c, mensajesSinLeer: 0 } : c)),
-      );
+  const visibleCompanies = useMemo(
+    () =>
+      favoriteCompanies.map((company) => ({
+        slug: company.id,
+        name: company.nombre,
+        logo:
+          company.logo ??
+          (company.nombre
+            .split(" ")
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((token) => token[0]?.toUpperCase() ?? "")
+            .join("") ||
+            "TM"),
+        city: "Bolivia",
+        category: "Empresa seguida",
+        tagline: "Empresa seguida desde tu cuenta cliente.",
+        rating: company.calificacion ?? 0,
+        reviewCount: 0,
+      })),
+    [favoriteCompanies],
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    searchTrending()
+      .then((items) => {
+        if (!active) {
+          return;
+        }
+        setTrendingSearches(items);
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+        setTrendingSearches([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const normalizedQuery = query.trim();
+
+    if (!normalizedQuery) {
+      setSearchSuggestions([]);
+      return;
     }
 
-    loadMessages();
-  }, [activeChatId, apiChatMessages]);
+    const timeoutId = window.setTimeout(() => {
+      fetchSearchSuggestions(normalizedQuery)
+        .then((items) => {
+          setSearchSuggestions(items);
+        })
+        .catch(() => {
+          setSearchSuggestions([]);
+        });
+    }, 250);
 
-  const activeChat = apiChats.find((c) => c.id === activeChatId) ?? null;
-  const activeChatMessages = activeChatId ? (apiChatMessages[activeChatId] ?? []) : [];
-
-  const profileName =
-    apiProfile ? `${apiProfile.nombre} ${apiProfile.apellido}`.trim() : "Cliente";
-  const profileInitials = getInitials(profileName);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [query]);
 
   const aiSummary = useMemo(() => {
     if (!hasAiSearchRun || !aiResults.length) return "";
@@ -361,44 +404,53 @@ export default function ClientePage() {
   }, [aiQuery, aiResults.length, hasAiSearchRun]);
 
   useEffect(() => {
-    if (!isThinking) return;
+    if (!isThinking) {
+      return;
+    }
+
     const intervalId = window.setInterval(() => {
       setAiThinkingMessageIndex((current) => (current + 1) % aiThinkingMessages.length);
     }, 820);
-    return () => window.clearInterval(intervalId);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, [isThinking]);
 
   useEffect(() => {
     return () => {
-      if (aiSearchTimerRef.current !== null) window.clearTimeout(aiSearchTimerRef.current);
+      if (aiSearchTimerRef.current !== null) {
+        window.clearTimeout(aiSearchTimerRef.current);
+      }
     };
   }, []);
 
-  const fullFeed = useMemo(
-    () => mergeCommunityFeedPosts([...apiFeedPosts, ...companyFeedPosts]),
-    [apiFeedPosts, companyFeedPosts],
-  );
+  const fullFeed = useMemo(() => mergeCommunityFeedPosts(companyFeedPosts), [companyFeedPosts]);
 
   const filteredFeed = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
-    if (!cleanQuery) return fullFeed;
+
+    if (!cleanQuery) {
+      return fullFeed;
+    }
+
     return fullFeed.filter((item) => {
       const bucket = `${item.author} ${item.title} ${item.body} ${item.tag} ${item.location}`.toLowerCase();
       return bucket.includes(cleanQuery);
     });
   }, [fullFeed, query]);
 
-  const filteredFollowingPosts = useMemo(() => {
+  const filteredFollowingPosts = useMemo<FollowingPost[]>(() => {
     const cleanQuery = query.trim().toLowerCase();
-    if (!cleanQuery) return followingPosts;
-    return followingPosts.filter((item) => {
-      const bucket = `${item.author} ${item.title} ${item.body} ${item.tag}`.toLowerCase();
-      return bucket.includes(cleanQuery);
-    });
+
+    return [];
   }, [query]);
 
   const clearPendingAiSearch = () => {
-    if (aiSearchTimerRef.current === null) return;
+    if (aiSearchTimerRef.current === null) {
+      return;
+    }
+
     window.clearTimeout(aiSearchTimerRef.current);
     aiSearchTimerRef.current = null;
   };
@@ -411,28 +463,84 @@ export default function ClientePage() {
     setAiResults([]);
   };
 
+  const runGlobalSearch = async (nextQuery: string) => {
+    const normalizedQuery = nextQuery.trim();
+
+    if (!normalizedQuery) {
+      setLastSearchQuery("");
+      setSearchResults([]);
+      setSearchTotal(null);
+      setSearchStatus("idle");
+      setSearchError(null);
+      return;
+    }
+
+    setLastSearchQuery(normalizedQuery);
+    setSearchStatus("loading");
+    setSearchError(null);
+
+    try {
+      const response = await searchGlobal(normalizedQuery);
+      setSearchResults(response.resultados ?? []);
+      setSearchTotal(response.total ?? 0);
+      setSearchStatus("success");
+
+      try {
+        await createSearchHistory({ query: normalizedQuery, tipo: "general" });
+      } catch {
+        // ignore history failures
+      }
+    } catch (error) {
+      setSearchResults([]);
+      setSearchTotal(null);
+      setSearchStatus("error");
+      setSearchError(error instanceof Error ? error.message : "Error de busqueda");
+    }
+  };
+
   const handleAiSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isThinking) return;
+
+    if (isThinking) {
+      return;
+    }
+
     clearPendingAiSearch();
+
     setHasAiSearchRun(true);
     setAiThinkingMessageIndex(0);
     setIsThinking(true);
     setAiResults([]);
+
     aiSearchTimerRef.current = window.setTimeout(() => {
-      setAiResults(aiSuggestions);
+      setAiResults([]);
       setIsThinking(false);
       aiSearchTimerRef.current = null;
     }, 1850);
   };
 
-  const handleNormalSearch = (event: FormEvent<HTMLFormElement>) => {
+  const handleHeaderSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    runGlobalSearch(headerQuery);
   };
 
-  const isPostLiked = (postId: string) => likedFeedPostIds.includes(postId);
-  const getFeedLikeCount = (postId: string) =>
-    (feedBaseLikesByPostId[postId] ?? 0) + (isPostLiked(postId) ? 1 : 0);
+  const handleNormalSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    runGlobalSearch(query);
+  };
+
+  const handleSuggestionClick = (text: string) => {
+    setQuery(text);
+    runGlobalSearch(text);
+  };
+
+  const isPostLiked = (postId: string): boolean => likedFeedPostIds.includes(postId);
+
+  const getFeedLikeCount = (postId: string): number => {
+    const baseLikes = feedBaseLikesByPostId[postId] ?? 0;
+    return baseLikes + (isPostLiked(postId) ? 1 : 0);
+  };
+
   const getMergedFeedComments = (postId: string): PostComment[] => [
     ...(feedCommentsByPostId[postId] ?? []),
     ...(customFeedCommentsByPostId[postId] ?? []),
@@ -440,9 +548,15 @@ export default function ClientePage() {
 
   const handleToggleFeedLike = (postId: string) => {
     const liked = isPostLiked(postId);
-    setLikedFeedPostIds((current) =>
-      liked ? current.filter((id) => id !== postId) : [...current, postId],
-    );
+
+    setLikedFeedPostIds((current) => {
+      if (liked) {
+        return current.filter((id) => id !== postId);
+      }
+
+      return [...current, postId];
+    });
+
     if (!liked) {
       setAuraLikePostId(postId);
       window.setTimeout(() => {
@@ -457,23 +571,34 @@ export default function ClientePage() {
 
   const handleSubmitFeedComment = (event: FormEvent<HTMLFormElement>, postId: string) => {
     event.preventDefault();
+
     const draftComment = (feedCommentDraftByPostId[postId] ?? "").trim();
-    if (draftComment.length < 3) return;
+
+    if (draftComment.length < 3) {
+      return;
+    }
+
     const nextComment: PostComment = {
       id: `${postId}-client-comment-${Date.now()}`,
-      author: profileName,
+      author: activeClientName,
       text: draftComment,
       time: "Ahora",
     };
+
     setCustomFeedCommentsByPostId((current) => ({
       ...current,
       [postId]: [...(current[postId] ?? []), nextComment],
     }));
-    setFeedCommentDraftByPostId((current) => ({ ...current, [postId]: "" }));
+
+    setFeedCommentDraftByPostId((current) => ({
+      ...current,
+      [postId]: "",
+    }));
   };
 
   const handleOpenFeedPublication = (item: CommunityFeedPost) => {
     const mergedComments = getMergedFeedComments(item.id);
+
     setActivePublication({
       id: item.id,
       title: item.title,
@@ -486,59 +611,31 @@ export default function ClientePage() {
       image: item.image,
       initialLikeCount: getFeedLikeCount(item.id),
       initiallyLiked: isPostLiked(item.id),
-      initialComments: mergedComments.map((c) => ({
-        id: c.id,
-        author: c.author,
-        text: c.text,
-        time: c.time,
+      initialComments: mergedComments.map((comment) => ({
+        id: comment.id,
+        author: comment.author,
+        text: comment.text,
+        time: comment.time,
       })),
       ...getFeedSaleMeta(item),
     });
   };
-
-  const handleChatSendMessage = async () => {
-    if (!activeChatId || draftMessage.trim().length < 2) return;
-    const text = draftMessage.trim();
-    setDraftMessage("");
-
-    const result = await sendMessage(activeChatId, text);
-    const newMsg: ApiMessage = result ?? {
-      id: `local-${Date.now()}`,
-      remitente: "cliente",
-      contenido: text,
-      fecha: new Date().toISOString(),
-    };
-
-    setApiChatMessages((prev) => ({
-      ...prev,
-      [activeChatId]: [...(prev[activeChatId] ?? []), newMsg],
-    }));
-    setApiChats((prev) =>
-      prev.map((c) => (c.id === activeChatId ? { ...c, ultimoMensaje: text } : c)),
-    );
-  };
-
-  // Historias / bubbles: nombres de empresas de la API
-  const storyLabels =
-    apiCompanies.length > 0
-      ? apiCompanies.slice(0, 6).map((c) => c.nombre)
-      : ["TechMarket"];
 
   return (
     <div className="flex-1 pb-0">
       <ClientPageHeader
         sectionLabel="Cliente activo"
         brandHref="/"
-        middleSlot={
-          <form onSubmit={handleNormalSearch}>
+        middleSlot={(
+          <form onSubmit={handleHeaderSearch}>
             <input
               className="auth-input"
               placeholder="Buscar en TechMarket..."
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              value={headerQuery}
+              onChange={(event) => setHeaderQuery(event.target.value)}
             />
           </form>
-        }
+        )}
       />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)_320px] lg:items-start lg:px-6">
@@ -546,20 +643,13 @@ export default function ClientePage() {
           <section className="tech-card">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                {profileInitials}
+                CM
               </div>
               <div>
-                <p className="text-sm font-semibold text-cyan-50">
-                  {apiProfile ? profileName : "Tu panel"}
-                </p>
-                <p className="text-xs text-cyan-100/75">
-                  {apiProfile ? apiProfile.email : "Cliente activo en TechMarket"}
-                </p>
+                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
+                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
               </div>
             </div>
-            <p className="mt-1 font-mono text-[10px] text-cyan-200/45">
-              GET /api/clients/profile
-            </p>
             <div className="mt-4 grid gap-2">
               {quickActions.map((action) => (
                 <Link key={action.label} href={action.href} className="auth-action">
@@ -569,111 +659,114 @@ export default function ClientePage() {
             </div>
           </section>
 
-          {/* Empresa destacada */}
-          {apiCompanies.length > 0 && (
-            <section className="tech-card">
-              <p className="text-sm font-semibold text-cyan-50">Perfil destacado</p>
-              <div className="mt-3 rounded-2xl border border-cyan-100/15 bg-slate-950/30 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">
-                  Recomendado para ti
-                </p>
-                <h3 className="mt-2 text-lg font-semibold text-cyan-50">
-                  {apiCompanies[0].nombre}
-                </h3>
-                <p className="mt-1 text-sm text-cyan-100/75">
-                  Calificacion: {apiCompanies[0].calificacion.toFixed(1)}/5
-                </p>
-                <Link
-                  href={`/cliente/empresa/${apiCompanies[0].id}`}
-                  className="mt-4 inline-flex rounded-xl border border-cyan-100/10 bg-cyan-300/10 px-3 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/15"
-                >
-                  Ver perfil
-                </Link>
-              </div>
-              <p className="mt-2 font-mono text-[10px] text-cyan-200/45">
-                GET /api/marketplace/companies
-              </p>
-            </section>
-          )}
+          <section className="tech-card">
+            <p className="text-sm font-semibold text-cyan-50">Perfil destacado</p>
+            <div className="mt-3 rounded-2xl border border-cyan-100/15 bg-slate-950/30 p-4">
+              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Recomendado para ti</p>
+              <h3 className="mt-2 text-lg font-semibold text-cyan-50">Perfil desde API</h3>
+              <p className="mt-1 text-sm text-cyan-100/75">Carga empresas desde la API para ver recomendaciones.</p>
+              <Link
+                href="/cliente/empresas"
+                className="mt-4 inline-flex rounded-xl border border-cyan-100/10 bg-cyan-300/10 px-3 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/15"
+              >
+                Ver perfil
+              </Link>
+            </div>
+          </section>
 
-          {/* Favoritos */}
           <section id="favoritos" className="tech-card">
             <p className="text-sm font-semibold text-cyan-50">Favoritos</p>
-            <p className="mt-1 font-mono text-[10px] text-cyan-200/45">
-              GET /api/clients/favorites/products
-            </p>
+            {clientApiError ? (
+              <p className="mt-2 text-xs text-amber-200/85">
+                No se pudo conectar con la API: {clientApiError}
+              </p>
+            ) : null}
             <div className="mt-3 grid gap-3">
-              {apiFavoriteProducts.length === 0 ? (
-                <p className="text-xs text-cyan-100/70">
-                  {apiProfile ? "No tienes productos favoritos." : "Cargando..."}
-                </p>
-              ) : (
-                apiFavoriteProducts.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-cyan-100/15 p-3">
-                    {item.imagenPrincipal ? (
-                      <img
-                        src={item.imagenPrincipal}
-                        alt={item.nombre}
-                        className="h-16 w-full rounded-xl object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="h-16 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br from-cyan-300/35 via-blue-500/25 to-slate-900/60" />
-                    )}
-                    <p className="mt-2 text-xs text-cyan-100/85">{item.nombre}</p>
-                    <p className="text-xs font-semibold text-cyan-200">{formatPrice(item.precio)}</p>
+              {visibleFavorites.length ? (
+                visibleFavorites.map((item) => (
+                  <div key={item.name} className="rounded-2xl border border-cyan-100/15 p-3">
+                    <div
+                      className={`h-16 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${item.imageClass}`}
+                    />
+                    <p className="mt-2 text-xs text-cyan-100/85">{item.name}</p>
                   </div>
                 ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-cyan-100/15 p-3 text-xs text-cyan-100/75">
+                  No hay favoritos desde la API.
+                </div>
               )}
             </div>
           </section>
 
-          {/* Empresas destacadas */}
           <section id="empresas" className="tech-card">
-            <p className="text-sm font-semibold text-cyan-50">Empresas destacadas</p>
-            <p className="mt-1 font-mono text-[10px] text-cyan-200/45">
-              GET /api/marketplace/companies
+            <p className="text-sm font-semibold text-cyan-50">
+              {favoriteCompanies.length ? "Empresas seguidas" : "Empresas destacadas"}
             </p>
             <div className="mt-3 space-y-3">
-              {apiCompanies.length === 0 ? (
-                <p className="text-xs text-cyan-100/70">Cargando empresas...</p>
-              ) : (
-                apiCompanies.map((company) => (
+              {visibleCompanies.length ? (
+                visibleCompanies.map((profile) => (
                   <Link
-                    key={company.id}
-                    href={`/cliente/empresa/${company.id}`}
+                    key={profile.slug}
+                    href={`/cliente/empresa/${profile.slug}`}
                     className="block rounded-2xl border border-cyan-100/15 bg-slate-950/35 p-3 transition hover:bg-slate-950/50"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
-                        {getInitials(company.nombre)}
+                        {profile.logo}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-cyan-50">{company.nombre}</p>
-                        <p className="truncate text-xs text-cyan-200/70">
-                          Calificacion: {company.calificacion.toFixed(1)}
-                        </p>
+                        <p className="text-sm font-semibold text-cyan-50">{profile.name}</p>
+                        <p className="truncate text-xs text-cyan-200/70">{profile.city} · {profile.category}</p>
+                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-cyan-100/75">{profile.tagline}</p>
                       </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-xs text-cyan-200/70">
+                      <span>Valoracion {profile.rating.toFixed(1)}</span>
+                      <span>{profile.reviewCount} opiniones</span>
                     </div>
                   </Link>
                 ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-cyan-100/15 p-3 text-xs text-cyan-100/75">
+                  No hay empresas seguidas desde la API.
+                </div>
               )}
+            </div>
+          </section>
+
+          <section id="guardados" className="tech-card">
+            <p className="text-sm font-semibold text-cyan-50">
+              {notifications.length ? "Notificaciones" : "Guardados"}
+            </p>
+            <div className="mt-3 grid gap-3">
+              {notifications.length
+                ? notifications.slice(0, 4).map((notification) => (
+                    <Link
+                      key={notification.id}
+                      href={notification.enlace ?? "#"}
+                      className="rounded-2xl border border-cyan-100/15 p-3 text-xs text-cyan-100/85"
+                    >
+                      <span className={notification.leido ? "text-cyan-100/70" : "font-semibold text-cyan-50"}>
+                        {notification.titulo}
+                      </span>
+                    </Link>
+                  ))
+                : (
+                    <div className="rounded-2xl border border-dashed border-cyan-100/15 p-3 text-xs text-cyan-100/75">
+                      No hay notificaciones desde la API.
+                    </div>
+                  )}
             </div>
           </section>
         </aside>
 
-        {/* ─── Feed central ─────────────────────────────────────────────── */}
         <section className="space-y-4">
           <section id="feed" className="tech-card">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD CLIENTE</p>
-                <h1 className="mt-2 text-xl font-semibold text-cyan-50 md:text-2xl">
-                  Feed principal
-                </h1>
-                <p className="mt-1 font-mono text-[10px] text-cyan-200/45">
-                  GET /api/marketplace/products
-                </p>
+                <h1 className="mt-2 text-xl font-semibold text-cyan-50 md:text-2xl">Feed principal</h1>
               </div>
               <div className="auth-switch">
                 <button
@@ -693,336 +786,356 @@ export default function ClientePage() {
               </div>
             </div>
             <p className="mt-3 text-sm text-cyan-100/75">
-              El feed muestra los productos del marketplace. Seguimiento muestra publicaciones de cuentas que sigues.
+              Seguimiento muestra publicaciones de cuentas que sigues. Marketplace ahora vive en su propia seccion.
             </p>
           </section>
 
           {topView === "feed" && (
             <>
-              <section className="tech-card overflow-hidden">
-                <div className="flex gap-3 overflow-x-auto pb-1">
-                  {storyLabels.map((label) => (
-                    <button
-                      key={label}
-                      type="button"
-                      className="flex min-w-[95px] shrink-0 flex-col items-center gap-2 rounded-2xl border border-cyan-100/15 bg-slate-950/30 px-3 py-3 text-center text-xs text-cyan-100/85"
-                    >
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full border border-cyan-200/40 bg-gradient-to-br from-cyan-300 to-blue-600 font-bold text-slate-950">
-                        {getInitials(label)}
-                      </span>
-                      <span className="line-clamp-1">{label.split(" ")[0]}</span>
-                    </button>
-                  ))}
-                </div>
-              </section>
+          <section className="tech-card overflow-hidden">
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              []
+            </div>
+          </section>
 
-              <section className="tech-card">
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    className={`tech-button ${searchMode === "normal" ? "tech-button-primary" : "tech-button-secondary"}`}
-                    onClick={() => {
-                      clearPendingAiSearch();
-                      setIsThinking(false);
-                      setSearchMode("normal");
-                    }}
-                  >
-                    Busqueda normal
-                  </button>
-                  <button
-                    type="button"
-                    className={`tech-button ${searchMode === "ia" ? "tech-button-primary" : "tech-button-secondary"}`}
-                    onClick={() => {
-                      setSearchMode("ia");
-                      resetAiSearchSession();
-                    }}
-                  >
-                    Busqueda con IA
-                  </button>
-                </div>
+          <section className="tech-card">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className={`tech-button ${
+                  searchMode === "normal" ? "tech-button-primary" : "tech-button-secondary"
+                }`}
+                onClick={() => {
+                  clearPendingAiSearch();
+                  setIsThinking(false);
+                  setSearchMode("normal");
+                }}
+              >
+                Busqueda normal
+              </button>
+              <button
+                type="button"
+                className={`tech-button ${
+                  searchMode === "ia" ? "tech-button-primary" : "tech-button-secondary"
+                }`}
+                onClick={() => {
+                  setSearchMode("ia");
+                  resetAiSearchSession();
+                }}
+              >
+                Busqueda con IA
+              </button>
+            </div>
 
-                {searchMode === "normal" && (
-                  <form className="mt-4" onSubmit={handleNormalSearch}>
-                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                      <input
-                        className="auth-input w-full"
-                        placeholder="Busca productos, tiendas o servicios..."
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                      />
-                      <button
-                        type="submit"
-                        className="tech-button tech-button-primary w-full md:w-auto md:whitespace-nowrap"
-                      >
-                        Buscar en el feed
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                {searchMode === "ia" && (
-                  <form className="mt-4 space-y-4" onSubmit={handleAiSearch}>
-                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                      <input
-                        className="auth-input w-full"
-                        placeholder="Ej: mi laptop funciona mal y se recalienta"
-                        value={aiQuery}
-                        onChange={(event) => setAiQuery(event.target.value)}
-                      />
-                      <button
-                        type="submit"
-                        disabled={isThinking}
-                        className="tech-button tech-button-primary w-full md:w-auto md:whitespace-nowrap"
-                      >
-                        {isThinking ? "Analizando..." : "Buscar con IA"}
-                      </button>
-                    </div>
-
-                    {aiSummary && (
-                      <p className="text-sm text-cyan-100/80">{aiSummary}</p>
-                    )}
-
-                    {!hasAiSearchRun && !isThinking && (
-                      <p className="text-xs text-cyan-200/75">
-                        Escribe tu consulta y presiona &quot;Buscar con IA&quot; para iniciar el analisis.
-                      </p>
-                    )}
-
-                    {hasAiSearchRun && aiResults.length > 0 && (
-                      <div className="grid gap-3 md:grid-cols-3">
-                        {aiResults.map((result) => (
-                          <article key={result.title} className="rounded-2xl border border-cyan-100/15 p-4">
-                            <div
-                              className={`h-24 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${result.imageClass}`}
-                            />
-                            <p className="mt-3 text-xs text-cyan-200/75">Servicio tecnico</p>
-                            <h3 className="mt-2 text-base font-semibold text-cyan-50">
-                              {result.title}
-                            </h3>
-                            <p className="mt-2 text-sm text-cyan-100/80">{result.match}</p>
-                            <div className="mt-3 flex items-center justify-between gap-2">
-                              <span className="text-xs text-cyan-200/85">
-                                Reputacion {result.rating}
-                              </span>
-                              <Link
-                                className="tech-button tech-button-secondary"
-                                href={`/cliente/servicios/${result.slug}`}
-                              >
-                                Ver resenas
-                              </Link>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                    )}
-                  </form>
-                )}
-              </section>
-
-              <section className="space-y-4">
-                {filteredFeed.length === 0 && (
-                  <div className="tech-card">
-                    <p className="text-sm text-cyan-100/80">
-                      {apiFeedPosts.length === 0
-                        ? "Cargando productos desde la API..."
-                        : "No encontramos publicaciones para esa busqueda."}
-                    </p>
-                  </div>
-                )}
-
-                {filteredFeed.map((item) => {
-                  const isLiked = isPostLiked(item.id);
-                  const isCommentOpen = activeFeedCommentPostId === item.id;
-                  const mergedComments = getMergedFeedComments(item.id);
-                  const likeCount = getFeedLikeCount(item.id);
-                  const draftComment = feedCommentDraftByPostId[item.id] ?? "";
-
-                  return (
-                    <PublicationCard
-                      key={item.id}
-                      header={
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <PublicationAvatar label={item.author} />
-                            <div>
-                              <p className="text-sm font-semibold text-cyan-50">
-                                {item.author}
-                              </p>
-                              <p className="text-xs text-cyan-200/70">
-                                {item.role} · {item.location} ·{" "}
-                                {formatPublishedAt(item.createdAt)}
-                              </p>
-                            </div>
-                          </div>
-                          <span className="rounded-full border border-cyan-100/20 bg-cyan-100/10 px-3 py-1 text-xs text-cyan-100/85">
-                            {item.tag}
-                          </span>
-                        </div>
-                      }
-                      content={
-                        <>
-                          <h2 className="mt-4 text-lg font-semibold text-cyan-50">
-                            {item.title}
-                          </h2>
-                          <p className="mt-2 text-sm leading-7 text-cyan-100/85">
-                            {item.body}
-                          </p>
-                        </>
-                      }
-                      media={
-                        item.image
-                          ? {
-                              src: item.image,
-                              alt: item.title,
-                              imageClassName: "h-64 w-full object-cover md:h-80",
-                            }
-                          : undefined
-                      }
-                      footer={
-                        <div className="mt-4 border-t border-cyan-100/10 pt-3 text-xs text-cyan-200/75">
-                          {item.time || formatPublishedAt(item.createdAt)}
-                        </div>
-                      }
-                      actions={
-                        <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
-                          <motion.button
-                            type="button"
-                            onClick={() => handleToggleFeedLike(item.id)}
-                            whileHover={{ y: -1 }}
-                            whileTap={{ scale: 0.96 }}
-                            animate={
-                              isLiked
-                                ? {
-                                    scale: [1, 1.04, 1],
-                                    boxShadow: [
-                                      "0 0 0 rgba(34,211,238,0)",
-                                      "0 0 24px rgba(34,211,238,0.45)",
-                                      "0 0 12px rgba(34,211,238,0.25)",
-                                    ],
-                                  }
-                                : {
-                                    scale: 1,
-                                    boxShadow: "0 0 0 rgba(34,211,238,0)",
-                                  }
-                            }
-                            transition={{ duration: 0.45, ease: "easeOut" }}
-                            className={`group relative overflow-hidden rounded-xl border px-3 py-2 font-semibold transition ${
-                              isLiked
-                                ? "border-cyan-200/45 bg-cyan-300/20 text-cyan-50"
-                                : "border-cyan-100/10 bg-cyan-300/10 text-cyan-100/90 hover:border-cyan-200/30 hover:bg-cyan-300/15"
-                            }`}
-                          >
-                            <span className="pointer-events-none absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_top,rgba(103,232,249,0.3),transparent_70%)]" />
-                            <AnimatePresence>
-                              {auraLikePostId === item.id && (
-                                <motion.span
-                                  className="pointer-events-none absolute inset-0 rounded-xl bg-cyan-300/35"
-                                  initial={{ opacity: 0.55, scale: 0.78 }}
-                                  animate={{ opacity: 0, scale: 1.38 }}
-                                  exit={{ opacity: 0 }}
-                                  transition={{ duration: 0.5, ease: "easeOut" }}
-                                />
-                              )}
-                            </AnimatePresence>
-                            <span className="relative z-10">
-                              {isLiked ? "Te gusta" : "Me gusta"} · {likeCount}
-                            </span>
-                          </motion.button>
-
-                          <PublicationActionButton
-                            onClick={() => handleToggleFeedComment(item.id)}
-                            active={isCommentOpen}
-                            accent="neutral"
-                          >
-                            Comentar · {mergedComments.length}
-                          </PublicationActionButton>
-
-                          <PublicationActionButton
-                            onClick={() => handleOpenFeedPublication(item)}
-                            accent="neutral"
-                          >
-                            Ver publicacion
-                          </PublicationActionButton>
-                        </div>
-                      }
-                      composer={
-                        <AnimatePresence initial={false}>
-                          {isCommentOpen && (
-                            <motion.form
-                              key={`${item.id}-comment-form`}
-                              onSubmit={(event) => handleSubmitFeedComment(event, item.id)}
-                              initial={{ opacity: 0, height: 0, y: -4 }}
-                              animate={{ opacity: 1, height: "auto", y: 0 }}
-                              exit={{ opacity: 0, height: 0, y: -4 }}
-                              transition={{ duration: 0.22, ease: "easeOut" }}
-                              className="mt-3 space-y-2 overflow-hidden rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3"
-                            >
-                              <label className="block text-xs font-semibold text-cyan-200/80">
-                                Agregar comentario
-                              </label>
-                              <textarea
-                                value={draftComment}
-                                onChange={(event) =>
-                                  setFeedCommentDraftByPostId((current) => ({
-                                    ...current,
-                                    [item.id]: event.target.value,
-                                  }))
-                                }
-                                placeholder="Comparte tu opinion sobre esta publicacion..."
-                                className="h-24 w-full resize-none rounded-2xl border border-cyan-100/10 bg-slate-950/45 px-3 py-2 text-sm text-cyan-50 placeholder:text-cyan-100/45 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                              />
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveFeedCommentPostId(null)}
-                                  className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-100/85"
-                                >
-                                  Cerrar
-                                </button>
-                                <button
-                                  type="submit"
-                                  disabled={draftComment.trim().length < 3}
-                                  className="rounded-xl border border-cyan-200/25 bg-cyan-400/20 px-3 py-2 text-xs font-semibold text-cyan-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  Publicar
-                                </button>
-                              </div>
-                            </motion.form>
-                          )}
-                        </AnimatePresence>
-                      }
-                      thread={
-                        mergedComments.length > 0 ? (
-                          <motion.div
-                            layout
-                            className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3"
-                          >
-                            <p className="text-xs font-semibold text-cyan-200/80">
-                              Comentarios · {mergedComments.length}
-                            </p>
-                            {mergedComments.map((comment) => (
-                              <div
-                                key={comment.id}
-                                className="rounded-xl border border-cyan-100/10 bg-white/5 p-3"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-xs font-semibold text-cyan-50">
-                                    {comment.author}
-                                  </p>
-                                  <p className="text-[10px] text-cyan-200/65">{comment.time}</p>
-                                </div>
-                                <p className="mt-2 text-xs leading-5 text-cyan-100/85">
-                                  {comment.text}
-                                </p>
-                              </div>
-                            ))}
-                          </motion.div>
-                        ) : null
-                      }
+            {searchMode === "normal" && (
+              <>
+                <form className="mt-4" onSubmit={handleNormalSearch}>
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                    <input
+                      className="auth-input w-full"
+                      placeholder="Busca productos, tiendas o servicios..."
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
                     />
-                  );
-                })}
-              </section>
+                    <button
+                      type="submit"
+                      className="tech-button tech-button-primary w-full md:w-auto md:whitespace-nowrap"
+                    >
+                      Buscar en el feed
+                    </button>
+                  </div>
+                </form>
+
+                {searchSuggestions.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {searchSuggestions.map((suggestion) => (
+                      <button
+                        key={`${suggestion.texto}-${suggestion.tipo}`}
+                        type="button"
+                        onClick={() => handleSuggestionClick(suggestion.texto)}
+                        className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs text-cyan-100/85 transition hover:border-cyan-200/40"
+                      >
+                        {suggestion.texto}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                {query.trim() && query.trim() === lastSearchQuery ? (
+                  <div className="mt-4 space-y-3">
+                    {searchStatus === "loading" ? (
+                      <p className="text-xs text-cyan-200/75">Buscando en todo TechMarket...</p>
+                    ) : null}
+                    {searchStatus === "error" && searchError ? (
+                      <p className="text-xs text-rose-200/85">{searchError}</p>
+                    ) : null}
+                    {searchStatus === "success" ? (
+                      searchResults.length > 0 ? (
+                        <div className="grid gap-3">
+                          <p className="text-xs text-cyan-200/75">
+                            Resultados: {searchTotal ?? searchResults.length}
+                          </p>
+                          {searchResults.map((result) => (
+                            <Link
+                              key={result.id}
+                              href={result.url}
+                              className="rounded-2xl border border-cyan-100/15 bg-slate-950/35 p-3 transition hover:border-cyan-200/40"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-200/75">
+                                  {result.tipo}
+                                </p>
+                                <span className="text-[11px] text-cyan-100/60">{result.id}</span>
+                              </div>
+                              <p className="mt-2 text-sm font-semibold text-cyan-50">{result.titulo}</p>
+                              <p className="mt-1 text-xs text-cyan-100/75">
+                                {result.descripcion || "Sin descripcion"}
+                              </p>
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-cyan-200/75">Sin resultados globales.</p>
+                      )
+                    ) : null}
+                  </div>
+                ) : null}
+              </>
+            )}
+
+            {searchMode === "ia" && (
+              <form className="mt-4 space-y-4" onSubmit={handleAiSearch}>
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                  <input
+                    className="auth-input w-full"
+                    placeholder="Ej: mi laptop funciona mal y se recalienta"
+                    value={aiQuery}
+                    onChange={(event) => setAiQuery(event.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isThinking}
+                    className="tech-button tech-button-primary w-full md:w-auto md:whitespace-nowrap"
+                  >
+                    {isThinking ? "Analizando..." : "Buscar con IA"}
+                  </button>
+                </div>
+
+                {aiSummary && <p className="text-sm text-cyan-100/80">{aiSummary}</p>}
+
+                {!hasAiSearchRun && !isThinking ? (
+                  <p className="text-xs text-cyan-200/75">
+                    Escribe tu consulta y presiona &quot;Buscar con IA&quot; para iniciar el analisis.
+                  </p>
+                ) : null}
+
+                {hasAiSearchRun && aiResults.length > 0 ? (
+                  <div className="grid gap-3 md:grid-cols-3">
+                    {aiResults.map((result) => (
+                      <article key={result.title} className="rounded-2xl border border-cyan-100/15 p-4">
+                        <div
+                          className={`h-24 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${result.imageClass}`}
+                        />
+                        <p className="mt-3 text-xs text-cyan-200/75">Servicio tecnico</p>
+                        <h3 className="mt-2 text-base font-semibold text-cyan-50">{result.title}</h3>
+                        <p className="mt-2 text-sm text-cyan-100/80">{result.match}</p>
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <span className="text-xs text-cyan-200/85">Reputacion {result.rating}</span>
+                          <Link
+                            className="tech-button tech-button-secondary"
+                            href={`/cliente/servicios/${result.slug}`}
+                          >
+                            Ver resenas
+                          </Link>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
+              </form>
+            )}
+          </section>
+
+          <section className="space-y-4">
+            {filteredFeed.length === 0 && (
+              <div className="tech-card">
+                <p className="text-sm text-cyan-100/80">No encontramos publicaciones para esa busqueda.</p>
+              </div>
+            )}
+
+            {filteredFeed.map((item) => {
+              const isLiked = isPostLiked(item.id);
+              const isCommentOpen = activeFeedCommentPostId === item.id;
+              const mergedComments = getMergedFeedComments(item.id);
+              const likeCount = getFeedLikeCount(item.id);
+              const draftComment = feedCommentDraftByPostId[item.id] ?? "";
+
+              return (
+                <PublicationCard
+                  key={item.id}
+                  header={
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <PublicationAvatar label={item.author} />
+                        <div>
+                          <p className="text-sm font-semibold text-cyan-50">{item.author}</p>
+                          <p className="text-xs text-cyan-200/70">
+                            {item.role} · {item.location} · {formatPublishedAt(item.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="rounded-full border border-cyan-100/20 bg-cyan-100/10 px-3 py-1 text-xs text-cyan-100/85">
+                        {item.tag}
+                      </span>
+                    </div>
+                  }
+                  content={
+                    <>
+                      <h2 className="mt-4 text-lg font-semibold text-cyan-50">{item.title}</h2>
+                      <p className="mt-2 text-sm leading-7 text-cyan-100/85">{item.body}</p>
+                    </>
+                  }
+                  media={
+                    item.image
+                      ? {
+                          src: item.image,
+                          alt: item.title,
+                          imageClassName: "h-64 w-full object-cover md:h-80",
+                        }
+                      : undefined
+                  }
+                  footer={
+                    <div className="mt-4 border-t border-cyan-100/10 pt-3 text-xs text-cyan-200/75">
+                      {item.time || formatPublishedAt(item.createdAt)}
+                    </div>
+                  }
+                  actions={
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                      <motion.button
+                        type="button"
+                        onClick={() => handleToggleFeedLike(item.id)}
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.96 }}
+                        animate={
+                          isLiked
+                            ? {
+                                scale: [1, 1.04, 1],
+                                boxShadow: [
+                                  "0 0 0 rgba(34,211,238,0)",
+                                  "0 0 24px rgba(34,211,238,0.45)",
+                                  "0 0 12px rgba(34,211,238,0.25)",
+                                ],
+                              }
+                            : {
+                                scale: 1,
+                                boxShadow: "0 0 0 rgba(34,211,238,0)",
+                              }
+                        }
+                        transition={{ duration: 0.45, ease: "easeOut" }}
+                        className={`group relative overflow-hidden rounded-xl border px-3 py-2 font-semibold transition ${
+                          isLiked
+                            ? "border-cyan-200/45 bg-cyan-300/20 text-cyan-50"
+                            : "border-cyan-100/10 bg-cyan-300/10 text-cyan-100/90 hover:border-cyan-200/30 hover:bg-cyan-300/15"
+                        }`}
+                      >
+                        <span className="pointer-events-none absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_top,rgba(103,232,249,0.3),transparent_70%)]" />
+                        <AnimatePresence>
+                          {auraLikePostId === item.id ? (
+                            <motion.span
+                              className="pointer-events-none absolute inset-0 rounded-xl bg-cyan-300/35"
+                              initial={{ opacity: 0.55, scale: 0.78 }}
+                              animate={{ opacity: 0, scale: 1.38 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.5, ease: "easeOut" }}
+                            />
+                          ) : null}
+                        </AnimatePresence>
+                        <span className="relative z-10">{isLiked ? "Te gusta" : "Me gusta"} · {likeCount}</span>
+                      </motion.button>
+
+                      <PublicationActionButton
+                        onClick={() => handleToggleFeedComment(item.id)}
+                        active={isCommentOpen}
+                        accent="neutral"
+                      >
+                        Comentar · {mergedComments.length}
+                      </PublicationActionButton>
+
+                      <PublicationActionButton
+                        onClick={() => handleOpenFeedPublication(item)}
+                        accent="neutral"
+                      >
+                        Ver publicacion
+                      </PublicationActionButton>
+                    </div>
+                  }
+                  composer={
+                    <AnimatePresence initial={false}>
+                      {isCommentOpen ? (
+                        <motion.form
+                          key={`${item.id}-comment-form`}
+                          onSubmit={(event) => handleSubmitFeedComment(event, item.id)}
+                          initial={{ opacity: 0, height: 0, y: -4 }}
+                          animate={{ opacity: 1, height: "auto", y: 0 }}
+                          exit={{ opacity: 0, height: 0, y: -4 }}
+                          transition={{ duration: 0.22, ease: "easeOut" }}
+                          className="mt-3 space-y-2 overflow-hidden rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3"
+                        >
+                          <label className="block text-xs font-semibold text-cyan-200/80">Agregar comentario</label>
+                          <textarea
+                            value={draftComment}
+                            onChange={(event) =>
+                              setFeedCommentDraftByPostId((current) => ({
+                                ...current,
+                                [item.id]: event.target.value,
+                              }))
+                            }
+                            placeholder="Comparte tu opinion sobre esta publicacion..."
+                            className="h-24 w-full resize-none rounded-2xl border border-cyan-100/10 bg-slate-950/45 px-3 py-2 text-sm text-cyan-50 placeholder:text-cyan-100/45 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setActiveFeedCommentPostId(null)}
+                              className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-100/85"
+                            >
+                              Cerrar
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={draftComment.trim().length < 3}
+                              className="rounded-xl border border-cyan-200/25 bg-cyan-400/20 px-3 py-2 text-xs font-semibold text-cyan-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Publicar
+                            </button>
+                          </div>
+                        </motion.form>
+                      ) : null}
+                    </AnimatePresence>
+                  }
+                  thread={
+                    mergedComments.length > 0 ? (
+                      <motion.div
+                        layout
+                        className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3"
+                      >
+                        <p className="text-xs font-semibold text-cyan-200/80">Comentarios · {mergedComments.length}</p>
+                        {mergedComments.map((comment) => (
+                          <div key={comment.id} className="rounded-xl border border-cyan-100/10 bg-white/5 p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs font-semibold text-cyan-50">{comment.author}</p>
+                              <p className="text-[10px] text-cyan-200/65">{comment.time}</p>
+                            </div>
+                            <p className="mt-2 text-xs leading-5 text-cyan-100/85">{comment.text}</p>
+                          </div>
+                        ))}
+                      </motion.div>
+                    ) : null
+                  }
+                />
+              );
+            })}
+          </section>
             </>
           )}
 
@@ -1059,8 +1172,7 @@ export default function ClientePage() {
                     <div>
                       <p className="text-sm font-semibold text-cyan-50">{post.author}</p>
                       <p className="text-xs text-cyan-200/70">
-                        {post.kind === "empresa" ? "Cuenta empresa" : "Usuario"} ·{" "}
-                        {post.followedSince}
+                        {post.kind === "empresa" ? "Cuenta empresa" : "Usuario"} · {post.followedSince}
                       </p>
                     </div>
                     <span className="rounded-full border border-cyan-100/20 bg-cyan-100/10 px-3 py-1 text-xs text-cyan-100/85">
@@ -1071,7 +1183,7 @@ export default function ClientePage() {
                   <h3 className="mt-4 text-lg font-semibold text-cyan-50">{post.title}</h3>
                   <p className="mt-2 text-sm leading-7 text-cyan-100/85">{post.body}</p>
 
-                  {post.image && (
+                  {post.image ? (
                     <div className="mt-4 overflow-hidden rounded-2xl border border-cyan-100/10">
                       <img
                         src={post.image}
@@ -1080,42 +1192,33 @@ export default function ClientePage() {
                         loading="lazy"
                       />
                     </div>
-                  )}
+                  ) : null}
 
                   <div className="mt-4 flex items-center justify-between border-t border-cyan-100/10 pt-3 text-xs text-cyan-200/75">
                     <span>{formatPublishedAt(post.createdAt)}</span>
                     <div className="flex gap-2">
-                      {post.kind === "usuario" && (
+                      {post.kind === "usuario" ? (
                         <Link
                           href={buildClientProfileHref(post.author)}
                           className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-cyan-100/90"
                         >
                           Ver perfil
                         </Link>
-                      )}
-                      <button
-                        type="button"
-                        className="rounded-xl border border-cyan-100/10 bg-cyan-300/10 px-3 py-2 text-cyan-100/90"
-                      >
+                      ) : null}
+                      <button type="button" className="rounded-xl border border-cyan-100/10 bg-cyan-300/10 px-3 py-2 text-cyan-100/90">
                         Me interesa
                       </button>
-                      <button
-                        type="button"
-                        className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-cyan-100/90"
-                      >
+                      <button type="button" className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-cyan-100/90">
                         Comentar
                       </button>
                     </div>
                   </div>
 
-                  {post.comments && post.comments.length > 0 && (
+                  {post.comments && post.comments.length > 0 ? (
                     <div className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
                       <p className="text-xs font-semibold text-cyan-200/80">Comentarios</p>
                       {post.comments.map((comment) => (
-                        <div
-                          key={comment.id}
-                          className="rounded-xl border border-cyan-100/10 bg-white/5 p-3"
-                        >
+                        <div key={comment.id} className="rounded-xl border border-cyan-100/10 bg-white/5 p-3">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-xs font-semibold text-cyan-50">{comment.author}</p>
                             <p className="text-[10px] text-cyan-200/65">{comment.time}</p>
@@ -1124,95 +1227,63 @@ export default function ClientePage() {
                         </div>
                       ))}
                     </div>
-                  )}
+                  ) : null}
                 </article>
               ))}
             </section>
           )}
         </section>
 
-        {/* ─── Sidebar derecho ───────────────────────────────────────────── */}
         <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
           <section className="tech-card">
-            <p className="text-sm font-semibold text-cyan-50">Empresas recomendadas</p>
-            <p className="mt-1 text-xs text-cyan-100/75">
-              Empresas del ecosistema con presencia en TechMarket.
-            </p>
-            <p className="mt-1 font-mono text-[10px] text-cyan-200/45">
-              GET /api/marketplace/companies
-            </p>
+            <p className="text-sm font-semibold text-cyan-50">Cuentas recomendadas</p>
+            <p className="mt-2 text-xs text-cyan-100/75">Empresas y especialistas con buena reputacion en la comunidad.</p>
             <div className="mt-4 space-y-3">
-              {apiCompanies.length === 0 ? (
-                <p className="text-xs text-cyan-100/70">Cargando...</p>
-              ) : (
-                apiCompanies.map((company) => (
-                  <article
-                    key={company.id}
-                    className="rounded-2xl border border-cyan-100/15 bg-slate-950/35 p-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
-                        {getInitials(company.nombre)}
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold text-cyan-50">{company.nombre}</p>
-                        <p className="text-xs text-cyan-200/75">
-                          Calificacion {company.calificacion.toFixed(1)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex gap-2">
-                      <Link
-                        href={`/cliente/empresa/${company.id}`}
-                        className="flex-1 rounded-xl border border-cyan-200/20 bg-cyan-400/15 px-3 py-2 text-center text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
-                      >
-                        Ver perfil
-                      </Link>
-                      <button
-                        type="button"
-                        className="rounded-xl border border-cyan-200/20 bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-100/90"
-                      >
-                        Seguir
-                      </button>
-                    </div>
-                  </article>
-                ))
-              )}
+              []
             </div>
           </section>
 
           <section className="tech-card">
             <p className="text-sm font-semibold text-cyan-50">Actividad del ecosistema</p>
             <ul className="mt-3 space-y-2 text-xs text-cyan-100/80">
-              <li>Nuevas publicaciones de empresas cada dia.</li>
-              <li>Mayor interaccion en soporte remoto y diagnostico.</li>
-              <li>Embajadores activos recomendando negocios locales.</li>
+              {trendingSearches.length > 0
+                ? trendingSearches.map((trend) => (
+                    <li key={trend.texto}>
+                      {trend.texto} · {trend.busquedas} busquedas
+                    </li>
+                  ))
+                : <li>No hay actividad desde la API.</li>}
             </ul>
           </section>
         </aside>
       </main>
 
-      {/* ─── Modal de publicacion ─────────────────────────────────────────── */}
       <PublicationViewerModal
         publication={activePublication}
         onClose={() => setActivePublication(null)}
-        secondaryActionLabel={
-          activePublication?.variant === "sale" ? "Contactar vendedor" : undefined
-        }
+        secondaryActionLabel={activePublication?.variant === "sale" ? "Contactar vendedor" : undefined}
         onSecondaryAction={() => setActivePublication(null)}
         onEngagementChange={(publicationId, snapshot) => {
           setLikedFeedPostIds((current) => {
             if (snapshot.likedByCurrentUser) {
               return current.includes(publicationId) ? current : [...current, publicationId];
             }
+
             return current.filter((id) => id !== publicationId);
           });
+
           const baseCommentIds = new Set(
-            (feedCommentsByPostId[publicationId] ?? []).map((c) => c.id),
+            (feedCommentsByPostId[publicationId] ?? []).map((comment) => comment.id),
           );
           const nextCustomComments = snapshot.comments
-            .filter((c) => !baseCommentIds.has(c.id))
-            .map((c) => ({ id: c.id, author: c.author, text: c.text, time: c.time }));
+            .filter((comment) => !baseCommentIds.has(comment.id))
+            .map((comment) => ({
+              id: comment.id,
+              author: comment.author,
+              text: comment.text,
+              time: comment.time,
+            }));
+
           setCustomFeedCommentsByPostId((current) => ({
             ...current,
             [publicationId]: nextCustomComments,
@@ -1220,9 +1291,8 @@ export default function ClientePage() {
         }}
       />
 
-      {/* ─── Overlay IA ───────────────────────────────────────────────────── */}
       <AnimatePresence>
-        {isThinking && (
+        {isThinking ? (
           <motion.div
             className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/72 px-4 backdrop-blur-md"
             initial={{ opacity: 0 }}
@@ -1238,29 +1308,25 @@ export default function ClientePage() {
               className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-cyan-100/25 bg-[linear-gradient(165deg,rgba(8,27,48,0.96),rgba(4,16,30,0.98))] px-6 py-6 text-center shadow-2xl shadow-slate-950/60"
             >
               <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.26),transparent_62%)]" />
+              <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.05),transparent)]" />
+
               <div className="relative">
-                <p className="tech-mono text-[11px] tracking-[0.24em] text-cyan-200/78">
-                  IA SEARCH ENGINE
-                </p>
-                <h3 className="mt-3 text-xl font-semibold text-cyan-50">
-                  Analizando tu consulta con IA
-                </h3>
+                <p className="tech-mono text-[11px] tracking-[0.24em] text-cyan-200/78">IA SEARCH ENGINE</p>
+                <h3 className="mt-3 text-xl font-semibold text-cyan-50">Analizando tu consulta con IA</h3>
+
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                   {aiThinkingSignals.map((signal, index) => (
                     <motion.span
                       key={signal}
                       animate={{ opacity: [0.4, 1, 0.4], y: [0, -2, 0] }}
-                      transition={{
-                        duration: 1.15,
-                        repeat: Number.POSITIVE_INFINITY,
-                        delay: index * 0.12,
-                      }}
+                      transition={{ duration: 1.15, repeat: Number.POSITIVE_INFINITY, delay: index * 0.12 }}
                       className="rounded-full border border-cyan-100/18 bg-cyan-300/12 px-3 py-1 text-[11px] font-semibold text-cyan-100/92"
                     >
                       {signal}
                     </motion.span>
                   ))}
                 </div>
+
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.p
                     key={aiThinkingMessageIndex}
@@ -1273,6 +1339,7 @@ export default function ClientePage() {
                     {aiThinkingMessages[aiThinkingMessageIndex]}
                   </motion.p>
                 </AnimatePresence>
+
                 <div className="mt-5 overflow-hidden rounded-full border border-cyan-100/15 bg-slate-950/55">
                   <motion.div
                     className="h-2 rounded-full bg-[linear-gradient(90deg,rgba(6,182,212,0.45),rgba(34,211,238,0.95),rgba(59,130,246,0.55))]"
@@ -1281,19 +1348,19 @@ export default function ClientePage() {
                     transition={{ duration: 1.75, ease: "linear" }}
                   />
                 </div>
+
                 <p className="mt-3 text-xs text-cyan-200/75">
                   Cruzando semantica, reputacion y disponibilidad en tiempo real.
                 </p>
               </div>
             </motion.div>
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
 
-      {/* ─── Widget de chat ───────────────────────────────────────────────── */}
       <div className="fixed bottom-5 right-4 z-50 w-[340px] max-w-[calc(100vw-1rem)] md:bottom-6 md:right-6">
         <AnimatePresence mode="wait" initial={false}>
-          {isChatOpen ? (
+          {isChatOpen && activeChat ? (
             <motion.div
               key="chat-open"
               initial={{ opacity: 0, y: 20, scale: 0.96 }}
@@ -1304,20 +1371,18 @@ export default function ClientePage() {
             >
               <div className="relative border-b border-cyan-100/12 bg-[linear-gradient(120deg,rgba(19,78,110,0.32),rgba(7,24,44,0.85))] px-4 py-3.5">
                 <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(103,232,249,0.22),transparent_62%)]" />
+
                 <div className="relative flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
-                      {activeChat ? getInitials(activeChat.empresa.nombre) : "TM"}
+                      {activeChat.avatar}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-white">
-                        {activeChat ? activeChat.empresa.nombre : "Mis chats"}
-                      </p>
-                      <p className="font-mono text-[10px] text-cyan-100/55">
-                        GET /api/clients/chats
-                      </p>
+                      <p className="text-sm font-semibold text-white">{activeChat.company}</p>
+                      <p className="text-xs text-cyan-100/75">{activeChat.name}</p>
                     </div>
                   </div>
+
                   <motion.button
                     type="button"
                     onClick={() => setIsChatOpen(false)}
@@ -1329,85 +1394,64 @@ export default function ClientePage() {
                   </motion.button>
                 </div>
 
-                {activeChat && (
-                  <div className="relative mt-2 flex items-center gap-2 text-[11px] text-cyan-100/75">
-                    <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.85)]" />
-                    Activo ahora
-                    {activeChat.mensajesSinLeer > 0 && (
-                      <span className="rounded-full border border-cyan-100/20 bg-white/10 px-2 py-0.5 text-[10px] text-cyan-50">
-                        {activeChat.mensajesSinLeer} nuevos
-                      </span>
-                    )}
-                  </div>
-                )}
+                <div className="relative mt-2 flex items-center gap-2 text-[11px] text-cyan-100/75">
+                  <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.85)]" />
+                  Activo ahora
+                  {activeChat.unread ? (
+                    <span className="rounded-full border border-cyan-100/20 bg-white/10 px-2 py-0.5 text-[10px] text-cyan-50">
+                      {activeChat.unread} nuevos
+                    </span>
+                  ) : null}
+                </div>
               </div>
 
-              {apiChats.length > 0 && (
-                <div className="border-b border-cyan-100/10 bg-slate-950/45 px-3 py-2.5">
-                  <div className="chat-scrollbar chat-scrollbar-x flex gap-2 overflow-x-auto">
-                    {apiChats.map((chat) => {
-                      const isActive = chat.id === activeChatId;
-                      return (
-                        <motion.button
-                          key={chat.id}
-                          type="button"
-                          onClick={() => setActiveChatId(chat.id)}
-                          whileHover={{ y: -1 }}
-                          whileTap={{ scale: 0.97 }}
-                          className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                            isActive
-                              ? "border-cyan-300/65 bg-cyan-300/20 text-cyan-50"
-                              : "border-cyan-100/15 bg-white/5 text-cyan-100/80 hover:border-cyan-200/35 hover:bg-white/10"
-                          }`}
-                        >
-                          {chat.empresa.nombre}
-                          {chat.mensajesSinLeer > 0 && ` · ${chat.mensajesSinLeer}`}
-                        </motion.button>
-                      );
-                    })}
-                  </div>
+              <div className="border-b border-cyan-100/10 bg-slate-950/45 px-3 py-2.5">
+                <div className="chat-scrollbar chat-scrollbar-x flex gap-2 overflow-x-auto">
+                  {clientChatThreads.map((chat) => {
+                    const isActive = chat.id === activeChatId;
+
+                    return (
+                      <motion.button
+                        key={chat.id}
+                        type="button"
+                        onClick={() => setActiveChatId(chat.id)}
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                          isActive
+                            ? "border-cyan-300/65 bg-cyan-300/20 text-cyan-50"
+                            : "border-cyan-100/15 bg-white/5 text-cyan-100/80 hover:border-cyan-200/35 hover:bg-white/10"
+                        }`}
+                      >
+                        {chat.company}
+                        {chat.unread ? ` · ${chat.unread}` : ""}
+                      </motion.button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
 
               <div className="chat-scrollbar max-h-[300px] space-y-3 overflow-y-auto bg-[linear-gradient(180deg,rgba(4,13,24,0.35),rgba(4,11,20,0.6))] px-4 py-3">
-                {apiChats.length === 0 ? (
-                  <p className="text-xs text-cyan-100/70">
-                    Cargando chats desde la API...
-                  </p>
-                ) : activeChatMessages.length === 0 ? (
-                  <p className="text-xs text-cyan-100/70">
-                    {activeChat ? "Sin mensajes cargados." : "Selecciona un chat."}
-                  </p>
-                ) : (
-                  activeChatMessages.map((msg, msgIndex) => {
-                    const isClient = msg.remitente === "cliente";
-                    return (
-                      <motion.div
-                        key={msg.id}
-                        className={`flex ${isClient ? "justify-end" : "justify-start"}`}
-                        initial={{ opacity: 0, y: 8, x: isClient ? 8 : -8 }}
-                        animate={{ opacity: 1, y: 0, x: 0 }}
-                        transition={{ duration: 0.2, delay: msgIndex * 0.03 }}
-                      >
-                        <div
-                          className={`max-w-[84%] rounded-2xl border px-3 py-2 text-xs leading-5 ${
-                            isClient
-                              ? "border-cyan-200/25 bg-cyan-300/16 text-cyan-50"
-                              : "border-cyan-100/10 bg-white/6 text-cyan-100/92"
-                          }`}
-                        >
-                          <p>{msg.contenido}</p>
-                          <p className="mt-2 text-right text-[10px] text-cyan-100/55">
-                            {new Date(msg.fecha).toLocaleTimeString("es-BO", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </div>
-                      </motion.div>
-                    );
-                  })
-                )}
+                {activeChat.messages.map((message, messageIndex) => (
+                  <motion.div
+                    key={`${activeChat.id}-${message.id}`}
+                    className={`flex ${message.author === "cliente" ? "justify-end" : "justify-start"}`}
+                    initial={{ opacity: 0, y: 8, x: message.author === "cliente" ? 8 : -8 }}
+                    animate={{ opacity: 1, y: 0, x: 0 }}
+                    transition={{ duration: 0.2, delay: messageIndex * 0.03 }}
+                  >
+                    <div
+                      className={`max-w-[84%] rounded-2xl border px-3 py-2 text-xs leading-5 ${
+                        message.author === "cliente"
+                          ? "border-cyan-200/25 bg-cyan-300/16 text-cyan-50"
+                          : "border-cyan-100/10 bg-white/6 text-cyan-100/92"
+                      }`}
+                    >
+                      <p>{message.text}</p>
+                      <p className="mt-2 text-right text-[10px] text-cyan-100/55">{message.time}</p>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
 
               <div className="border-t border-cyan-100/10 bg-slate-950/45 px-4 py-3">
@@ -1415,18 +1459,11 @@ export default function ClientePage() {
                   <input
                     value={draftMessage}
                     onChange={(event) => setDraftMessage(event.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleChatSendMessage();
-                      }
-                    }}
                     placeholder="Escribe un mensaje..."
                     className="w-full rounded-2xl border border-cyan-100/15 bg-slate-950/45 px-3 py-2 text-xs text-cyan-50 placeholder:text-cyan-100/42 focus:outline-none focus:ring-2 focus:ring-cyan-300/35"
                   />
                   <motion.button
                     type="button"
-                    onClick={handleChatSendMessage}
                     whileHover={{ y: -1, boxShadow: "0 10px 20px rgba(6,182,212,0.22)" }}
                     whileTap={{ scale: 0.96 }}
                     className="rounded-2xl border border-cyan-200/25 bg-cyan-400/20 px-3 py-2 text-xs font-semibold text-cyan-50"
@@ -1453,10 +1490,10 @@ export default function ClientePage() {
               <span className="relative flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.8)]" />
-                  {activeChat ? `Chat · ${activeChat.empresa.nombre}` : "Mis chats"}
+                  Chat cliente
                 </span>
                 <span className="rounded-full border border-cyan-100/25 bg-white/10 px-2 py-0.5 text-[10px]">
-                  {apiChats.length} chats
+                  0 chats
                 </span>
               </span>
             </motion.button>

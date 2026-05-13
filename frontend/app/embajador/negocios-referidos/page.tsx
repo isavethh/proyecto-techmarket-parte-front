@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { EmbajadorSidebar } from "../page";
 import { ambassadorProfile } from "../ambassadorData";
 import { useReferredBusinessesState } from "../businessStore";
@@ -80,7 +80,7 @@ const getRecommendations = (business: {
   return recommendations.slice(0, 3);
 };
 
-export default function EmbajadorNegociosReferidosPage() {
+function EmbajadorNegociosReferidosContent() {
   const searchParams = useSearchParams();
   const requestedBusinessId = searchParams.get("business") ?? "";
   const referredBusinessesState = useReferredBusinessesState();
@@ -339,5 +339,13 @@ export default function EmbajadorNegociosReferidosPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function EmbajadorNegociosReferidosPage() {
+  return (
+    <Suspense fallback={null}>
+      <EmbajadorNegociosReferidosContent />
+    </Suspense>
   );
 }

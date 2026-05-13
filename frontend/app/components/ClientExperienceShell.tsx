@@ -16,7 +16,6 @@ import {
   useState,
 } from "react";
 import { CommunityFeedPost, upsertCommunityFeedPosts } from "../lib/communityFeed";
-import { buildClientProfileHref } from "../lib/clientUserProfiles";
 
 type ClientExperienceShellProps = {
   children: ReactNode;
@@ -33,11 +32,24 @@ type ClientExperienceContextValue = {
 const ClientExperienceContext = createContext<ClientExperienceContextValue | null>(null);
 
 const CLIENT_PROFILE = {
-  name: "Camila Mendoza",
-  email: "camila.mendoza@techmarket.bo",
-  city: "La Paz",
-  account: "Cliente verificado",
-  initials: "CM",
+  name: "",
+  email: "",
+  city: "",
+  account: "Cliente",
+  initials: "US",
+};
+
+const buildClientProfileHref = (name: string): string => {
+  const slug =
+    name
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "perfil";
+
+  return `/cliente/perfil/${slug}`;
 };
 
 const CLIENT_ALLOWED_POST_CATEGORY = "Consulta";

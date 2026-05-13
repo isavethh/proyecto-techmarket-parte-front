@@ -1,10 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ClientPageHeader } from "../../components/ClientPageSections";
+import {
+  createClientChat,
+  createClientChatMessage,
+  getClientChatMessages,
+  listClientChats,
+  markClientChatRead,
+  readCurrentUserId,
+  type ClientChatMessage,
+  type ClientChatSummary,
+} from "@/lib/api/iaApi";
 
 
 
@@ -33,11 +43,45 @@ type ChatThread = {
 type MarketplaceChatIntent = {
   seller: string;
   company: string;
+  companyId: string;
+  productId: string;
   product: string;
   message: string;
 };
 
-const CHAT_STORAGE_KEY = "techmarket.client.chat.threads";
+const MARKETPLACE_CHAT_MAP_KEY = "techmarket.client.marketplace.chatByProduct";
+
+const readMarketplaceChatMap = (): Record<string, string> => {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(MARKETPLACE_CHAT_MAP_KEY);
+    if (!rawValue) {
+      return {};
+    }
+
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === "object" && !Array.isArray(parsedValue)
+      ? (parsedValue as Record<string, string>)
+      : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveMarketplaceChat = (productId: string, chatId: string): void => {
+  if (typeof window === "undefined" || !productId || !chatId) {
+    return;
+  }
+
+  const currentMap = readMarketplaceChatMap();
+  window.localStorage.setItem(
+    MARKETPLACE_CHAT_MAP_KEY,
+    JSON.stringify({ ...currentMap, [productId]: chatId }),
+  );
+};
 
 const clientMenuItems = [
   { label: "Explorar marketplace", href: "/cliente/marketplace" },
@@ -47,77 +91,6 @@ const clientMenuItems = [
   { label: "Explorar empresas", href: "/cliente/empresas" },
   { label: "Comunidades", href: "/cliente/comunidades" },
   { label: "Actividad reciente", href: "/cliente" },
-];
-
-const seedThreads: ChatThread[] = [
-  {
-    id: "chat-techfix-lab",
-    sellerId: "techfix-lab",
-    sellerName: "Sergio Ramirez",
-    company: "TechFix Lab",
-    product: "Diagnostico express para laptops lentas",
-    avatar: "TL",
-    unread: 1,
-    online: true,
-    updatedAt: "2026-04-19T10:22:00.000Z",
-    messages: [
-      {
-        id: "chat-techfix-lab-m1",
-        author: "empresa",
-        text: "Hola, vi que buscaste servicio tecnico.",
-        createdAt: "2026-04-19T10:20:00.000Z",
-      },
-      {
-        id: "chat-techfix-lab-m2",
-        author: "empresa",
-        text: "Puedo atenderte hoy mismo en tu zona.",
-        createdAt: "2026-04-19T10:21:00.000Z",
-      },
-      {
-        id: "chat-techfix-lab-m3",
-        author: "cliente",
-        text: "Perfecto, necesito diagnostico para mi laptop.",
-        createdAt: "2026-04-19T10:22:00.000Z",
-      },
-    ],
-  },
-  {
-    id: "chat-zona-gamer-store",
-    sellerId: "zona-gamer-store",
-    sellerName: "Laura V.",
-    company: "Zona Gamer Store",
-    product: "Mouse ergonomico con 20% de descuento",
-    avatar: "ZG",
-    unread: 2,
-    online: true,
-    updatedAt: "2026-04-19T10:00:00.000Z",
-    messages: [
-      {
-        id: "chat-zona-gamer-store-m1",
-        author: "empresa",
-        text: "Hola, vimos que buscaste una laptop.",
-        createdAt: "2026-04-19T09:55:00.000Z",
-      },
-      {
-        id: "chat-zona-gamer-store-m2",
-        author: "empresa",
-        text: "Tenemos opciones para estudio y gaming.",
-        createdAt: "2026-04-19T09:56:00.000Z",
-      },
-      {
-        id: "chat-zona-gamer-store-m3",
-        author: "cliente",
-        text: "Me interesa una laptop ligera para trabajo.",
-        createdAt: "2026-04-19T09:58:00.000Z",
-      },
-      {
-        id: "chat-zona-gamer-store-m4",
-        author: "empresa",
-        text: "Te comparto 2 opciones con entrega inmediata.",
-        createdAt: "2026-04-19T10:00:00.000Z",
-      },
-    ],
-  },
 ];
 
 const sortThreadsByRecent = (threads: ChatThread[]): ChatThread[] =>
@@ -191,47 +164,70 @@ const formatRelativeTime = (isoDate: string): string => {
   return `Hace ${diffDays} d`;
 };
 
-const readStoredThreads = (): ChatThread[] => {
-  if (typeof window === "undefined") {
-    return sortThreadsByRecent(seedThreads);
+const normalizeRemoteUserId = (value: string): string => {
+  const trimmed = value.trim();
+  if (trimmed.toUpperCase().startsWith("USR-")) {
+    return trimmed.slice(4);
   }
-
-  const storedValue = window.localStorage.getItem(CHAT_STORAGE_KEY);
-
-  if (!storedValue) {
-    return sortThreadsByRecent(seedThreads);
-  }
-
-  try {
-    const parsedValue = JSON.parse(storedValue);
-
-    if (!Array.isArray(parsedValue)) {
-      return sortThreadsByRecent(seedThreads);
-    }
-
-    return sortThreadsByRecent(parsedValue as ChatThread[]);
-  } catch {
-    return sortThreadsByRecent(seedThreads);
-  }
+  return trimmed;
 };
 
-const writeStoredThreads = (threads: ChatThread[]) => {
-  if (typeof window === "undefined") {
-    return;
-  }
+const buildThreadFromConversation = (conversation: ClientChatSummary): ChatThread => {
+  const nowIso = new Date().toISOString();
+  const seedMessage = conversation.ultimoMensaje
+    ? [
+        {
+          id: `${conversation.id}-last`,
+          author: "empresa" as const,
+          text: conversation.ultimoMensaje,
+          createdAt: nowIso,
+        },
+      ]
+    : [];
 
-  window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(sortThreadsByRecent(threads)));
+  return {
+    id: conversation.id,
+    sellerId: conversation.id,
+    sellerName: conversation.empresa.nombre ?? "Empresa",
+    company: conversation.empresa.nombre ?? "Empresa",
+    product: "Conversacion",
+    avatar: createAvatar(conversation.empresa.nombre ?? "Empresa"),
+    unread: conversation.mensajesSinLeer ?? 0,
+    online: true,
+    messages: seedMessage,
+    updatedAt: nowIso,
+  };
 };
+
+const buildMessageFromConversation = (
+  message: ClientChatMessage,
+  currentUserId: string | null,
+): ChatMessage => {
+  const isFromCurrentUser =
+    message.remitente === "cliente" ||
+    Boolean(currentUserId && normalizeRemoteUserId(message.remitente) === currentUserId);
+
+  return {
+    id: message.id,
+    author: isFromCurrentUser ? "cliente" : "empresa",
+    text: message.contenido,
+    createdAt: message.fecha,
+  };
+};
+
+const readStoredThreads = (): ChatThread[] => [];
+
+const writeStoredThreads = (_threads: ChatThread[]) => {};
 
 const upsertThreadFromMarketplace = (
   currentThreads: ChatThread[],
   intent: MarketplaceChatIntent,
 ): { threads: ChatThread[]; threadId: string } => {
   const nowIso = new Date().toISOString();
-  const sellerId = createSellerId(intent.seller || intent.company);
+  const sellerId = createSellerId(`${intent.companyId || intent.seller || intent.company}-${intent.productId || intent.product}`);
   const fallbackSellerName = intent.seller || intent.company;
   const existingThread = currentThreads.find(
-    (thread) => thread.sellerId === sellerId || thread.company.toLowerCase() === intent.company.toLowerCase(),
+    (thread) => thread.sellerId === sellerId,
   );
 
   if (existingThread) {
@@ -278,15 +274,19 @@ const upsertThreadFromMarketplace = (
   };
 };
 
-export default function ClienteChatPage() {
+function ClienteChatContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const pathname = usePathname();
+  const requestedChatId = searchParams.get("chatId")?.trim() ?? "";
 
   const marketplaceIntent = useMemo<MarketplaceChatIntent | null>(() => {
     const source = searchParams.get("source");
     const seller = searchParams.get("seller")?.trim() ?? "";
     const company = searchParams.get("company")?.trim() ?? seller;
+    const companyId = searchParams.get("companyId")?.trim() ?? "";
+    const productId = searchParams.get("productId")?.trim() ?? "";
     const product = searchParams.get("product")?.trim() ?? "Publicacion en marketplace";
     const message =
       searchParams.get("message")?.trim() ??
@@ -303,10 +303,16 @@ export default function ClienteChatPage() {
     return {
       seller: seller || company,
       company: company || seller,
+      companyId,
+      productId,
       product,
       message,
     };
   }, [searchParams]);
+
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [threads, setThreads] = useState<ChatThread[]>(() => {
     const initialThreads = readStoredThreads();
@@ -320,6 +326,10 @@ export default function ClienteChatPage() {
   const [activeThreadId, setActiveThreadId] = useState<string | null>(() => {
     const initialThreads = readStoredThreads();
 
+    if (requestedChatId) {
+      return requestedChatId;
+    }
+
     if (!marketplaceIntent) {
       return initialThreads[0]?.id ?? null;
     }
@@ -330,6 +340,127 @@ export default function ClienteChatPage() {
   const [draftMessage, setDraftMessage] = useState(() => marketplaceIntent?.message ?? "");
 
   const messageListRef = useRef<HTMLDivElement>(null);
+  const createdMarketplaceChatKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    setCurrentUserId(readCurrentUserId());
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadConversations = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        const conversations = await listClientChats();
+        const mappedThreads = conversations.map(buildThreadFromConversation);
+        let nextThreads = mappedThreads;
+        let preferredThreadId = requestedChatId;
+
+        if (marketplaceIntent?.companyId) {
+          const intentKey = `${marketplaceIntent.companyId}:${marketplaceIntent.productId}:${marketplaceIntent.product}`;
+
+          if (createdMarketplaceChatKeyRef.current !== intentKey) {
+            createdMarketplaceChatKeyRef.current = intentKey;
+            const existingChatId = marketplaceIntent.productId
+              ? readMarketplaceChatMap()[marketplaceIntent.productId]
+              : null;
+
+            if (existingChatId) {
+              preferredThreadId = existingChatId;
+              router.replace(`/cliente/chat?chatId=${encodeURIComponent(existingChatId)}`);
+            } else {
+              const createdChat = await createClientChat({
+                empresaId: marketplaceIntent.companyId,
+                asunto: marketplaceIntent.productId
+                  ? `${marketplaceIntent.product} (${marketplaceIntent.productId})`
+                  : marketplaceIntent.product,
+              });
+
+              let createdMessages: ChatMessage[] = [];
+              if (marketplaceIntent.message.trim().length >= 2) {
+                const createdMessage = await createClientChatMessage(
+                  createdChat.chatId,
+                  marketplaceIntent.message,
+                );
+                createdMessages = [
+                  {
+                    id: createdMessage.id,
+                    author: "cliente",
+                    text: createdMessage.contenido,
+                    createdAt: createdMessage.fecha,
+                  },
+                ];
+              }
+
+              const nowIso = createdMessages[0]?.createdAt ?? new Date().toISOString();
+              const createdThread: ChatThread = {
+                id: createdChat.chatId,
+                sellerId: createSellerId(
+                  `${marketplaceIntent.companyId}-${marketplaceIntent.productId || marketplaceIntent.product}`,
+                ),
+                sellerName: marketplaceIntent.seller || marketplaceIntent.company,
+                company: marketplaceIntent.company || marketplaceIntent.seller,
+                product: marketplaceIntent.product,
+                avatar: createAvatar(marketplaceIntent.company || marketplaceIntent.seller),
+                unread: 0,
+                online: true,
+                messages: createdMessages,
+                updatedAt: nowIso,
+              };
+
+              if (marketplaceIntent.productId) {
+                saveMarketplaceChat(marketplaceIntent.productId, createdChat.chatId);
+              }
+
+              preferredThreadId = createdChat.chatId;
+              nextThreads = sortThreadsByRecent([createdThread, ...mappedThreads]);
+              router.replace(`/cliente/chat?chatId=${encodeURIComponent(createdChat.chatId)}`);
+            }
+          }
+        } else if (marketplaceIntent) {
+          nextThreads = upsertThreadFromMarketplace(nextThreads, marketplaceIntent).threads;
+        }
+
+        if (!active) {
+          return;
+        }
+
+        setThreads(nextThreads);
+        setActiveThreadId((current) => {
+          if (preferredThreadId && nextThreads.some((thread) => thread.id === preferredThreadId)) {
+            return preferredThreadId;
+          }
+
+          if (current && nextThreads.some((thread) => thread.id === current)) {
+            return current;
+          }
+
+          return nextThreads[0]?.id ?? null;
+        });
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+
+        setLoadError(
+          error instanceof Error ? error.message : "No se pudo cargar conversaciones",
+        );
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadConversations();
+
+    return () => {
+      active = false;
+    };
+  }, [marketplaceIntent, requestedChatId, router]);
 
   useEffect(() => {
     writeStoredThreads(threads);
@@ -362,6 +493,46 @@ export default function ClienteChatPage() {
   }, [searchQuery, threads]);
 
   useEffect(() => {
+    if (!activeThread || !activeThread.id.startsWith("CHT-")) {
+      return;
+    }
+
+    let active = true;
+
+    getClientChatMessages(activeThread.id)
+      .then((messages) => {
+        if (!active) {
+          return;
+        }
+
+        const mappedMessages = messages.map((message) =>
+          buildMessageFromConversation(message, currentUserId),
+        );
+        const updatedAt =
+          mappedMessages[mappedMessages.length - 1]?.createdAt ?? activeThread.updatedAt;
+
+        setThreads((current) =>
+          current.map((thread) =>
+            thread.id === activeThread.id
+              ? {
+                  ...thread,
+                  messages: mappedMessages,
+                  updatedAt,
+                }
+              : thread,
+          ),
+        );
+      })
+      .catch(() => {
+        // ignore message load errors
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeThread, currentUserId]);
+
+  useEffect(() => {
     if (!activeThread) {
       return;
     }
@@ -385,9 +556,15 @@ export default function ClienteChatPage() {
           : thread,
       ),
     );
+
+    if (threadId.startsWith("CHT-")) {
+      markClientChatRead(threadId).catch(() => {
+        // ignore read marker errors
+      });
+    }
   };
 
-  const handleSendMessage = (event: FormEvent<HTMLFormElement>) => {
+  const handleSendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!activeThread) {
@@ -397,6 +574,43 @@ export default function ClienteChatPage() {
     const normalizedMessage = draftMessage.trim();
 
     if (normalizedMessage.length < 2) {
+      return;
+    }
+
+    if (activeThread.id.startsWith("CHT-")) {
+      try {
+        const response = await createClientChatMessage(activeThread.id, normalizedMessage);
+        const nowIso = response.fecha ?? new Date().toISOString();
+
+        setThreads((current) => {
+          const nextThreads = current.map((thread) => {
+            if (thread.id !== activeThread.id) {
+              return thread;
+            }
+
+            const nextMessage: ChatMessage = {
+              id: response.id,
+              author: "cliente",
+              text: response.contenido,
+              createdAt: nowIso,
+            };
+
+            return {
+              ...thread,
+              messages: [...thread.messages, nextMessage],
+              unread: 0,
+              updatedAt: nowIso,
+            };
+          });
+
+          return sortThreadsByRecent(nextThreads);
+        });
+
+        setDraftMessage("");
+      } catch {
+        // ignore send errors
+      }
+
       return;
     }
 
@@ -448,7 +662,7 @@ export default function ClienteChatPage() {
         )}
       />
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:h-[calc(100vh-120px)] lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:px-6">
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:h-[calc(100vh-120px)] lg:grid-cols-[260px_minmax(300px,390px)_minmax(0,1fr)] lg:items-start lg:px-6">
         <aside className="chat-scrollbar min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start lg:h-[calc(100vh-120px)] lg:overflow-y-auto lg:overflow-x-hidden lg:pr-2">
           <section className="tech-card">
             <div className="flex items-center gap-3">
@@ -487,6 +701,12 @@ export default function ClienteChatPage() {
             <p className="mt-2 text-sm text-cyan-100/75">
               Vista completa para revisar todos tus chats, abrir cada hilo y responder rapido.
             </p>
+            {isLoading ? (
+              <p className="mt-2 text-xs text-cyan-200/75">Cargando conversaciones...</p>
+            ) : null}
+            {loadError ? (
+              <p className="mt-2 text-xs text-rose-200/85">{loadError}</p>
+            ) : null}
 
             <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
               <div className="rounded-xl border border-cyan-100/12 bg-slate-950/35 p-3">
@@ -508,8 +728,27 @@ export default function ClienteChatPage() {
               </Link>
             </div>
           </section>
+        </aside>
 
-          <section className="chat-scrollbar min-w-0 flex-1 overflow-y-auto overflow-x-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(170deg,rgba(11,34,60,0.95),rgba(6,23,43,0.95))] p-4">
+        <section className="flex min-h-[420px] min-w-0 flex-col overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(170deg,rgba(11,34,60,0.95),rgba(6,23,43,0.95))] lg:h-full">
+          <div className="border-b border-cyan-100/10 px-4 py-4">
+            <p className="tech-mono text-xs text-cyan-200/75">TODOS MIS CHATS</p>
+            <div className="mt-2 flex items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold text-cyan-50">Bandeja</h2>
+                <p className="mt-1 text-sm text-cyan-100/70">
+                  {filteredThreads.length} de {threads.length} conversaciones
+                </p>
+              </div>
+              {totalUnread > 0 ? (
+                <span className="rounded-full border border-cyan-100/15 bg-cyan-300/18 px-3 py-1 text-xs font-semibold text-cyan-50">
+                  {totalUnread} sin leer
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="chat-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3">
             <div className="space-y-2">
               {filteredThreads.map((thread) => {
                 const isActive = thread.id === activeThread?.id;
@@ -522,22 +761,22 @@ export default function ClienteChatPage() {
                     onClick={() => handleSelectThread(thread.id)}
                     className={`w-full rounded-2xl border p-3 text-left transition ${
                       isActive
-                        ? "border-cyan-300/40 bg-cyan-300/14"
+                        ? "border-cyan-300/45 bg-cyan-300/16 shadow-lg shadow-cyan-950/20"
                         : "border-cyan-100/12 bg-slate-950/35 hover:border-cyan-200/30 hover:bg-slate-900/45"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
                           {thread.avatar}
                         </span>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-cyan-50">{thread.company}</p>
-                          <p className="truncate text-xs text-cyan-200/75">{thread.sellerName}</p>
+                          <p className="truncate text-xs text-cyan-200/75">{thread.product}</p>
                         </div>
                       </div>
 
-                      <div className="text-right text-[11px] text-cyan-200/65">
+                      <div className="shrink-0 text-right text-[11px] text-cyan-200/65">
                         <p>{formatRelativeTime(thread.updatedAt)}</p>
                         {thread.unread > 0 ? (
                           <span className="mt-1 inline-flex rounded-full border border-cyan-100/15 bg-cyan-300/20 px-2 py-0.5 text-[10px] text-cyan-50">
@@ -547,8 +786,9 @@ export default function ClienteChatPage() {
                       </div>
                     </div>
 
-                    <p className="mt-2 truncate text-xs text-cyan-100/75">{thread.product}</p>
-                    <p className="mt-1 truncate text-xs text-cyan-100/70">{lastMessage?.text ?? "Sin mensajes"}</p>
+                    <p className="mt-3 line-clamp-2 text-xs leading-5 text-cyan-100/72">
+                      {lastMessage?.text ?? "Sin mensajes"}
+                    </p>
                   </button>
                 );
               })}
@@ -559,8 +799,8 @@ export default function ClienteChatPage() {
                 </div>
               ) : null}
             </div>
-          </section>
-        </aside>
+          </div>
+        </section>
 
         <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(165deg,rgba(10,33,57,0.97),rgba(4,18,34,0.98))] shadow-xl shadow-slate-950/35">
           {activeThread ? (
@@ -638,5 +878,13 @@ export default function ClienteChatPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function ClienteChatPage() {
+  return (
+    <Suspense fallback={<div className="flex-1 pb-0" />}>
+      <ClienteChatContent />
+    </Suspense>
   );
 }

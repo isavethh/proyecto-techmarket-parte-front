@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { clientCompanyProfiles } from "../../lib/clientCompanyProfiles";
+import { useEffect, useMemo, useState } from "react";
+import {
+  listMarketplaceCompanies,
+  type MarketplaceCompanySummary,
+} from "@/lib/api/iaApi";
 import {
   ClientPageHeader,
   ClientQuickLinksCard,
@@ -20,6 +24,60 @@ const clientMenuItems = [
 
 export default function ClienteEmpresasPage() {
   const pathname = usePathname();
+  const [companies, setCompanies] = useState<MarketplaceCompanySummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    listMarketplaceCompanies()
+      .then((response) => {
+        if (active) {
+          setCompanies(response);
+          setLoadError(null);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setCompanies([]);
+          setLoadError(error instanceof Error ? error.message : "No se pudo cargar empresas");
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const visibleCompanies = useMemo(
+    () =>
+      companies.map((company) => ({
+        slug: company.id,
+        name: company.nombre,
+        logo:
+          company.logo ??
+          (company.nombre
+            .split(" ")
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((token) => token[0]?.toUpperCase() ?? "")
+            .join("") ||
+            "TM"),
+        city: "Bolivia",
+        category: "Empresa registrada",
+        description: "Empresa registrada en TechMarket con catalogo disponible desde la API.",
+        specialties: ["Marketplace", "Productos", "Atencion al cliente"],
+        rating: company.calificacion ?? 0,
+        reviewCount: 0,
+      })),
+    [companies],
+  );
 
   return (
     <div className="flex-1 pb-10">
@@ -98,10 +156,23 @@ export default function ClienteEmpresasPage() {
             <p className="mt-3 text-sm text-cyan-100/80">
               Pulsa una tarjeta para ver el perfil de la empresa dentro de TechMarket.
             </p>
+            {isLoading ? (
+              <p className="mt-3 text-xs text-cyan-200/75">Cargando empresas desde la API...</p>
+            ) : null}
+            {loadError ? (
+              <p className="mt-3 text-xs text-amber-200/85">
+                No se pudo conectar con la API: {loadError}
+              </p>
+            ) : null}
           </section>
 
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {clientCompanyProfiles.map((profile) => (
+            {visibleCompanies.length === 0 && !isLoading ? (
+              <div className="rounded-3xl border border-dashed border-cyan-100/18 bg-slate-950/35 p-5 text-sm text-cyan-100/75 md:col-span-2 xl:col-span-3">
+                No hay empresas para mostrar desde la API.
+              </div>
+            ) : null}
+            {visibleCompanies.map((profile) => (
               <Link
                 key={profile.slug}
                 href={`/cliente/empresa/${profile.slug}`}

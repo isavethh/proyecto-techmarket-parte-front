@@ -1,127 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ClientPageHeader, ClientQuickLinksCard } from "../../components/ClientPageSections";
-
-type ProductSpec = {
-  id: string;
-  name: string;
-  brand: string;
-  image: string;
-  category: string;
-  cpu: string;
-  gpu: string;
-  ram: string;
-  storage: string;
-  display: string;
-  battery: string;
-  weight: string;
-  price: string;
-  warranty: string;
-  workScore: number;
-  gamingScore: number;
-  creatorScore: number;
-};
-
-const products: ProductSpec[] = [
-  {
-    id: "p-1",
-    name: "NovaBook Air 14",
-    brand: "TechMarket Labs",
-    image: "/productos/laptop-pro-14.jpg",
-    category: "Ultraligera",
-    cpu: "Intel Core i7 1360P",
-    gpu: "Intel Iris Xe",
-    ram: "16 GB LPDDR5",
-    storage: "SSD 512 GB NVMe",
-    display: "14\" 2.8K OLED 90Hz",
-    battery: "14 horas mixto",
-    weight: "1.18 kg",
-    price: "$3.650.000",
-    warranty: "12 meses",
-    workScore: 92,
-    gamingScore: 58,
-    creatorScore: 80,
-  },
-  {
-    id: "p-2",
-    name: "ForgeStation G15",
-    brand: "Zona Gamer Store",
-    image: "/productos/monitor-ultrawide-34.jpg",
-    category: "Gaming",
-    cpu: "AMD Ryzen 7 8845HS",
-    gpu: "RTX 4060 8GB",
-    ram: "16 GB DDR5",
-    storage: "SSD 1 TB NVMe",
-    display: "15.6\" QHD 165Hz",
-    battery: "7 horas mixto",
-    weight: "2.15 kg",
-    price: "$5.150.000",
-    warranty: "18 meses",
-    workScore: 84,
-    gamingScore: 95,
-    creatorScore: 91,
-  },
-  {
-    id: "p-3",
-    name: "Creator Pro 16",
-    brand: "Pixel Andino",
-    image: "/productos/teclado-tkl.jpg",
-    category: "Creador de contenido",
-    cpu: "Intel Core Ultra 9",
-    gpu: "RTX 4070 8GB",
-    ram: "32 GB DDR5",
-    storage: "SSD 1 TB NVMe",
-    display: "16\" 3.2K Mini-LED 120Hz",
-    battery: "9 horas mixto",
-    weight: "1.95 kg",
-    price: "$7.200.000",
-    warranty: "24 meses",
-    workScore: 96,
-    gamingScore: 93,
-    creatorScore: 98,
-  },
-  {
-    id: "p-4",
-    name: "Budget Smart 15",
-    brand: "TecnoCentro Andino",
-    image: "/productos/kit-limpieza-pc.jpg",
-    category: "Entrada",
-    cpu: "Intel Core i5 1335U",
-    gpu: "Intel Iris Xe",
-    ram: "8 GB DDR4",
-    storage: "SSD 512 GB",
-    display: "15.6\" FHD 60Hz",
-    battery: "11 horas mixto",
-    weight: "1.70 kg",
-    price: "$2.450.000",
-    warranty: "12 meses",
-    workScore: 78,
-    gamingScore: 42,
-    creatorScore: 55,
-  },
-];
-
-const specsToCompare: Array<{ label: string; key: keyof ProductSpec }> = [
-  { label: "Categoria", key: "category" },
-  { label: "CPU", key: "cpu" },
-  { label: "GPU", key: "gpu" },
-  { label: "RAM", key: "ram" },
-  { label: "Almacenamiento", key: "storage" },
-  { label: "Pantalla", key: "display" },
-  { label: "Bateria", key: "battery" },
-  { label: "Peso", key: "weight" },
-  { label: "Precio", key: "price" },
-  { label: "Garantia", key: "warranty" },
-];
-
-const scoreItems: Array<{ label: string; key: "workScore" | "gamingScore" | "creatorScore" }> = [
-  { label: "Trabajo", key: "workScore" },
-  { label: "Gaming", key: "gamingScore" },
-  { label: "Creacion", key: "creatorScore" },
-];
+import {
+  MarketplaceProductSummary,
+  listMarketplaceProducts,
+} from "../../../lib/api/iaApi";
 
 const clientMenuItems = [
   { label: "Explorar marketplace", href: "/cliente/marketplace" },
@@ -133,48 +19,72 @@ const clientMenuItems = [
   { label: "Actividad reciente", href: "/cliente" },
 ];
 
-export default function ClienteVersusPage() {
-  const [selectedIds, setSelectedIds] = useState<string[]>(["p-1", "p-2"]);
+const formatPrice = (value: number | null) =>
+  typeof value === "number"
+    ? new Intl.NumberFormat("es-BO", { style: "currency", currency: "BOB" }).format(value)
+    : "Sin precio";
 
+export default function ClienteVersusPage() {
   const pathname = usePathname();
+  const [products, setProducts] = useState<MarketplaceProductSummary[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProducts = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await listMarketplaceProducts({ pagina: 1 });
+
+        if (!isMounted) {
+          return;
+        }
+
+        const apiProducts = response.productos ?? [];
+        setProducts(apiProducts);
+        setSelectedIds(apiProducts.slice(0, 2).map((product) => product.id));
+      } catch (requestError) {
+        if (!isMounted) {
+          return;
+        }
+
+        console.error("No se pudo cargar productos para versus", requestError);
+        setProducts([]);
+        setSelectedIds([]);
+        setError("No se pudo conectar con la API de productos.");
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const selectedProducts = useMemo(
     () => products.filter((product) => selectedIds.includes(product.id)),
-    [selectedIds],
+    [products, selectedIds],
   );
 
   const toggleProduct = (id: string) => {
     setSelectedIds((current) => {
       if (current.includes(id)) {
-        if (current.length <= 2) {
-          return current;
-        }
-
-        return current.filter((item) => item !== id);
+        return current.length <= 1 ? current : current.filter((item) => item !== id);
       }
 
-      if (current.length >= 4) {
-        return current;
-      }
-
-      return [...current, id];
+      return current.length >= 4 ? current : [...current, id];
     });
   };
-
-  const bestForWork = useMemo(
-    () => [...selectedProducts].sort((a, b) => b.workScore - a.workScore)[0],
-    [selectedProducts],
-  );
-
-  const bestForGaming = useMemo(
-    () => [...selectedProducts].sort((a, b) => b.gamingScore - a.gamingScore)[0],
-    [selectedProducts],
-  );
-
-  const bestForCreator = useMemo(
-    () => [...selectedProducts].sort((a, b) => b.creatorScore - a.creatorScore)[0],
-    [selectedProducts],
-  );
 
   return (
     <div className="flex-1 pb-10">
@@ -214,176 +124,140 @@ export default function ClienteVersusPage() {
           </section>
 
           <section className="tech-card mt-4">
-            <p className="tech-mono text-xs text-cyan-200/75">VERSUS CONFIG</p>
-            <h3 className="mt-2 text-xl font-semibold text-cyan-50">Comparacion guiada</h3>
+            <p className="tech-mono text-xs text-cyan-200/75">VERSUS</p>
+            <h3 className="mt-2 text-xl font-semibold text-cyan-50">Productos desde API</h3>
             <p className="mt-3 text-sm leading-7 text-cyan-100/80">
-              Compara equipos lado a lado para elegir con mas claridad segun trabajo, gaming o creacion.
+              La comparacion usa el listado de marketplace; no hay productos de muestra locales.
             </p>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {["Comparacion", "Rendimiento", "Decision", "Analisis"].map((chip) => (
-                <span
-                  key={chip}
-                  className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs text-cyan-100/85"
-                >
-                  {chip}
-                </span>
-              ))}
-            </div>
           </section>
 
-          <div className="space-y-4">
-            <section className="tech-card space-y-2">
-              {products.map((product) => {
-                const isSelected = selectedIds.includes(product.id);
+          <section className="tech-card space-y-2">
+            {products.map((product) => {
+              const isSelected = selectedIds.includes(product.id);
 
-                return (
-                  <button
-                    key={product.id}
-                    type="button"
-                    onClick={() => toggleProduct(product.id)}
-                    className={`w-full rounded-2xl border p-3 text-left transition ${
-                      isSelected
-                        ? "border-cyan-300/55 bg-cyan-300/12"
-                        : "border-cyan-100/15 bg-slate-950/25 hover:bg-slate-950/40"
-                    }`}
-                  >
-                    <p className="text-sm font-semibold text-cyan-50">{product.name}</p>
-                    <p className="mt-1 text-xs text-cyan-100/75">{product.brand}</p>
-                    <p className="mt-1 text-xs text-cyan-200/70">{product.price}</p>
-                  </button>
-                );
-              })}
-            </section>
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => toggleProduct(product.id)}
+                  className={`w-full rounded-2xl border p-3 text-left transition ${
+                    isSelected
+                      ? "border-cyan-300/55 bg-cyan-300/12"
+                      : "border-cyan-100/15 bg-slate-950/25 hover:bg-slate-950/40"
+                  }`}
+                >
+                  <p className="text-sm font-semibold text-cyan-50">{product.nombre}</p>
+                  <p className="mt-1 text-xs text-cyan-200/70">{formatPrice(product.precio)}</p>
+                </button>
+              );
+            })}
 
-            <section className="tech-card">
-              <p className="text-sm font-semibold text-cyan-50">Resumen IA</p>
-              <p className="mt-3 text-sm text-cyan-100/80">
-                Mejor para trabajo: {bestForWork?.name ?? "N/D"}
+            {!products.length ? (
+              <p className="text-sm text-cyan-100/75">
+                {isLoading ? "Cargando productos..." : "No hay productos para comparar desde la API."}
               </p>
-              <p className="mt-2 text-sm text-cyan-100/80">
-                Mejor para gaming: {bestForGaming?.name ?? "N/D"}
-              </p>
-              <p className="mt-2 text-sm text-cyan-100/80">
-                Mejor para creacion: {bestForCreator?.name ?? "N/D"}
-              </p>
-            </section>
+            ) : null}
+          </section>
 
-            <ClientQuickLinksCard
-              links={[
-                { href: "/cliente", label: "Volver al feed" },
-                { href: "/cliente/marketplace", label: "Explorar marketplace" },
-                { href: "#versus-activo", label: "Ver comparacion activa" },
-              ]}
-            />
-          </div>
+          <ClientQuickLinksCard
+            links={[
+              { href: "/cliente", label: "Volver al feed" },
+              { href: "/cliente/marketplace", label: "Explorar marketplace" },
+              { href: "#versus-activo", label: "Ver comparacion activa" },
+            ]}
+          />
         </aside>
 
-        <section  id="versus-activo"  className="chat-scrollbar space-y-4 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
+        <section id="versus-activo" className="chat-scrollbar space-y-4 overflow-y-auto pr-0 lg:pr-4" style={{ maxHeight: "calc(100vh - 140px)" }}>
           <section className="tech-card">
-            <p className="tech-mono text-xs text-cyan-200/75">MOCKUP VERSUS</p>
-            <h2 className="mt-2 text-2xl font-semibold text-cyan-50">Comparador visual de productos</h2>
+            <p className="tech-mono text-xs text-cyan-200/75">API</p>
+            <h2 className="mt-2 text-2xl font-semibold text-cyan-50">Comparador de productos</h2>
             <p className="mt-3 text-sm text-cyan-100/80">
-              Pensado para reducir incertidumbre de compra: comparacion tecnica, scores por uso y decision
-              guiada en una sola vista.
+              {error ?? "Selecciona productos del marketplace para verlos lado a lado."}
             </p>
           </section>
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {selectedProducts.map((product) => (
-              <article
-                key={product.id}
-                className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(155deg,rgba(17,45,80,0.95),rgba(7,24,44,0.96))] shadow-xl shadow-slate-950/25"
-              >
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="h-36 w-full object-cover"
-                  loading="lazy"
-                />
-                <div className="p-4">
-                  <p className="text-xs text-cyan-200/80">{product.brand}</p>
-                  <h3 className="mt-1 text-lg font-semibold text-white">{product.name}</h3>
-                  <p className="mt-2 text-sm text-cyan-100/80">{product.category}</p>
-                  <p className="mt-3 text-base font-bold text-cyan-100">{product.price}</p>
-                </div>
-              </article>
-            ))}
-          </section>
-
-          <section className="tech-card overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-y-2 text-left text-sm">
-              <thead>
-                <tr>
-                  <th className="px-3 py-2 text-cyan-200/75">Caracteristica</th>
-                  {selectedProducts.map((product) => (
-                    <th key={`head-${product.id}`} className="px-3 py-2 text-cyan-50">
-                      {product.name}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {specsToCompare.map((spec) => (
-                  <tr key={spec.key}>
-                    <td className="rounded-l-xl border border-cyan-100/10 bg-slate-950/35 px-3 py-2 font-semibold text-cyan-100/90">
-                      {spec.label}
-                    </td>
-                    {selectedProducts.map((product, index) => (
-                      <td
-                        key={`${spec.key}-${product.id}`}
-                        className={`border border-cyan-100/10 bg-slate-950/35 px-3 py-2 text-cyan-100/80 ${
-                          index === selectedProducts.length - 1 ? "rounded-r-xl" : ""
-                        }`}
-                      >
-                        {String(product[spec.key])}
-                      </td>
-                    ))}
-                  </tr>
+          {selectedProducts.length ? (
+            <>
+              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {selectedProducts.map((product) => (
+                  <article
+                    key={product.id}
+                    className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(155deg,rgba(17,45,80,0.95),rgba(7,24,44,0.96))] shadow-xl shadow-slate-950/25"
+                  >
+                    {product.imagenPrincipal ? (
+                      <img
+                        src={product.imagenPrincipal}
+                        alt={product.nombre}
+                        className="h-36 w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : null}
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-white">{product.nombre}</h3>
+                      <p className="mt-3 text-base font-bold text-cyan-100">{formatPrice(product.precio)}</p>
+                      <p className="mt-2 text-sm text-cyan-100/80">
+                        Calificacion: {product.calificacion ?? "Sin calificacion"}
+                      </p>
+                    </div>
+                  </article>
                 ))}
-              </tbody>
-            </table>
-          </section>
+              </section>
 
-          <section className="tech-card">
-            <h3 className="text-lg font-semibold text-cyan-50">Scores por escenario</h3>
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              {scoreItems.map((score) => (
-                <article key={score.key} className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
-                  <p className="text-sm font-semibold text-cyan-100">{score.label}</p>
-                  <div className="mt-3 space-y-2">
-                    {selectedProducts.map((product) => (
-                      <div key={`${score.key}-${product.id}`}>
-                        <div className="mb-1 flex items-center justify-between text-xs text-cyan-100/80">
-                          <span>{product.name}</span>
-                          <span>{product[score.key]}/100</span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-slate-900/80">
-                          <div
-                            className="h-full rounded-full bg-cyan-300"
-                            style={{ width: `${product[score.key]}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="tech-card">
-            <h3 className="text-lg font-semibold text-cyan-50">Decision sugerida</h3>
-            <p className="mt-3 text-sm text-cyan-100/85">
-              Si priorizas movilidad y bateria: <span className="font-semibold text-cyan-50">{bestForWork?.name}</span>.
-            </p>
-            <p className="mt-2 text-sm text-cyan-100/85">
-              Si priorizas rendimiento bruto: <span className="font-semibold text-cyan-50">{bestForGaming?.name}</span>.
-            </p>
-            <p className="mt-2 text-sm text-cyan-100/85">
-              Si trabajas con diseno y video: <span className="font-semibold text-cyan-50">{bestForCreator?.name}</span>.
-            </p>
-          </section>
+              <section className="tech-card overflow-x-auto">
+                <table className="min-w-full border-separate border-spacing-y-2 text-left text-sm">
+                  <thead>
+                    <tr>
+                      <th className="px-3 py-2 text-cyan-200/75">Dato</th>
+                      {selectedProducts.map((product) => (
+                        <th key={`head-${product.id}`} className="px-3 py-2 text-cyan-50">
+                          {product.nombre}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="rounded-l-xl border border-cyan-100/10 bg-slate-950/35 px-3 py-2 font-semibold text-cyan-100/90">
+                        Precio
+                      </td>
+                      {selectedProducts.map((product, index) => (
+                        <td
+                          key={`price-${product.id}`}
+                          className={`border border-cyan-100/10 bg-slate-950/35 px-3 py-2 text-cyan-100/80 ${
+                            index === selectedProducts.length - 1 ? "rounded-r-xl" : ""
+                          }`}
+                        >
+                          {formatPrice(product.precio)}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="rounded-l-xl border border-cyan-100/10 bg-slate-950/35 px-3 py-2 font-semibold text-cyan-100/90">
+                        Calificacion
+                      </td>
+                      {selectedProducts.map((product, index) => (
+                        <td
+                          key={`rating-${product.id}`}
+                          className={`border border-cyan-100/10 bg-slate-950/35 px-3 py-2 text-cyan-100/80 ${
+                            index === selectedProducts.length - 1 ? "rounded-r-xl" : ""
+                          }`}
+                        >
+                          {product.calificacion ?? "Sin calificacion"}
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+            </>
+          ) : (
+            <section className="tech-card">
+              <p className="text-sm text-cyan-100/80">
+                {isLoading ? "Cargando productos..." : "No hay productos para comparar desde la API."}
+              </p>
+            </section>
+          )}
         </section>
       </main>
     </div>
