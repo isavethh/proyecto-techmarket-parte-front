@@ -1,18 +1,69 @@
 "use client";
-
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { EmbajadorSidebar } from "../page";
 import {
-  type BusinessOnboarding,
-  type OnboardingNote,
-  type ReferredBusiness,
-} from "../ambassadorData";
-import { updateOnboardingState, useOnboardingState } from "../onboardingStore";
-import {
-  updateReferredBusinessesState,
-  useReferredBusinessesState,
-} from "../businessStore";
+  completeAmbassadorOnboardingMilestone,
+  createAmbassadorOnboardingAction,
+  createAmbassadorOnboardingNote,
+  createAmbassadorOnboardingTask,
+  updateAmbassadorOnboarding,
+  updateAmbassadorOnboardingTaskStatus,
+  useAmbassadorOnboarding,
+  useAmbassadorOnboardingDetail,
+  useAmbassadorOnboardingMilestones,
+  useAmbassadorOnboardingSnapshot,
+  useAmbassadorOnboardingTasks,
+  useAmbassadorProfile,
+  type ApiOnboardingSummary,
+} from "../useAmbassadorApi";
+
+type OnboardingNote = {
+  text: string;
+  date: string;
+};
+
+type BusinessOnboarding = {
+  id: string;
+  businessId: string;
+  isActive: boolean;
+  progress: number;
+  currentStep: string;
+  completedSteps: string[];
+  nextAction: string;
+  alerts: string[];
+  lastUpdate: string;
+  snapshot: {
+    emailVerified: boolean;
+    basicDataComplete: boolean;
+    profileDescription: string;
+    category: string;
+    location: string;
+    productsCount: number;
+    postsCount: number;
+    evidenceCount: number;
+    promotionCreated: boolean;
+  };
+  validated: {
+    profile: boolean;
+    catalog: boolean;
+    post: boolean;
+    evidence: boolean;
+    promotion: boolean;
+  };
+  tracking: {
+    responsible: "Embajador" | "Negocio";
+    nextActionDate: string;
+    lastAction: string;
+  };
+  metrics: {
+    startedAt: string;
+    activatedAt?: string;
+    daysToActivate?: number;
+    leadsAfterActivation?: number;
+  };
+  notes: OnboardingNote[];
+};
 
 type OnboardingStatus = "Onboarding activo" | "Completado" | "Estancado";
 type OnboardingFilter = "Todos" | OnboardingStatus;
@@ -66,8 +117,72 @@ const daysBetween = (fromIso: string, toDate: Date) => {
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 };
 
-const getBusinessName = (businesses: ReferredBusiness[], businessId: string) => {
-  return businesses.find((business) => business.id === businessId)?.name ?? "Negocio";
+const getBusinessName = (businessId: string) => businessId || "Negocio";
+
+const normalizeBackendOnboardingStatus = (status: string) => {
+  const normalizedStatus = status.trim().toUpperCase();
+  if (normalizedStatus.includes("COMPLET") || normalizedStatus.includes("ACTIVE") || normalizedStatus.includes("ACTIVO")) {
+    return "Completado" as const;
+  }
+  if (normalizedStatus.includes("STUCK") || normalizedStatus.includes("ESTANC")) {
+    return "Estancado" as const;
+  }
+  return "Onboarding activo" as const;
+};
+
+const buildCompletedStepsFromProgress = (progress: number) => {
+  const availableSteps = ["Registro", "Perfil", "Catálogo", "Primera publicación", "Evidencia", "Promoción"];
+  const completedCount = Math.min(TOTAL_CORE_STEPS, Math.max(0, Math.round((progress / 100) * TOTAL_CORE_STEPS)));
+  return availableSteps.slice(0, completedCount);
+};
+
+const mapApiOnboardingToLocal = (item: ApiOnboardingSummary): BusinessOnboarding => {
+  const status = normalizeBackendOnboardingStatus(item.estado);
+  const isActive = status === "Completado";
+  const progress = clampProgress(item.progreso);
+  const completedSteps = buildCompletedStepsFromProgress(progress);
+  const currentStep = isActive ? "Activo" : completedSteps.at(-1) ?? "Registro";
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  return {
+    id: item.id,
+    businessId: item.nombre || item.referidoId,
+    isActive,
+    progress,
+    currentStep,
+    completedSteps,
+    nextAction: isActive ? "Onboarding completado" : "Continuar seguimiento del onboarding",
+    alerts: status === "Estancado" ? ["Proceso detenido"] : [],
+    lastUpdate: todayIso,
+    snapshot: {
+      emailVerified: progress >= 16,
+      basicDataComplete: progress >= 16,
+      profileDescription: "",
+      category: "",
+      location: "",
+      productsCount: 0,
+      postsCount: 0,
+      evidenceCount: 0,
+      promotionCreated: progress >= 100,
+    },
+    validated: {
+      profile: progress >= 33,
+      catalog: progress >= 50,
+      post: progress >= 66,
+      evidence: progress >= 83,
+      promotion: progress >= 100,
+    },
+    tracking: {
+      responsible: isActive ? "Negocio" : "Embajador",
+      nextActionDate: formatIsoToDisplayDate(todayIso),
+      lastAction: `Estado backend: ${item.estado}`,
+    },
+    metrics: {
+      startedAt: todayIso,
+      activatedAt: isActive ? todayIso : undefined,
+    },
+    notes: [],
+  };
 };
 
 const computeValidated = (onboarding: BusinessOnboarding) => {
@@ -267,16 +382,25 @@ const applyOnboardingAction = (onboarding: BusinessOnboarding, actionKey: string
 
 export default function EmbajadorOnboardingPage() {
   const [activeFilter, setActiveFilter] = useState<OnboardingFilter>("Todos");
+  const { data: profile } = useAmbassadorProfile();
+  const {
+    data: apiOnboarding,
+    loading: onboardingLoading,
+    error: onboardingError,
+  } = useAmbassadorOnboarding();
 
-  const onboardingState = useOnboardingState();
-  const referredBusinessesState = useReferredBusinessesState();
+  const sourceOnboardingState = useMemo(
+    () => (apiOnboarding?.length ? apiOnboarding.map(mapApiOnboardingToLocal) : []),
+    [apiOnboarding],
+  );
   const normalizedOnboardingState = useMemo(
-    () => onboardingState.map((item) => recalculateOnboarding(item)),
-    [onboardingState],
+    () => sourceOnboardingState.map((item) => recalculateOnboarding(item)),
+    [sourceOnboardingState],
   );
 
-  const [activeBusinessId, setActiveBusinessId] = useState(onboardingState[0]?.id ?? "");
+  const [activeBusinessId, setActiveBusinessId] = useState("");
   const [noteDraft, setNoteDraft] = useState("");
+  const [backendFeedback, setBackendFeedback] = useState<string | null>(null);
 
   const filteredBusinesses = useMemo(() => {
     const withStatus = normalizedOnboardingState.map((item) => ({
@@ -304,19 +428,61 @@ export default function EmbajadorOnboardingPage() {
     () => filteredBusinesses.find((business) => business.id === activeBusinessId) ?? filteredBusinesses[0] ?? null,
     [filteredBusinesses, activeBusinessId],
   );
+  const { data: onboardingDetail, refetch: refetchOnboardingDetail } = useAmbassadorOnboardingDetail(activeBusiness?.id ?? null);
+  const { data: onboardingSnapshot, refetch: refetchOnboardingSnapshot } = useAmbassadorOnboardingSnapshot(activeBusiness?.id ?? null);
+  const { data: onboardingTasks, refetch: refetchOnboardingTasks } = useAmbassadorOnboardingTasks(activeBusiness?.id ?? null);
+  const { data: onboardingMilestones } = useAmbassadorOnboardingMilestones();
+  const displayedBusiness = useMemo(() => {
+    if (!activeBusiness) return null;
+    if (!onboardingSnapshot) return activeBusiness;
 
-  const handleItemAction = (actionKey: string) => {
+    const completedSteps = onboardingSnapshot.checklist.filter((item) => item.completado).map((item) => item.nombre);
+
+    return recalculateOnboarding({
+      ...activeBusiness,
+      businessId: onboardingSnapshot.perfil.nombre ?? activeBusiness.businessId,
+      completedSteps,
+      snapshot: {
+        emailVerified: onboardingSnapshot.checklist[0]?.completado ?? false,
+        basicDataComplete: onboardingSnapshot.checklist[0]?.completado ?? false,
+        profileDescription: onboardingSnapshot.perfil.tipo ?? "",
+        category: onboardingSnapshot.perfil.tipo ?? "",
+        location: [onboardingSnapshot.perfil.ciudad, onboardingSnapshot.perfil.pais].filter(Boolean).join(", "),
+        productsCount: onboardingSnapshot.catalogo.totalProductos,
+        postsCount: onboardingSnapshot.publicaciones.length,
+        evidenceCount: onboardingSnapshot.evidencias.length,
+        promotionCreated: Boolean(onboardingSnapshot.promocion.codigo),
+      },
+      notes: onboardingSnapshot.notas.map((note) => ({ text: note.nota, date: note.fecha })),
+      tracking: {
+        ...activeBusiness.tracking,
+        lastAction: onboardingSnapshot.accionesPendientes.length
+          ? `${onboardingSnapshot.accionesPendientes.length} acciones pendientes`
+          : activeBusiness.tracking.lastAction,
+      },
+    });
+  }, [activeBusiness, onboardingSnapshot]);
+
+  const handleItemAction = async (actionKey: string) => {
     if (!activeBusiness) {
       return;
     }
 
-    const updated = normalizedOnboardingState.map((item) =>
-      item.id === activeBusiness.id ? applyOnboardingAction(item, actionKey) : item,
-    );
-    updateOnboardingState(updated);
+    try {
+      await createAmbassadorOnboardingAction(activeBusiness.id, actionKey, `Accion ejecutada desde front: ${actionKey}`);
+      await updateAmbassadorOnboarding(activeBusiness.id, {
+        etapa: activeBusiness.currentStep,
+        nota: `Accion ejecutada desde front: ${actionKey}`,
+      });
+      setBackendFeedback("Onboarding actualizado en backend.");
+      await refetchOnboardingDetail();
+      await refetchOnboardingSnapshot();
+    } catch (error) {
+      setBackendFeedback(error instanceof Error ? error.message : "No se pudo sincronizar onboarding.");
+    }
   };
 
-  const handleActivate = () => {
+  const handleActivate = async () => {
     if (!activeBusiness) {
       return;
     }
@@ -341,39 +507,58 @@ export default function EmbajadorOnboardingPage() {
       ? undefined
       : Math.max(0, Math.ceil((now.getTime() - startedAt.getTime()) / (1000 * 60 * 60 * 24)));
 
-    const updated = normalizedOnboardingState.map((item) => {
-      if (item.id !== activeBusiness.id) {
-        return item;
-      }
-
-      return recalculateOnboarding({
-        ...item,
-        isActive: true,
-        lastUpdate: todayIso,
-        metrics: {
-          ...item.metrics,
-          activatedAt: todayIso,
-          daysToActivate,
-          leadsAfterActivation: item.metrics.leadsAfterActivation ?? 12,
-        },
-        tracking: {
-          ...item.tracking,
-          lastAction: "Negocio activado",
-        },
+    try {
+      await updateAmbassadorOnboarding(activeBusiness.id, {
+        etapa: "ACTIVE",
+        nota: "Negocio activado desde el panel de embajador",
       });
-    });
-
-    updateOnboardingState(updated);
-
-    const updatedBusinesses = referredBusinessesState.map((business) =>
-      business.id === activeBusiness.businessId && business.status !== "Activo"
-        ? { ...business, status: "Activo" as const }
-        : business,
-    );
-    updateReferredBusinessesState(updatedBusinesses);
+      setBackendFeedback("Negocio activado en backend.");
+      await refetchOnboardingDetail();
+      await refetchOnboardingSnapshot();
+    } catch (error) {
+      setBackendFeedback(error instanceof Error ? error.message : "No se pudo activar en backend.");
+    }
   };
 
-  const handleAddNote = () => {
+  const handleCreateBackendTask = async () => {
+    if (!activeBusiness) return;
+
+    try {
+      await createAmbassadorOnboardingTask(activeBusiness.id, {
+        titulo: computeRecommended(activeBusiness.currentStep).message,
+        fechaLimite: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      });
+      setBackendFeedback("Tarea creada en backend.");
+      await refetchOnboardingTasks();
+    } catch (error) {
+      setBackendFeedback(error instanceof Error ? error.message : "No se pudo crear la tarea.");
+    }
+  };
+
+  const handleCompleteBackendTask = async (taskId: string) => {
+    try {
+      await updateAmbassadorOnboardingTaskStatus(taskId, "completada");
+      setBackendFeedback("Tarea completada.");
+      await refetchOnboardingTasks();
+      await refetchOnboardingDetail();
+    } catch (error) {
+      setBackendFeedback(error instanceof Error ? error.message : "No se pudo completar la tarea.");
+    }
+  };
+
+  const handleCompleteMilestone = async (milestoneId: string) => {
+    if (!activeBusiness) return;
+
+    try {
+      await completeAmbassadorOnboardingMilestone(activeBusiness.id, milestoneId);
+      setBackendFeedback("Hito marcado como completado.");
+      await refetchOnboardingDetail();
+    } catch (error) {
+      setBackendFeedback(error instanceof Error ? error.message : "No se pudo completar el hito.");
+    }
+  };
+
+  const handleAddNote = async () => {
     if (!activeBusiness) {
       return;
     }
@@ -383,27 +568,14 @@ export default function EmbajadorOnboardingPage() {
       return;
     }
 
-    const todayIso = new Date().toISOString().slice(0, 10);
-    const newNote: OnboardingNote = { text, date: todayIso };
-
-    const updated = normalizedOnboardingState.map((item) => {
-      if (item.id !== activeBusiness.id) {
-        return item;
-      }
-
-      return recalculateOnboarding({
-        ...item,
-        lastUpdate: todayIso,
-        notes: [newNote, ...item.notes],
-        tracking: {
-          ...item.tracking,
-          lastAction: "Nota agregada por embajador",
-        },
-      });
-    });
-
-    setNoteDraft("");
-    updateOnboardingState(updated);
+    try {
+      await createAmbassadorOnboardingNote(activeBusiness.id, text);
+      setNoteDraft("");
+      setBackendFeedback("Nota agregada en backend.");
+      await refetchOnboardingSnapshot();
+    } catch (error) {
+      setBackendFeedback(error instanceof Error ? error.message : "No se pudo agregar la nota.");
+    }
   };
 
   return (
@@ -425,13 +597,13 @@ export default function EmbajadorOnboardingPage() {
         </div>
       </header>
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <EmbajadorSidebar activeSection="onboarding" />
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_320px_minmax(0,1fr)] xl:grid-cols-[300px_360px_minmax(0,1fr)] lg:px-6">
+        <EmbajadorSidebar activeSection="onboarding" profile={profile} />
 
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-scroll lg:pr-2 chat-scrollbar">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">ONBOARDING</p>
-            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Lista</h1>
+            <h1 className="mt-3 text-xl font-semibold text-cyan-50">Lista</h1>
             <p className="mt-2 text-sm text-cyan-100/80">Filtro + progreso automático + estado real.</p>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -455,6 +627,16 @@ export default function EmbajadorOnboardingPage() {
             </div>
 
             <div className="mt-4 space-y-2">
+              {onboardingLoading ? (
+                <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4 text-sm text-cyan-100/80">
+                  Cargando onboarding real...
+                </div>
+              ) : null}
+              {onboardingError ? (
+                <div className="rounded-2xl border border-rose-300/25 bg-rose-400/10 p-4 text-sm text-rose-100">
+                  No se pudo cargar onboarding real: {onboardingError}
+                </div>
+              ) : null}
               {filteredBusinesses.map((business) => {
                 const isSelected = business.id === activeBusiness?.id;
                 const progress = clampProgress(business.progress);
@@ -475,7 +657,7 @@ export default function EmbajadorOnboardingPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-cyan-50">
-                          {getBusinessName(referredBusinessesState, business.businessId)}
+                          {getBusinessName(business.businessId)}
                         </p>
                         <p className="mt-1 text-xs text-cyan-100/70">Etapa actual: {business.currentStep}</p>
                       </div>
@@ -524,7 +706,7 @@ export default function EmbajadorOnboardingPage() {
                 <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h2 className="text-3xl font-bold text-cyan-50">
-                      {getBusinessName(referredBusinessesState, activeBusiness.businessId)}
+                      {getBusinessName(displayedBusiness?.businessId ?? activeBusiness.businessId)}
                     </h2>
                     <p className="mt-2 text-sm text-cyan-100/82">
                       Etapa actual: <strong className="text-cyan-50">{activeBusiness.currentStep}</strong>
@@ -617,6 +799,83 @@ export default function EmbajadorOnboardingPage() {
                     </article>
                   </div>
                 ) : null}
+              </section>
+
+              <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">Tareas e hitos reales</h3>
+                    <p className="mt-1 text-sm text-cyan-100/75">
+                      Estado backend: {onboardingDetail?.estado ?? activeBusiness.currentStep} · Progreso backend:{" "}
+                      {onboardingDetail?.progreso ?? activeBusiness.progress}%
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleCreateBackendTask()}
+                    className="tech-button tech-button-primary px-4 py-2 text-xs"
+                  >
+                    Crear tarea sugerida
+                  </button>
+                </div>
+
+                {backendFeedback ? (
+                  <div className="mt-3 rounded-2xl border border-cyan-100/10 bg-white/5 px-4 py-3 text-sm text-cyan-100/80">
+                    {backendFeedback}
+                  </div>
+                ) : null}
+
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                  <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                    <p className="text-sm font-semibold text-cyan-50">Tareas</p>
+                    <div className="mt-3 space-y-2">
+                      {(onboardingTasks ?? []).map((task) => (
+                        <div key={task.id} className="rounded-xl border border-cyan-100/10 bg-slate-950/35 p-3 text-sm text-cyan-100/80">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-semibold text-cyan-50">{task.titulo}</span>
+                            <span className="text-xs text-cyan-100/60">{task.estado}</span>
+                          </div>
+                          <p className="mt-1 text-xs text-cyan-100/60">Límite: {task.fechaLimite ?? "Sin fecha"}</p>
+                          {task.estado !== "completada" ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleCompleteBackendTask(task.id)}
+                              className="mt-3 rounded-xl border border-emerald-200/25 bg-emerald-300/10 px-3 py-2 text-xs font-semibold text-emerald-100"
+                            >
+                              Completar
+                            </button>
+                          ) : null}
+                        </div>
+                      ))}
+                      {(onboardingTasks ?? []).length === 0 ? <p className="text-sm text-cyan-100/60">Sin tareas registradas.</p> : null}
+                    </div>
+                  </article>
+
+                  <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                    <p className="text-sm font-semibold text-cyan-50">Hitos</p>
+                    <div className="mt-3 space-y-2">
+                      {(onboardingDetail?.pasos ?? onboardingMilestones ?? []).map((milestone) => (
+                        <div key={milestone.id} className="rounded-xl border border-cyan-100/10 bg-slate-950/35 p-3 text-sm text-cyan-100/80">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-semibold text-cyan-50">{milestone.nombre}</span>
+                            {"completado" in milestone ? (
+                              <span className="text-xs text-cyan-100/60">{milestone.completado ? "Completado" : "Pendiente"}</span>
+                            ) : null}
+                          </div>
+                          {!("completado" in milestone) || !milestone.completado ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleCompleteMilestone(milestone.id)}
+                              className="mt-3 rounded-xl border border-emerald-200/25 bg-emerald-300/10 px-3 py-2 text-xs font-semibold text-emerald-100"
+                            >
+                              Marcar completado
+                            </button>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                </div>
               </section>
 
               <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">

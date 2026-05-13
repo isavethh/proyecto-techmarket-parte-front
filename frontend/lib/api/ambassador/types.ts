@@ -293,29 +293,39 @@ export type ReferralFileUploadResponse = {
 
 export type Lead = {
   id: string;
-  businessName: string;
-  contactName: string;
-  email: string;
-  phone: string;
-  category: string;
-  city: string;
-  source: string;
-  status: string;
-  score: number;
-  createdAt: string;
-  updatedAt: string;
-  notes: string;
+  nombre: string;
+  tipo: string;
+  estado: string;
+  fuente?: string | null;
+  contacto?: string | null;
+  telefono?: string | null;
+  email?: string | null;
+  ciudad?: string | null;
+  pais?: string | null;
+  notas?: string | null;
+  proximaAccion?: string | null;
+  historialAcciones?: Array<{
+    id: string;
+    tipo: string;
+    nota: string;
+    fecha: string;
+  }> | null;
+  fechaUltimoContacto?: string | null;
+  fechaCreacion?: string | null;
+  probabilidadCierre?: number | null;
 };
 
 export type CreateLeadPayload = {
-  businessName: string;
-  contactName: string;
+  nombre: string;
+  tipo: string;
+  contacto: string;
+  telefono: string;
   email?: string;
-  phone?: string;
-  category: string;
-  city: string;
-  source: string;
-  notes?: string;
+  ciudad?: string;
+  pais?: string;
+  notas?: string;
+  proximaAccion?: string;
+  fuente: string;
 };
 
 export type UpdateLeadPayload = Partial<CreateLeadPayload>;

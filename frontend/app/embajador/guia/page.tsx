@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { EmbajadorSidebar } from "../page";
+import { useAmbassadorProfile } from "../useAmbassadorApi";
 import { logout } from "@/lib/auth/authGuard";
 
 const mainFunctions = [
@@ -48,6 +49,7 @@ const usefulTips = [
 
 export default function EmbajadorGuiaPage() {
   const router = useRouter();
+  const { data: profile } = useAmbassadorProfile();
 
   const handleLogout = () => {
     logout(router);
@@ -77,7 +79,7 @@ export default function EmbajadorGuiaPage() {
       </header>
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
-        <EmbajadorSidebar activeSection="guia" />
+        <EmbajadorSidebar activeSection="guia" profile={profile} />
 
         <section className="space-y-6">
           <section className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8">

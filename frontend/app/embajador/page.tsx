@@ -5,37 +5,22 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { logout, requireAuth } from "@/lib/auth/authGuard";
 import {
-  ambassadorProfile,
-  referredAmbassadors,
-} from "./ambassadorData";
-import { useReferredBusinessesState } from "./businessStore";
+  useAmbassadorProfile,
+  useComputedStats,
+  useAmbassadorReferrals,
+  useAmbassadorNetworkTree,
+  useAmbassadorReferralCodes,
+  useAmbassadorReferralLinks,
+  useAmbassadorReferralLinkQr,
+  useAmbassadorReferralLinkStats,
+  useAmbassadorPerformanceReport,
+  useAmbassadorConversionFunnel,
+  profileDisplayData,
+  type ApiProfile,
+} from "./useAmbassadorApi";
+import { LiveApiBadge } from "./HardcodedBadge";
 
-const referralLinkString = "https://techmarket.bo/auth?mode=register&type=empresa&ref=SV-EMB-0426";
-
-const referralQrPreviewRows = [
-  "########..##..########",
-  "##....##....##....####",
-  "##.##.##.##..##.##.###",
-  "##....##..##.##....###",
-  "########.##..#########",
-  "..##..####..##..##....",
-  "##..##....##..####.###",
-  "..######..####..##..##",
-  "##..##..##..##..####..",
-  "####..######..##..####",
-  "..##..##..####..##..##",
-  "########..##..########",
-];
-
-const referralQrGrid = referralQrPreviewRows.map((row) =>
-  row.split("").map((cell) => cell === "#"),
-);
-
-const currentLevel = ambassadorProfile.level;
-const nextLevel = currentLevel === 1 ? 2 : currentLevel === 2 ? 3 : null;
-const levelRuleDescription = nextLevel
-  ? `Como embajador Nivel ${currentLevel}, puedes referir embajadores Nivel ${nextLevel}.`
-  : "Como embajador Nivel 3, ya no puedes referir nuevos niveles de embajadores.";
+// Level rule description is now computed inside the component from API data
 
 export type EmbajadorSidebarSection =
   | "resumen"
@@ -61,19 +46,22 @@ export function EmbajadorSidebar({
   activeSection = "resumen",
   onOpenReferralModal,
   onLogout,
-}: EmbajadorSidebarProps) {
+  profile,
+}: EmbajadorSidebarProps & { profile?: ApiProfile | null }) {
+  const display = profile ? profileDisplayData(profile) : null;
+
   return (
     <aside className="space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-scroll lg:pr-2 chat-scrollbar">
       <section className="tech-card">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-            {ambassadorProfile.initials}
+            {display?.initials ?? ".."}
           </div>
           <div>
-            <p className="text-sm font-semibold text-cyan-50">{ambassadorProfile.name}</p>
-            <p className="text-xs text-cyan-100/75">{ambassadorProfile.account}</p>
+            <p className="text-sm font-semibold text-cyan-50">{display?.fullName ?? "Cargando..."}</p>
+            <p className="text-xs text-cyan-100/75">{profile?.estado === "ACTIVE" ? "Embajador verificado" : "Embajador"}</p>
             <p className="mt-1 inline-flex rounded-full border border-cyan-100/15 bg-cyan-300/12 px-2 py-0.5 text-[11px] font-semibold text-cyan-50">
-              Nivel {ambassadorProfile.level}
+              {profile?.nivel ?? "..."}
             </p>
           </div>
         </div>
@@ -81,15 +69,15 @@ export function EmbajadorSidebar({
         <div className="mt-4 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3 text-xs text-cyan-100/85">
           <div className="flex items-center justify-between gap-3">
             <span>Ciudad</span>
-            <strong className="text-cyan-50">{ambassadorProfile.city}</strong>
+            <strong className="text-cyan-50">{profile?.ciudad ?? "—"}</strong>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span>Residencia</span>
-            <strong className="text-cyan-50">{ambassadorProfile.residenceArea}</strong>
+            <span>Pais</span>
+            <strong className="text-cyan-50">{profile?.pais ?? "—"}</strong>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span>Especialidad</span>
-            <strong className="text-cyan-50">Captacion local</strong>
+            <span>Codigo referido</span>
+            <strong className="text-cyan-50">{profile?.codigoReferido ?? "—"}</strong>
           </div>
         </div>
 
@@ -169,44 +157,37 @@ export default function EmbajadorPage() {
 
   const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
   const [didCopyReferralLink, setDidCopyReferralLink] = useState(false);
-  const referredBusinessesState = useReferredBusinessesState();
+
+  const { data: profile } = useAmbassadorProfile();
+  const stats = useComputedStats();
+  const { data: referrals } = useAmbassadorReferrals();
+  const { data: networkTree } = useAmbassadorNetworkTree();
+  const { data: referralCodes } = useAmbassadorReferralCodes();
+  const { data: referralLinks } = useAmbassadorReferralLinks();
+  const primaryReferralLink = referralLinks?.[0] ?? null;
+  const { data: referralLinkQr } = useAmbassadorReferralLinkQr(primaryReferralLink?.id ?? null);
+  const { data: referralLinkStats } = useAmbassadorReferralLinkStats(primaryReferralLink?.id ?? null);
+  const { data: performanceReport } = useAmbassadorPerformanceReport();
+  const { data: conversionFunnel } = useAmbassadorConversionFunnel();
+
+  const referralLinkString = primaryReferralLink?.url ?? (referralCodes?.[0]
+    ? `https://techmarket.bo/auth?mode=register&type=empresa&ref=${referralCodes[0].codigo}`
+    : "");
+  const referralCodeString = primaryReferralLink?.codigo ?? referralCodes?.[0]?.codigo ?? "Sin código";
+  const referralClicks = referralLinkStats?.clicks ?? performanceReport?.clics ?? 0;
+  const referralRegistrations = referralLinkStats?.registros ?? conversionFunnel?.registros ?? referrals?.length ?? 0;
+  const referralLinkConversion = referralLinkStats?.conversionRate ?? performanceReport?.conversionRate ?? stats?.conversionRate ?? 0;
 
   const ambassadorKpis = useMemo(() => {
-    const totalReferredBusinesses = referredBusinessesState.length;
-    const activeBusinesses = referredBusinessesState.filter((business) => business.status === "Activo").length;
-    const averageRating = (
-      totalReferredBusinesses
-        ? referredBusinessesState.reduce((acc, business) => acc + business.rating, 0) / totalReferredBusinesses
-        : 0
-    ).toFixed(1);
-    const averageUserScore = Math.round(
-      totalReferredBusinesses
-        ? referredBusinessesState.reduce((acc, business) => acc + business.userScore, 0) / totalReferredBusinesses
-        : 0,
-    );
-    const averageConversion = Math.round(
-      totalReferredBusinesses
-        ? referredBusinessesState.reduce((acc, business) => acc + business.conversionRate, 0) / totalReferredBusinesses
-        : 0,
-    );
-    const totalCommissionGenerated = referredBusinessesState
-      .filter((business) => business.status === "Activo")
-      .reduce((acc, business) => acc + business.commissionGenerated, 0);
-
+    if (!stats) return [];
     return [
-      { label: "Nivel de embajador", value: `Nivel ${ambassadorProfile.level}`, helper: "Rango actual" },
-      { label: "Negocios referidos", value: `${totalReferredBusinesses}`, helper: "Cuentas en tu red" },
-      { label: "Negocios activos", value: `${activeBusinesses}`, helper: "Operando este mes" },
-      { label: "Percepcion usuario", value: `${averageUserScore}/100`, helper: "Promedio de confianza" },
-      { label: "Conversion promedio", value: `${averageConversion}%`, helper: "Lead a cierre comercial" },
-      {
-        label: "Comision estimada",
-        value: `Bs ${totalCommissionGenerated.toLocaleString("es-BO")}`,
-        helper: "Acumulado en negocios activos",
-      },
-      { label: "Rating promedio", value: `${averageRating}/5`, helper: "Valoracion de clientes" },
+      { label: "Nivel de embajador", value: stats.nivel, helper: "Rango actual" },
+      { label: "Negocios referidos", value: `${stats.negociosReferidos}`, helper: "Cuentas en tu red" },
+      { label: "Negocios activos", value: `${stats.negociosActivos}`, helper: "Operando este mes" },
+      { label: "Conversion", value: `${stats.conversionRate}%`, helper: "Lead a cierre comercial" },
+      { label: "Comisiones totales", value: stats.comisionesTotales, helper: "Acumulado total" },
     ];
-  }, [referredBusinessesState]);
+  }, [stats]);
 
   useEffect(() => {
     if (!isReferralModalOpen) {
@@ -275,6 +256,7 @@ export default function EmbajadorPage() {
           activeSection="resumen"
           onOpenReferralModal={() => setIsReferralModalOpen(true)}
           onLogout={() => logout(router)}
+          profile={profile}
         />
 
         <section className="space-y-6">
@@ -282,14 +264,19 @@ export default function EmbajadorPage() {
             id="resumen"
             className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8"
           >
-            <p className="tech-mono text-xs text-cyan-200/75">RESUMEN DE RED REFERIDA</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="tech-mono text-xs text-cyan-200/75">RESUMEN DE RED REFERIDA</p>
+              <LiveApiBadge label="API — /profile + /referrals + /commissions" />
+            </div>
             <h1 className="mt-3 text-3xl font-bold text-cyan-50 md:text-4xl">
               Asi les esta yendo a tus negocios referidos
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/80">{ambassadorProfile.bio}</p>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/80">
+              Bienvenido al panel de embajador. Aqui puedes ver el rendimiento de tu red de negocios referidos.
+            </p>
 
             <div className="mt-4 rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-3 text-sm text-cyan-100/82">
-              {levelRuleDescription}
+              Tu posicion en la red es Raíz. Tus referidos se organizan en niveles relativos a ti.
             </div>
 
             <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -327,53 +314,41 @@ export default function EmbajadorPage() {
           <section id="negocios" className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-2xl font-bold text-white">Resumen de negocios referidos</h2>
-              <span className="rounded-full border border-cyan-100/15 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100/85">
-                Seguimiento comercial y reputacional
-              </span>
+              <LiveApiBadge label="API — /referrals" />
             </div>
 
             <div className="mt-4 grid gap-4 xl:grid-cols-2">
-              {referredBusinessesState.map((business) => (
-                <article key={business.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              {(referrals ?? []).map((r) => (
+                <article key={r.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-base font-semibold text-cyan-50">{business.name}</p>
+                      <p className="text-base font-semibold text-cyan-50">{r.nombre ?? r.id}</p>
                       <p className="text-xs text-cyan-200/75">
-                        {business.category} · {business.city} · Referido: {business.referredAt}
+                        {r.tipo} · Referido: {r.fechaRegistro}
                       </p>
                     </div>
                     <span className="rounded-full border border-cyan-100/18 bg-cyan-300/12 px-2.5 py-1 text-[11px] text-cyan-50">
-                      {business.status}
+                      {r.estado}
                     </span>
                   </div>
 
-                  <p className="mt-3 text-sm text-cyan-100/82">{business.userView}</p>
-
                   <div className="mt-4 grid gap-2 sm:grid-cols-2">
                     <div className="rounded-xl border border-cyan-100/10 bg-slate-950/35 p-3 text-xs text-cyan-100/80">
-                      <p>Leads del mes</p>
-                      <p className="mt-1 text-lg font-semibold text-cyan-50">{business.monthlyLeads}</p>
+                      <p>Comision generada</p>
+                      <p className="mt-1 text-lg font-semibold text-cyan-50">{r.comisionGenerada}</p>
                     </div>
                     <div className="rounded-xl border border-cyan-100/10 bg-slate-950/35 p-3 text-xs text-cyan-100/80">
-                      <p>Conversion</p>
-                      <p className="mt-1 text-lg font-semibold text-cyan-50">{business.conversionRate}%</p>
-                    </div>
-                    <div className="rounded-xl border border-cyan-100/10 bg-slate-950/35 p-3 text-xs text-cyan-100/80">
-                      <p>Crecimiento</p>
-                      <p className="mt-1 text-lg font-semibold text-cyan-50">+{business.growthRate}%</p>
-                    </div>
-                    <div className="rounded-xl border border-cyan-100/10 bg-slate-950/35 p-3 text-xs text-cyan-100/80">
-                      <p>Rating</p>
-                      <p className="mt-1 text-lg font-semibold text-cyan-50">{business.rating.toFixed(1)} / 5</p>
+                      <p>Estado</p>
+                      <p className="mt-1 text-lg font-semibold text-cyan-50">{r.estado}</p>
                     </div>
                   </div>
 
                   <div className="mt-4">
                     <Link
-                      href={`/embajador/negocios-referidos?business=${encodeURIComponent(business.id)}`}
+                      href={`/embajador/negocios-referidos?business=${encodeURIComponent(r.id)}`}
                       className="inline-flex rounded-xl border border-cyan-100/15 bg-cyan-300/12 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
                     >
-                      Ver valor detallado de este negocio
+                      Ver detalle
                     </Link>
                   </div>
                 </article>
@@ -384,34 +359,22 @@ export default function EmbajadorPage() {
           <section id="embajadores-referidos" className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-2xl font-bold text-white">Embajadores referidos por ti</h2>
-              <span className="rounded-full border border-cyan-100/15 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100/85">
-                Jerarquia por niveles
-              </span>
+              <LiveApiBadge label="API — /network/tree" />
             </div>
 
-            <p className="mt-3 text-sm text-cyan-100/80">{levelRuleDescription}</p>
+            <p className="mt-3 text-sm text-cyan-100/80">Tu posicion es Raíz. Tus sub-embajadores aparecen debajo.</p>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {referredAmbassadors.map((ambassador) => (
-                <article key={ambassador.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              {(networkTree?.subEmbajadores ?? []).length === 0 && (
+                <p className="text-sm text-cyan-100/60 col-span-full">Aun no tienes sub-embajadores en tu red.</p>
+              )}
+              {(networkTree?.subEmbajadores ?? []).map((amb) => (
+                <article key={amb.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-cyan-50">{ambassador.name}</p>
+                    <p className="text-sm font-semibold text-cyan-50">{amb.nombre}</p>
                     <span className="rounded-full border border-cyan-100/18 bg-cyan-300/12 px-2.5 py-1 text-[11px] text-cyan-50">
-                      Nivel {ambassador.level}
+                      {amb.nivel}
                     </span>
-                  </div>
-
-                  <p className="mt-2 text-sm text-cyan-100/82">{ambassador.focus}</p>
-                  <div className="mt-3 grid gap-2 text-xs text-cyan-100/80 sm:grid-cols-3">
-                    <div className="rounded-xl border border-cyan-100/10 bg-slate-950/35 px-3 py-2">
-                      Estado: {ambassador.status}
-                    </div>
-                    <div className="rounded-xl border border-cyan-100/10 bg-slate-950/35 px-3 py-2">
-                      Referido: {ambassador.referredAt}
-                    </div>
-                    <div className="rounded-xl border border-cyan-100/10 bg-slate-950/35 px-3 py-2">
-                      Negocios activos: {ambassador.activeBusinesses}
-                    </div>
                   </div>
                 </article>
               ))}
@@ -421,29 +384,17 @@ export default function EmbajadorPage() {
           <section id="usuarios" className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-2xl font-bold text-white">Como los estan viendo los usuarios</h2>
-              <span className="rounded-full border border-cyan-100/15 bg-emerald-300/12 px-3 py-1 text-xs text-emerald-100">
-                Enfoque principal del embajador
-              </span>
             </div>
 
             <div className="mt-4 grid gap-3">
-              {referredBusinessesState.map((business) => (
-                <article key={`${business.id}-users`} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              {(referrals ?? []).map((r) => (
+                <article key={`${r.id}-users`} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-cyan-50">{business.name}</p>
-                    <p className="text-xs text-cyan-200/80">Percepcion usuario: {business.userScore}/100</p>
+                    <p className="text-sm font-semibold text-cyan-50">{r.nombre ?? r.id}</p>
+                    <p className="text-xs text-cyan-200/80">Comision: {r.comisionGenerada}</p>
                   </div>
-
-                  <div className="mt-3 h-2 overflow-hidden rounded-full border border-cyan-100/10 bg-slate-950/45">
-                    <div
-                      className="h-full rounded-full bg-[linear-gradient(90deg,rgba(6,182,212,0.45),rgba(34,211,238,0.92))]"
-                      style={{ width: `${business.userScore}%` }}
-                    />
-                  </div>
-
-                  <p className="mt-3 text-sm text-cyan-100/82">"{business.topComment}"</p>
                   <p className="mt-2 text-xs text-cyan-100/70">
-                    Impacto en tu reputacion como embajador: {business.reputationContribution}/100
+                    Tipo: {r.tipo} · Estado: {r.estado}
                   </p>
                 </article>
               ))}
@@ -504,32 +455,41 @@ export default function EmbajadorPage() {
                     {didCopyReferralLink ? "Link copiado" : "Copiar link"}
                   </button>
                   <span className="rounded-full border border-cyan-100/14 bg-white/5 px-2.5 py-1 text-[11px] text-cyan-100/80">
-                    Referido activo
+                    Codigo {referralCodeString}
                   </span>
                 </div>
 
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-xl border border-cyan-100/10 bg-slate-950/45 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">Clicks</p>
+                    <p className="mt-1 text-lg font-semibold text-cyan-50">{referralClicks}</p>
+                  </div>
+                  <div className="rounded-xl border border-cyan-100/10 bg-slate-950/45 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">Registros</p>
+                    <p className="mt-1 text-lg font-semibold text-cyan-50">{referralRegistrations}</p>
+                  </div>
+                  <div className="rounded-xl border border-cyan-100/10 bg-slate-950/45 p-3">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">Conversion</p>
+                    <p className="mt-1 text-lg font-semibold text-cyan-50">{referralLinkConversion}%</p>
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-2xl border border-cyan-100/14 bg-slate-950/35 p-4 md:p-5">
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">QR de referido</p>
 
                 <div className="mx-auto mt-3 w-full max-w-[220px] rounded-2xl border border-cyan-100/12 bg-white p-3 shadow-lg shadow-slate-950/30">
-                  <div
-                    className="grid gap-[2px]"
-                    style={{ gridTemplateColumns: `repeat(${referralQrGrid[0]?.length ?? 0}, minmax(0, 1fr))` }}
-                  >
-                    {referralQrGrid.map((row, rowIndex) =>
-                      row.map((isFilled, columnIndex) => (
-                        <span
-                          key={`${rowIndex}-${columnIndex}`}
-                          className={`aspect-square rounded-[1px] ${isFilled ? "bg-slate-950" : "bg-white"}`}
-                        />
-                      )),
-                    )}
-                  </div>
+                  {referralLinkQr?.qrUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={referralLinkQr.qrUrl} alt={`QR ${referralCodeString}`} className="aspect-square w-full rounded-xl object-cover" />
+                  ) : (
+                    <div className="flex aspect-square items-center justify-center rounded-xl bg-slate-950 text-center text-xs font-semibold text-cyan-50">
+                      QR no disponible
+                    </div>
+                  )}
                 </div>
 
-                <p className="mt-3 text-center text-xs text-cyan-100/75">QR demo para compartir</p>
+                <p className="mt-3 text-center text-xs text-cyan-100/75">QR real del link activo</p>
               </div>
             </div>
 

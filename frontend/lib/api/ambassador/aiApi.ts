@@ -12,24 +12,23 @@ import type {
 } from "./types";
 
 const BASE = "/api/ambassadors/ai";
-const AI_SERVICE = { service: "ai" as const };
 
 export function queryAi(data: AiQueryPayload): Promise<AiQueryResponse> {
-  return apiPost<AiQueryResponse>(`${BASE}/query`, data, AI_SERVICE);
+  return apiPost<AiQueryResponse>(`${BASE}/query`, data);
 }
 
 export function getAiInsights(): Promise<AiInsight[]> {
-  return apiGet<AiInsight[]>(`${BASE}/insights`, AI_SERVICE);
+  return apiGet<AiInsight[]>(`${BASE}/insights`);
 }
 
 export function getProspectScore(data: ProspectScorePayload): Promise<ProspectScoreResponse> {
-  return apiPost<ProspectScoreResponse>(`${BASE}/prospect-score`, data, AI_SERVICE);
+  return apiPost<ProspectScoreResponse>(`${BASE}/prospect-score`, data);
 }
 
 export function getFollowUpSuggestion(data: FollowUpSuggestionPayload): Promise<FollowUpSuggestionResponse> {
-  return apiPost<FollowUpSuggestionResponse>(`${BASE}/follow-up-suggestion`, data, AI_SERVICE);
+  return apiPost<FollowUpSuggestionResponse>(`${BASE}/follow-up-suggestion`, data);
 }
 
 export function getImprovementPlan(data: ImprovementPlanPayload): Promise<ImprovementPlanResponse> {
-  return apiPost<ImprovementPlanResponse>(`${BASE}/improvement-plan`, data, AI_SERVICE);
+  return apiPost<ImprovementPlanResponse>(`${BASE}/improvement-plan`, data);
 }

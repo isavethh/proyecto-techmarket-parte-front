@@ -4,8 +4,38 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { EmbajadorSidebar } from "../page";
-import { ambassadorProfile } from "../ambassadorData";
-import { useReferredBusinessesState } from "../businessStore";
+import {
+  useAmbassadorProfile,
+  useAmbassadorReferralActivity,
+  useAmbassadorReferralBusinessMetrics,
+  useAmbassadorReferralDetail,
+  useAmbassadorReferralMetrics,
+  useAmbassadorReferralUserInsights,
+  useAmbassadorReferrals,
+  useAmbassadorReferralsReport,
+  type ApiReferral,
+} from "../useAmbassadorApi";
+
+type BusinessView = {
+  id: string;
+  name: string;
+  category: string;
+  city: string;
+  referredAt: string;
+  status: "Activo" | "En onboarding";
+  monthlyLeads: number;
+  conversionRate: number;
+  growthRate: number;
+  rating: number;
+  userScore: number;
+  userView: string;
+  topComment: string;
+  valueScore: number;
+  commissionGenerated: number;
+  reputationContribution: number;
+  strengths: string[];
+  risks: string[];
+};
 
 const scoreTone = (score: number) => {
   if (score >= 85) {
@@ -80,10 +110,63 @@ const getRecommendations = (business: {
   return recommendations.slice(0, 3);
 };
 
+const normalizeReferralStatus = (status?: string | null): BusinessView["status"] => {
+  const normalizedStatus = status?.trim().toUpperCase();
+  return normalizedStatus?.includes("ACTIVE") || normalizedStatus?.includes("ACTIVO") ? "Activo" : "En onboarding";
+};
+
+const parseMoney = (value?: string | null) => {
+  if (!value) return 0;
+  const amount = Number(value.replace(/[^\d.,-]/g, "").replace(",", "."));
+  return Number.isFinite(amount) ? amount : 0;
+};
+
+const formatReferralDate = (value?: string | null) => {
+  if (!value) return "Sin fecha";
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) return value;
+
+  return new Intl.DateTimeFormat("es-BO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(parsedDate);
+};
+
+const mapReferralToBusiness = (referral: ApiReferral, index: number): BusinessView => {
+  return {
+    id: referral.id,
+    name: referral.nombre ?? `Referido ${index + 1}`,
+    category: referral.tipo || "Negocio referido",
+    city: "Sin ciudad registrada",
+    referredAt: formatReferralDate(referral.fechaRegistro),
+    status: normalizeReferralStatus(referral.estado),
+    monthlyLeads: 0,
+    conversionRate: 0,
+    growthRate: 0,
+    rating: 0,
+    userScore: 0,
+    userView: "Sin percepción registrada.",
+    topComment: "",
+    valueScore: 0,
+    commissionGenerated: parseMoney(referral.comisionGenerada),
+    reputationContribution: 0,
+    strengths: [],
+    risks: [],
+  };
+};
+
 function EmbajadorNegociosReferidosContent() {
   const searchParams = useSearchParams();
   const requestedBusinessId = searchParams.get("business") ?? "";
-  const referredBusinessesState = useReferredBusinessesState();
+  const { data: profile } = useAmbassadorProfile();
+  const { data: referrals, loading: referralsLoading, error: referralsError } = useAmbassadorReferrals();
+  const { data: referralMetrics } = useAmbassadorReferralMetrics();
+  const { data: referralsReport } = useAmbassadorReferralsReport();
+  const referredBusinessesState = useMemo(() => {
+    if (!referrals?.length) return [];
+    return referrals.map((referral, index) => mapReferralToBusiness(referral, index));
+  }, [referrals]);
   const [selectedBusinessId, setSelectedBusinessId] = useState("");
   const activeBusinessId = useMemo(() => {
     if (requestedBusinessId && referredBusinessesState.some((business) => business.id === requestedBusinessId)) {
@@ -101,22 +184,57 @@ function EmbajadorNegociosReferidosContent() {
     () => referredBusinessesState.find((business) => business.id === activeBusinessId) ?? referredBusinessesState[0],
     [activeBusinessId, referredBusinessesState],
   );
+  const { data: activeReferralDetail } = useAmbassadorReferralDetail(activeBusiness?.id?.startsWith("BUS-") ? activeBusiness.id : null);
+  const { data: activeBusinessMetrics } = useAmbassadorReferralBusinessMetrics(activeBusiness?.id?.startsWith("BUS-") ? activeBusiness.id : null);
+  const { data: activeUserInsights } = useAmbassadorReferralUserInsights(activeBusiness?.id?.startsWith("BUS-") ? activeBusiness.id : null);
+  const { data: activeReferralActivity } = useAmbassadorReferralActivity(activeBusiness?.id?.startsWith("BUS-") ? activeBusiness.id : null);
+  const activeReferralReport = referralsReport?.find((item) => item.referido === activeBusiness?.name);
 
   if (!activeBusiness) {
-    return null;
+    return (
+      <div className="flex-1 pb-10">
+        <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-6">
+          <EmbajadorSidebar activeSection="negocios" profile={profile} />
+          <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-6">
+            <h1 className="text-2xl font-bold text-cyan-50">Sin negocios referidos</h1>
+            <p className="mt-2 text-sm text-cyan-100/75">
+              Cuando backend devuelva referidos para este embajador, aparecerán aquí.
+            </p>
+          </section>
+        </main>
+      </div>
+    );
   }
 
+  const businessWithMetrics: BusinessView = {
+    ...activeBusiness,
+    city: activeReferralDetail?.ciudad ?? activeBusiness.city,
+    category: activeReferralDetail?.categoria ?? activeBusiness.category,
+    monthlyLeads: activeBusinessMetrics?.monthlyLeads ?? activeBusiness.monthlyLeads,
+    conversionRate: activeBusinessMetrics?.conversionRate ?? activeBusiness.conversionRate,
+    growthRate: activeBusinessMetrics?.growthRate ?? activeBusiness.growthRate,
+    rating: activeBusinessMetrics?.rating ?? activeBusiness.rating,
+    valueScore: activeBusinessMetrics?.valueScore ?? activeBusiness.valueScore,
+    commissionGenerated: activeBusinessMetrics?.commissionGenerated ?? activeBusiness.commissionGenerated,
+    reputationContribution: activeBusinessMetrics?.reputationContribution ?? activeBusiness.reputationContribution,
+    userScore: activeUserInsights?.userScore ?? activeBusiness.userScore,
+    userView: activeUserInsights?.userView ?? activeBusiness.userView,
+    topComment: activeUserInsights?.topComment ?? activeBusiness.topComment,
+    strengths: activeUserInsights?.strengths ?? activeBusiness.strengths,
+    risks: activeUserInsights?.risks ?? activeBusiness.risks,
+  };
+
   const reputationalImpactTone =
-    activeBusiness.reputationContribution >= 80
+    businessWithMetrics.reputationContribution >= 80
       ? "Impacto muy positivo"
-      : activeBusiness.reputationContribution >= 65
+      : businessWithMetrics.reputationContribution >= 65
         ? "Impacto positivo"
         : "Impacto moderado";
 
-  const growthTrend = getGrowthTrend(activeBusiness.growthRate);
-  const priorityLevel = getPriorityLevel(activeBusiness);
-  const projectedCommission = getProjectedCommission(activeBusiness);
-  const recommendations = getRecommendations(activeBusiness);
+  const growthTrend = getGrowthTrend(businessWithMetrics.growthRate);
+  const priorityLevel = getPriorityLevel(businessWithMetrics);
+  const projectedCommission = getProjectedCommission(businessWithMetrics);
+  const recommendations = getRecommendations(businessWithMetrics);
 
   return (
     <div className="flex-1 pb-10">
@@ -138,10 +256,10 @@ function EmbajadorNegociosReferidosContent() {
         </div>
       </header>
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:px-6">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-          <EmbajadorSidebar activeSection="negocios" />
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_320px_minmax(0,1fr)] xl:grid-cols-[300px_360px_minmax(0,1fr)] lg:px-6">
+        <EmbajadorSidebar activeSection="negocios" profile={profile} />
 
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-scroll lg:pr-2 chat-scrollbar">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">NEGOCIOS REFERIDOS</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Lista de negocios captados</h1>
@@ -150,6 +268,16 @@ function EmbajadorNegociosReferidosContent() {
             </p>
 
             <div className="mt-4 space-y-2">
+              {referralsLoading ? (
+                <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4 text-sm text-cyan-100/80">
+                  Cargando negocios referidos reales...
+                </div>
+              ) : null}
+              {referralsError ? (
+                <div className="rounded-2xl border border-rose-300/25 bg-rose-400/10 p-4 text-sm text-rose-100">
+                  No se pudieron cargar referidos reales: {referralsError}
+                </div>
+              ) : null}
               {referredBusinessesState.map((business) => {
                 const isActive = business.id === activeBusiness.id;
 
@@ -169,7 +297,7 @@ function EmbajadorNegociosReferidosContent() {
                       <span className="text-[11px] text-cyan-100/75">{business.status}</span>
                     </div>
                     <p className="mt-1 text-xs text-cyan-100/75">{business.category} · {business.city}</p>
-                    <p className="mt-2 text-xs text-cyan-200/80">Valor: {business.valueScore}/100</p>
+                    <p className="mt-2 text-xs text-cyan-200/80">Comisión: Bs {business.commissionGenerated.toLocaleString("es-BO")}</p>
                   </button>
                 );
               })}
@@ -179,37 +307,70 @@ function EmbajadorNegociosReferidosContent() {
 
         <section className="space-y-6">
           <section className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8">
-            <p className="tech-mono text-xs text-cyan-200/75">NEGOCIO SELECCIONADO</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="tech-mono text-xs text-cyan-200/75">NEGOCIO SELECCIONADO</p>
+            </div>
             <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-3xl font-bold text-cyan-50">{activeBusiness.name}</h2>
+                <h2 className="text-3xl font-bold text-cyan-50">{businessWithMetrics.name}</h2>
                 <p className="mt-2 text-sm text-cyan-100/82">
-                  {activeBusiness.category} · {activeBusiness.city} · Referido el {activeBusiness.referredAt}
+                  {businessWithMetrics.category} · {businessWithMetrics.city} · Referido el{" "}
+                  {activeReferralDetail?.fechaRegistro ?? businessWithMetrics.referredAt}
                 </p>
               </div>
-              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${scoreTone(activeBusiness.valueScore)}`}>
-                Valor para embajador: {activeBusiness.valueScore}/100
+              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${scoreTone(businessWithMetrics.valueScore)}`}>
+                Valor para embajador: {businessWithMetrics.valueScore}/100
               </span>
             </div>
 
             <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Leads del mes</p>
-                <p className="mt-2 text-2xl font-bold text-cyan-50">{activeBusiness.monthlyLeads}</p>
+                <p className="mt-2 text-2xl font-bold text-cyan-50">{businessWithMetrics.monthlyLeads}</p>
               </article>
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Conversion</p>
-                <p className="mt-2 text-2xl font-bold text-cyan-50">{activeBusiness.conversionRate}%</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Plan</p>
+                <p className="mt-2 text-2xl font-bold text-cyan-50">{activeReferralDetail?.plan ?? "Sin plan"}</p>
               </article>
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Comision estimada</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Comision generada</p>
                 <p className="mt-2 text-2xl font-bold text-cyan-50">
-                  Bs {activeBusiness.commissionGenerated.toLocaleString("es-BO")}
+                  {activeReferralReport?.comision ?? `Bs ${businessWithMetrics.commissionGenerated.toLocaleString("es-BO")}`}
                 </p>
               </article>
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Rating</p>
-                <p className="mt-2 text-2xl font-bold text-cyan-50">{activeBusiness.rating.toFixed(1)} / 5</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Ventas totales</p>
+                <p className="mt-2 text-2xl font-bold text-cyan-50">{activeBusinessMetrics?.ventasTotales ?? activeReferralDetail?.ventasTotales ?? 0}</p>
+              </article>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-xl font-semibold text-cyan-50">Detalle y actividad real</h3>
+            </div>
+            <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4 text-sm text-cyan-100/82">
+                <p><strong className="text-cyan-50">Pais:</strong> {activeReferralDetail?.pais ?? "Sin dato"}</p>
+                <p className="mt-2"><strong className="text-cyan-50">Ciudad:</strong> {activeReferralDetail?.ciudad ?? "Sin dato"}</p>
+                <p className="mt-2"><strong className="text-cyan-50">Contacto:</strong> {activeReferralDetail?.contacto?.nombre ?? "Sin contacto"}</p>
+                <p className="mt-2"><strong className="text-cyan-50">Email:</strong> {activeReferralDetail?.contacto?.email ?? "Sin email"}</p>
+                <p className="mt-2"><strong className="text-cyan-50">Telefono:</strong> {activeReferralDetail?.contacto?.telefono ?? "Sin telefono"}</p>
+              </article>
+              <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                <p className="text-sm font-semibold text-cyan-50">Actividad</p>
+                <div className="mt-3 space-y-2">
+                  {(activeReferralActivity ?? []).map((activity) => (
+                    <div key={activity.id} className="rounded-xl border border-cyan-100/10 bg-slate-950/35 p-3 text-sm text-cyan-100/80">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-semibold text-cyan-50">{activity.tipo}</span>
+                        <span className="text-xs text-cyan-100/60">{activity.fecha}</span>
+                      </div>
+                      <p className="mt-1">{activity.descripcion}</p>
+                    </div>
+                  ))}
+                  {(activeReferralActivity ?? []).length === 0 ? <p className="text-sm text-cyan-100/60">Sin actividad registrada.</p> : null}
+                </div>
               </article>
             </div>
           </section>
@@ -217,48 +378,50 @@ function EmbajadorNegociosReferidosContent() {
           <section className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
             <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
               <h3 className="text-xl font-semibold text-cyan-50">Como lo ven los usuarios</h3>
-              <p className="mt-2 text-sm text-cyan-100/80">{activeBusiness.userView}</p>
+              <p className="mt-2 text-sm text-cyan-100/80">{businessWithMetrics.userView}</p>
 
               <div className="mt-4 h-2 overflow-hidden rounded-full border border-cyan-100/12 bg-slate-950/45">
                 <div
                   className="h-full rounded-full bg-[linear-gradient(90deg,rgba(6,182,212,0.45),rgba(34,211,238,0.9))]"
-                  style={{ width: `${activeBusiness.userScore}%` }}
+                  style={{ width: `${businessWithMetrics.userScore}%` }}
                 />
               </div>
-              <p className="mt-2 text-xs text-cyan-100/78">Percepcion de usuarios: {activeBusiness.userScore}/100</p>
+              <p className="mt-2 text-xs text-cyan-100/78">Percepcion de usuarios: {businessWithMetrics.userScore}/100</p>
 
               <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Comentario destacado</p>
-                <p className="mt-2 text-sm text-cyan-100/85">&quot;{activeBusiness.topComment}&quot;</p>
+                <p className="mt-2 text-sm text-cyan-100/85">
+                  {businessWithMetrics.topComment ? `“${businessWithMetrics.topComment}”` : "Sin comentario destacado."}
+                </p>
               </div>
             </article>
 
             <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
               <h3 className="text-xl font-semibold text-cyan-50">Impacto en tu reputacion</h3>
               <p className="mt-2 text-sm text-cyan-100/82">
-                Este negocio aporta un impacto de {activeBusiness.reputationContribution}/100 a tu reputacion.
+                Este negocio aporta un impacto de {businessWithMetrics.reputationContribution}/100 a tu reputacion.
               </p>
               <p className="mt-2 text-sm font-semibold text-emerald-100">{reputationalImpactTone}</p>
 
               <div className="mt-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Fortalezas</p>
                 <ul className="mt-2 space-y-2 text-sm text-cyan-100/84">
-                  {activeBusiness.strengths.map((item) => (
+                  {businessWithMetrics.strengths.length ? businessWithMetrics.strengths.map((item) => (
                     <li key={item} className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2">
                       {item}
                     </li>
-                  ))}
+                  )) : <li className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2">Sin fortalezas registradas.</li>}
                 </ul>
               </div>
 
               <div className="mt-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Riesgos a vigilar</p>
                 <ul className="mt-2 space-y-2 text-sm text-cyan-100/84">
-                  {activeBusiness.risks.map((item) => (
+                  {businessWithMetrics.risks.length ? businessWithMetrics.risks.map((item) => (
                     <li key={item} className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2">
                       {item}
                     </li>
-                  ))}
+                  )) : <li className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2">Sin riesgos registrados.</li>}
                 </ul>
               </div>
             </article>
@@ -267,8 +430,15 @@ function EmbajadorNegociosReferidosContent() {
           <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-cyan-100/80">
-                Embajador actual: {ambassadorProfile.name} · Nivel {ambassadorProfile.level}
+                Embajador actual: {profile ? `${profile.nombre} ${profile.apellido}` : "..."} · {profile?.nivel ?? "..."}
               </p>
+              {referralMetrics ? (
+                <p className="text-sm text-cyan-100/80">
+                  Total real: <strong className="text-cyan-50">{referralMetrics.totalReferidos}</strong> · Activos:{" "}
+                  <strong className="text-cyan-50">{referralMetrics.activos}</strong> · Comision:{" "}
+                  <strong className="text-cyan-50">{referralMetrics.comisionTotal}</strong>
+                </p>
+              ) : null}
               <Link
                 href="/embajador"
                 className="rounded-xl border border-cyan-100/20 bg-cyan-300/12 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
@@ -288,8 +458,8 @@ function EmbajadorNegociosReferidosContent() {
                   la comision proyectada.
                 </p>
               </div>
-              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${scoreTone(activeBusiness.valueScore)}`}>
-                Valor estrategico: {activeBusiness.valueScore}/100
+              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${scoreTone(businessWithMetrics.valueScore)}`}>
+                Valor estrategico: {businessWithMetrics.valueScore}/100
               </span>
             </div>
 
@@ -297,7 +467,7 @@ function EmbajadorNegociosReferidosContent() {
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Tendencia de crecimiento</p>
                 <p className={`mt-2 text-lg font-semibold ${growthTrend.tone}`}>{growthTrend.label}</p>
-                <p className="mt-1 text-sm text-cyan-100/76">+{activeBusiness.growthRate}% respecto al periodo previo.</p>
+                <p className="mt-1 text-sm text-cyan-100/76">+{businessWithMetrics.growthRate}% respecto al periodo previo.</p>
               </article>
 
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
@@ -318,9 +488,9 @@ function EmbajadorNegociosReferidosContent() {
 
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Seguimiento comercial</p>
-                <p className="mt-2 text-lg font-semibold text-cyan-50">{activeBusiness.monthlyLeads} leads / mes</p>
+                <p className="mt-2 text-lg font-semibold text-cyan-50">{businessWithMetrics.monthlyLeads} leads / mes</p>
                 <p className="mt-1 text-sm text-cyan-100/76">
-                  Conversion actual del {activeBusiness.conversionRate}% con impacto reputacional de {activeBusiness.reputationContribution}/100.
+                  Conversion actual del {businessWithMetrics.conversionRate}% con impacto reputacional de {businessWithMetrics.reputationContribution}/100.
                 </p>
               </article>
             </div>

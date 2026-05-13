@@ -43,6 +43,7 @@ type ApiErrorBody = {
 };
 
 const IAM_BASE_URL = process.env.NEXT_PUBLIC_IAM_URL;
+let refreshSessionPromise: Promise<AuthSession> | null = null;
 
 function buildUrl(path: string): string {
   if (!IAM_BASE_URL) {
@@ -102,6 +103,16 @@ function isLoginResponse(candidate: unknown): candidate is { token: string; refr
     typeof response.token === "string" &&
     typeof response.refreshToken === "string"
   );
+}
+
+function isRefreshResponse(candidate: unknown): candidate is { token: string; refreshToken: string; expiresIn?: number } {
+  if (!candidate || typeof candidate !== "object") {
+    return false;
+  }
+
+  const response = candidate as Partial<{ token: string; refreshToken: string; expiresIn?: number }>;
+
+  return typeof response.token === "string" && typeof response.refreshToken === "string";
 }
 
 function isRegisterResponse(candidate: unknown): candidate is {
@@ -271,6 +282,55 @@ export async function login(credentials: LoginCredentials): Promise<AuthSession>
   return session;
 }
 
+export async function refreshAuthSession(): Promise<AuthSession> {
+  if (typeof window === "undefined") {
+    throw new Error("No se puede refrescar la sesión fuera del navegador.");
+  }
+
+  if (refreshSessionPromise) {
+    return refreshSessionPromise;
+  }
+
+  refreshSessionPromise = (async () => {
+    const refreshToken = window.localStorage.getItem("refreshToken");
+    const currentUser = getStoredUser();
+
+    if (!refreshToken || !currentUser) {
+      clearAuthSession();
+      throw new Error("Tu sesión venció. Inicia sesión nuevamente.");
+    }
+
+    const response = await fetch(buildUrl("/auth/refresh-token"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Tenant-Id": "00000000-0000-0000-0000-000000000000",
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    const responseBody = await readResponseBody(response);
+
+    if (!response.ok || !isRefreshResponse(responseBody)) {
+      clearAuthSession();
+      throw new Error(resolveErrorMessage(responseBody, "Tu sesión venció. Inicia sesión nuevamente."));
+    }
+
+    const session: AuthSession = {
+      accessToken: responseBody.token,
+      refreshToken: responseBody.refreshToken,
+      user: currentUser,
+    };
+
+    storeAuthSession(session);
+    return session;
+  })().finally(() => {
+    refreshSessionPromise = null;
+  });
+
+  return refreshSessionPromise;
+}
+
 export async function register(payload: RegisterPayload): Promise<RegisterResponse> {
   const response = await fetch(buildUrl("/auth/register"), {
     method: "POST",
@@ -328,4 +388,30 @@ export function clearAuthSession(): void {
   } catch (e) {
     // ignore
   }
+}
+
+function getStoredUser(): AuthProfile | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const rawUser = window.localStorage.getItem("user");
+  if (!rawUser) {
+    return null;
+  }
+
+  try {
+    const parsedUser = JSON.parse(rawUser) as Partial<AuthProfile>;
+    if (
+      (typeof parsedUser.id === "string" || typeof parsedUser.id === "number") &&
+      typeof parsedUser.nombre === "string" &&
+      typeof parsedUser.tipo === "string"
+    ) {
+      return parsedUser as AuthProfile;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }

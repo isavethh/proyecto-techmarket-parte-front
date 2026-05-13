@@ -1,4 +1,5 @@
-import { getToken } from "@/lib/auth/tokenStore";
+import { getToken, getUser } from "@/lib/auth/tokenStore";
+import { refreshAuthSession } from "@/lib/api/authApi";
 
 // ---------------------------------------------------------------------------
 // Base URLs
@@ -31,6 +32,10 @@ function resolveBaseUrl(service: "main" | "ai"): string {
 
 function buildUrl(path: string, service: "main" | "ai" = "main"): string {
   return new URL(path, resolveBaseUrl(service)).toString();
+}
+
+function isAmbassadorPath(path: string): boolean {
+  return path.startsWith("/api/ambassadors");
 }
 
 async function readResponseBody(response: Response): Promise<unknown> {
@@ -100,16 +105,30 @@ async function request<T = unknown>(
   const service = options?.service ?? "main";
   const queryString = buildQueryString(options?.params);
   const url = buildUrl(path + queryString, service);
+  const usesAmbassadorApi = service === "main" && isAmbassadorPath(path);
 
-  const token = getToken();
+  let token = getToken();
+  const user = getUser() as { id?: string | number } | null;
+  let userId = user?.id ? String(user.id) : null;
 
   const headers: Record<string, string> = {
-    "X-Tenant-Id": "00000000-0000-0000-0000-000000000000",
     ...(options?.headers ?? {}),
   };
 
+  headers["X-Tenant-Id"] = "00000000-0000-0000-0000-000000000000";
+
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  if (userId && !usesAmbassadorApi) {
+    headers["X-User-Id"] = userId;
+  } else if (!usesAmbassadorApi && typeof window !== "undefined") {
+    // Fallback si iniciaron sesión con loginAmbassador directo
+    const fallbackUserId = window.localStorage.getItem("userId");
+    if (fallbackUserId) {
+      headers["X-User-Id"] = fallbackUserId;
+    }
   }
 
   // Do not set Content-Type for FormData — the browser sets the boundary automatically.
@@ -119,11 +138,27 @@ async function request<T = unknown>(
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(url, {
+  const fetchOptions: RequestInit = {
     method,
     headers,
     body: body !== undefined ? (isFormData ? (body as FormData) : JSON.stringify(body)) : undefined,
-  });
+  };
+
+  let response = await fetch(url, fetchOptions);
+
+  const shouldRefreshSession =
+    token !== null &&
+    (response.status === 401 || (usesAmbassadorApi && response.status === 403));
+
+  if (shouldRefreshSession) {
+    try {
+      const refreshedSession = await refreshAuthSession();
+      headers["Authorization"] = `Bearer ${refreshedSession.accessToken}`;
+      response = await fetch(url, fetchOptions);
+    } catch (refreshError) {
+      throw refreshError instanceof Error ? refreshError : new Error("Tu sesión venció. Inicia sesión nuevamente.");
+    }
+  }
 
   const responseBody = await readResponseBody(response);
 
