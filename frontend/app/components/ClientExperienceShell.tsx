@@ -32,9 +32,9 @@ type ClientExperienceContextValue = {
 const ClientExperienceContext = createContext<ClientExperienceContextValue | null>(null);
 
 const CLIENT_PROFILE = {
-  name: "",
-  email: "",
-  city: "",
+  name: "Cliente",
+  email: "cliente.test@techmarket.com",
+  city: "Bolivia",
   account: "Cliente",
   initials: "US",
 };
@@ -57,6 +57,9 @@ const CLIENT_ALLOWED_POST_CATEGORY = "Consulta";
 const isClientCommunityDetailRoute = (pathname: string | null) =>
   typeof pathname === "string" && /^\/cliente\/comunidades\/[^/]+$/.test(pathname);
 
+const canCreateClientPostOnRoute = (pathname: string | null) =>
+  pathname === "/cliente" || isClientCommunityDetailRoute(pathname);
+
 const getCurrentIso = () => new Date().toISOString();
 
 const formatQuickTimestamp = () => {
@@ -67,7 +70,7 @@ const formatQuickTimestamp = () => {
   return `Hoy ${hours}:${minutes}`;
 };
 
-const useClientExperience = (): ClientExperienceContextValue => {
+export const useClientExperience = (): ClientExperienceContextValue => {
   const contextValue = useContext(ClientExperienceContext);
 
   if (!contextValue) {
@@ -81,7 +84,7 @@ export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps
   const router = useRouter();
   const { openPostModal } = useClientExperience();
   const pathname = usePathname();
-  const canCreatePost = isClientCommunityDetailRoute(pathname);
+  const canCreatePost = canCreateClientPostOnRoute(pathname);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
@@ -263,7 +266,7 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
   };
 
   const openPostModal = () => {
-    if (!isClientCommunityDetailRoute(pathname)) {
+    if (!canCreateClientPostOnRoute(pathname)) {
       return;
     }
 

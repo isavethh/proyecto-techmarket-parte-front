@@ -162,9 +162,9 @@ export default function ServiciosIndexPage() {
                   </p>
                 )}
 
-                {service.calificacion > 0 && (
+                {(service.calificacion ?? 0) > 0 && (
                   <p className="mt-1 text-xs text-cyan-100/70">
-                    Calificacion: {service.calificacion.toFixed(1)}
+                    Calificacion: {service.calificacion?.toFixed(1)}
                   </p>
                 )}
 

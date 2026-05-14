@@ -7,8 +7,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { requireAuth } from "@/lib/auth/authGuard";
 import {
   createSearchHistory,
+  createClientChatMessage,
+  getClientChatMessages,
   listClientCommunities,
   listClientCommunityPosts,
+  listClientChats,
   listClientNotifications,
   listFavoriteCompanies,
   listFavoriteProducts,
@@ -18,6 +21,8 @@ import {
   searchTrending,
   type GlobalSearchItem,
   type ClientNotification,
+  type ClientChatMessage,
+  type ClientChatSummary,
   type MarketplaceCompanySummary,
   type MarketplaceProductSummary,
   type SearchSuggestion,
@@ -31,6 +36,7 @@ import {
   upsertCommunityFeedPosts,
 } from "../lib/communityFeed";
 import { ClientPageHeader } from "../components/ClientPageSections";
+import { useClientExperience } from "../components/ClientExperienceShell";
 import {
   PublicationActionButton,
   PublicationAvatar,
@@ -154,11 +160,77 @@ const feedCommentsByPostId: Record<string, PostComment[]> = {};
 
 const feedBaseLikesByPostId: Record<string, number> = {};
 
-const activeClientName = "";
-
-const clientChatThreads: ChatThread[] = [];
+const activeClientName = "Cliente";
 
 const emptyFeedSnapshot: CommunityFeedPost[] = [];
+
+const createAvatarInitials = (value: string): string => {
+  const initials = value
+    .split(" ")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
+  return initials || "CH";
+};
+
+const formatChatTime = (isoDate?: string | null): string => {
+  if (!isoDate) {
+    return "Ahora";
+  }
+
+  const parsed = Date.parse(isoDate);
+  if (Number.isNaN(parsed)) {
+    return "Ahora";
+  }
+
+  const date = new Date(parsed);
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
+
+const buildChatMessage = (message: ClientChatMessage): ChatMessage => ({
+  id: message.id,
+  author: message.remitente === "cliente" ? "cliente" : "empresa",
+  text: message.contenido,
+  time: formatChatTime(message.fecha),
+});
+
+const buildChatThread = (
+  chat: ClientChatSummary,
+  messages: ClientChatMessage[],
+): ChatThread => {
+  const company = chat.empresa.nombre ?? "Empresa";
+  const mappedMessages = messages.map(buildChatMessage);
+  const lastMessage = mappedMessages[mappedMessages.length - 1];
+
+  return {
+    id: chat.id,
+    name: "Chat activo",
+    company,
+    trigger: "Conversacion cliente",
+    lastMessage: lastMessage?.text ?? chat.ultimoMensaje ?? "Conversacion iniciada",
+    time: lastMessage?.time ?? "Ahora",
+    unread: chat.mensajesSinLeer ?? 0,
+    avatar: createAvatarInitials(company),
+    messages:
+      mappedMessages.length > 0
+        ? mappedMessages
+        : chat.ultimoMensaje
+          ? [
+              {
+                id: `${chat.id}-last`,
+                author: "empresa",
+                text: chat.ultimoMensaje,
+                time: "Ahora",
+              },
+            ]
+          : [],
+  };
+};
 
 const subscribeCommunityFeed = (onStoreChange: () => void) => {
   if (typeof window === "undefined") {
@@ -248,6 +320,7 @@ const getFeedSaleMeta = (
 
 export default function ClientePage() {
   const router = useRouter();
+  const { openPostModal } = useClientExperience();
 
   useEffect(() => {
     requireAuth(router);
@@ -291,8 +364,11 @@ export default function ClientePage() {
   const [notifications, setNotifications] = useState<ClientNotification[]>([]);
   const [recommendedCompanies, setRecommendedCompanies] = useState<MarketplaceCompanySummary[]>([]);
   const [clientApiError, setClientApiError] = useState<string | null>(null);
+  const [chatThreads, setChatThreads] = useState<ChatThread[]>([]);
+  const [isChatLoading, setIsChatLoading] = useState(true);
+  const [chatError, setChatError] = useState<string | null>(null);
 
-  const activeChat = clientChatThreads.find((chat) => chat.id === activeChatId) ?? null;
+  const activeChat = chatThreads.find((chat) => chat.id === activeChatId) ?? null;
 
   useEffect(() => {
     let active = true;
@@ -323,6 +399,56 @@ export default function ClientePage() {
         setRecommendedCompanies([]);
         setClientApiError(error instanceof Error ? error.message : "No se pudo cargar datos cliente");
       });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadChats = async () => {
+      setIsChatLoading(true);
+      setChatError(null);
+
+      try {
+        const chats = await listClientChats();
+        const threads = await Promise.all(
+          chats.map(async (chat) => {
+            const messages = await getClientChatMessages(chat.id).catch(() => []);
+            return buildChatThread(chat, messages);
+          }),
+        );
+
+        if (!active) {
+          return;
+        }
+
+        setChatThreads(threads);
+        setActiveChatId((current) => {
+          if (current && threads.some((thread) => thread.id === current)) {
+            return current;
+          }
+
+          return threads[0]?.id ?? "";
+        });
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+
+        setChatThreads([]);
+        setActiveChatId("");
+        setChatError(error instanceof Error ? error.message : "No se pudieron cargar chats");
+      } finally {
+        if (active) {
+          setIsChatLoading(false);
+        }
+      }
+    };
+
+    loadChats();
 
     return () => {
       active = false;
@@ -643,6 +769,40 @@ export default function ClientePage() {
     }));
   };
 
+  const handleSendFloatingChatMessage = async () => {
+    if (!activeChat) {
+      return;
+    }
+
+    const normalizedMessage = draftMessage.trim();
+    if (normalizedMessage.length < 2) {
+      return;
+    }
+
+    try {
+      const sentMessage = await createClientChatMessage(activeChat.id, normalizedMessage);
+      const nextMessage = buildChatMessage(sentMessage);
+
+      setChatThreads((current) =>
+        current.map((chat) =>
+          chat.id === activeChat.id
+            ? {
+                ...chat,
+                lastMessage: nextMessage.text,
+                time: nextMessage.time,
+                unread: 0,
+                messages: [...chat.messages, nextMessage],
+              }
+            : chat,
+        ),
+      );
+      setDraftMessage("");
+      setChatError(null);
+    } catch (error) {
+      setChatError(error instanceof Error ? error.message : "No se pudo enviar el mensaje");
+    }
+  };
+
   const handleOpenFeedPublication = (item: CommunityFeedPost) => {
     const mergedComments = getMergedFeedComments(item.id);
 
@@ -810,32 +970,58 @@ export default function ClientePage() {
 
         <section className="space-y-4">
           <section id="feed" className="tech-card">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD CLIENTE</p>
                 <h1 className="mt-2 text-xl font-semibold text-cyan-50 md:text-2xl">Feed principal</h1>
               </div>
-              <div className="auth-switch">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  className={topView === "feed" ? "active" : ""}
-                  onClick={() => setTopView("feed")}
+                  onClick={openPostModal}
+                  className="rounded-xl border border-cyan-200/25 bg-cyan-400/20 px-4 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/25"
                 >
-                  Feed
+                  Nueva publicacion
                 </button>
-                <button
-                  type="button"
-                  className={topView === "seguimiento" ? "active" : ""}
-                  onClick={() => setTopView("seguimiento")}
-                >
-                  Seguimiento
-                </button>
+                <div className="auth-switch">
+                  <button
+                    type="button"
+                    className={topView === "feed" ? "active" : ""}
+                    onClick={() => setTopView("feed")}
+                  >
+                    Feed
+                  </button>
+                  <button
+                    type="button"
+                    className={topView === "seguimiento" ? "active" : ""}
+                    onClick={() => setTopView("seguimiento")}
+                  >
+                    Seguimiento
+                  </button>
+                </div>
               </div>
             </div>
             <p className="mt-3 text-sm text-cyan-100/75">
               Seguimiento muestra publicaciones de cuentas que sigues. Marketplace ahora vive en su propia seccion.
             </p>
           </section>
+
+          {topView === "feed" ? (
+            <button
+              type="button"
+              onClick={openPostModal}
+              className="w-full rounded-3xl border border-cyan-100/15 bg-[linear-gradient(155deg,rgba(17,45,80,0.9),rgba(7,24,44,0.96))] p-4 text-left shadow-xl shadow-slate-950/20 transition hover:border-cyan-200/35"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                  US
+                </span>
+                <span className="flex-1 rounded-full border border-cyan-100/15 bg-slate-950/35 px-4 py-3 text-sm text-cyan-100/70">
+                  Que quieres publicar en TechMarket?
+                </span>
+              </div>
+            </button>
+          ) : null}
 
           {topView === "feed" && (
             <>
@@ -1483,7 +1669,7 @@ export default function ClientePage() {
 
               <div className="border-b border-cyan-100/10 bg-slate-950/45 px-3 py-2.5">
                 <div className="chat-scrollbar chat-scrollbar-x flex gap-2 overflow-x-auto">
-                  {clientChatThreads.map((chat) => {
+                  {chatThreads.map((chat) => {
                     const isActive = chat.id === activeChatId;
 
                     return (
@@ -1535,18 +1721,29 @@ export default function ClientePage() {
                   <input
                     value={draftMessage}
                     onChange={(event) => setDraftMessage(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleSendFloatingChatMessage();
+                      }
+                    }}
                     placeholder="Escribe un mensaje..."
                     className="w-full rounded-2xl border border-cyan-100/15 bg-slate-950/45 px-3 py-2 text-xs text-cyan-50 placeholder:text-cyan-100/42 focus:outline-none focus:ring-2 focus:ring-cyan-300/35"
                   />
                   <motion.button
                     type="button"
+                    onClick={handleSendFloatingChatMessage}
+                    disabled={draftMessage.trim().length < 2}
                     whileHover={{ y: -1, boxShadow: "0 10px 20px rgba(6,182,212,0.22)" }}
                     whileTap={{ scale: 0.96 }}
-                    className="rounded-2xl border border-cyan-200/25 bg-cyan-400/20 px-3 py-2 text-xs font-semibold text-cyan-50"
+                    className="rounded-2xl border border-cyan-200/25 bg-cyan-400/20 px-3 py-2 text-xs font-semibold text-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Enviar
                   </motion.button>
                 </div>
+                {chatError ? (
+                  <p className="mt-2 text-[11px] text-rose-200/85">{chatError}</p>
+                ) : null}
               </div>
             </motion.div>
           ) : (
@@ -1569,7 +1766,7 @@ export default function ClientePage() {
                   Chat cliente
                 </span>
                 <span className="rounded-full border border-cyan-100/25 bg-white/10 px-2 py-0.5 text-[10px]">
-                  0 chats
+                  {isChatLoading ? "Cargando" : `${chatThreads.length} chats`}
                 </span>
               </span>
             </motion.button>
