@@ -12,6 +12,7 @@ import {
   listClientNotifications,
   listFavoriteCompanies,
   listFavoriteProducts,
+  listMarketplaceCompanies,
   searchGlobal,
   searchSuggestions as fetchSearchSuggestions,
   searchTrending,
@@ -288,6 +289,7 @@ export default function ClientePage() {
   const [favoriteProducts, setFavoriteProducts] = useState<MarketplaceProductSummary[]>([]);
   const [favoriteCompanies, setFavoriteCompanies] = useState<MarketplaceCompanySummary[]>([]);
   const [notifications, setNotifications] = useState<ClientNotification[]>([]);
+  const [recommendedCompanies, setRecommendedCompanies] = useState<MarketplaceCompanySummary[]>([]);
   const [clientApiError, setClientApiError] = useState<string | null>(null);
 
   const activeChat = clientChatThreads.find((chat) => chat.id === activeChatId) ?? null;
@@ -299,14 +301,16 @@ export default function ClientePage() {
       listFavoriteProducts(),
       listFavoriteCompanies(),
       listClientNotifications(),
+      listMarketplaceCompanies(),
     ])
-      .then(([products, companies, notificationItems]) => {
+      .then(([products, companies, notificationItems, allCompanies]) => {
         if (!active) {
           return;
         }
         setFavoriteProducts(products);
         setFavoriteCompanies(companies);
         setNotifications(notificationItems);
+        setRecommendedCompanies(allCompanies.slice(0, 3));
         setClientApiError(null);
       })
       .catch((error) => {
@@ -316,6 +320,7 @@ export default function ClientePage() {
         setFavoriteProducts([]);
         setFavoriteCompanies([]);
         setNotifications([]);
+        setRecommendedCompanies([]);
         setClientApiError(error instanceof Error ? error.message : "No se pudo cargar datos cliente");
       });
 
@@ -1281,7 +1286,36 @@ export default function ClientePage() {
             <p className="text-sm font-semibold text-cyan-50">Cuentas recomendadas</p>
             <p className="mt-2 text-xs text-cyan-100/75">Empresas y especialistas con buena reputacion en la comunidad.</p>
             <div className="mt-4 space-y-3">
-              []
+              {recommendedCompanies.length > 0 ? (
+                recommendedCompanies.map((company) => {
+                  const initials =
+                    company.nombre
+                      .split(" ")
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((token) => token[0]?.toUpperCase() ?? "")
+                      .join("") || "TM";
+                  return (
+                    <Link
+                      key={company.id}
+                      href={`/cliente/empresa/${company.id}`}
+                      className="flex items-center gap-3 rounded-2xl border border-cyan-100/15 bg-slate-950/30 p-3 transition hover:bg-slate-950/50"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                        {initials}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-cyan-50">{company.nombre}</p>
+                        {company.calificacion != null && company.calificacion > 0 && (
+                          <p className="text-xs text-cyan-200/70">Valoracion {company.calificacion.toFixed(1)}</p>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })
+              ) : (
+                <p className="text-xs text-cyan-100/60">No hay cuentas recomendadas desde la API.</p>
+              )}
             </div>
           </section>
 
