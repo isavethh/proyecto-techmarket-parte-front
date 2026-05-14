@@ -22,6 +22,7 @@ import {
   type PortfolioItem,
   type SpecialistService,
 } from "../specialistData";
+import { getTechmarketToken, getTechmarketUserId } from "@/lib/auth/tokenStore";
 import { debugSpecialistResult, getDatasetSource, normalizeBackendList, type DatasetSource } from "./specialistBackendHelpers";
 import { hasBackendProfileData, mapBackendProfileToUiProfile, neutralSpecialistProfile } from "./useSpecialistProfileData";
 
@@ -71,13 +72,27 @@ export function useSpecialistBackendData() {
       setLoading(true);
       setError(null);
 
-      const login = await loginTechMarket();
-      setAuth({ token: login.accessToken, userId: login.userId });
+      const storedToken = getTechmarketToken();
+      const storedUserId = getTechmarketUserId();
+
+      let currentToken: string;
+      let currentUserId: string;
+
+      if (storedToken && storedUserId) {
+        currentToken = storedToken;
+        currentUserId = storedUserId;
+        setAuth({ token: storedToken, userId: storedUserId });
+      } else {
+        const login = await loginTechMarket();
+        currentToken = login.accessToken;
+        currentUserId = login.userId;
+        setAuth({ token: login.accessToken, userId: login.userId });
+      }
 
       const [profileResult, servicesResult, portfolioResult] = await Promise.allSettled([
-        getSpecialistProfile(login.accessToken, login.userId),
-        getSpecialistServices(login.accessToken, login.userId),
-        getSpecialistPortfolio(login.accessToken, login.userId),
+        getSpecialistProfile(currentToken, currentUserId),
+        getSpecialistServices(currentToken, currentUserId),
+        getSpecialistPortfolio(currentToken, currentUserId),
       ]);
 
       if (!isMounted()) {
@@ -132,6 +147,14 @@ export function useSpecialistBackendData() {
   const ensureAuth = useCallback(async () => {
     if (auth) {
       return auth;
+    }
+
+    const storedToken = getTechmarketToken();
+    const storedUserId = getTechmarketUserId();
+    if (storedToken && storedUserId) {
+      const nextAuth = { token: storedToken, userId: storedUserId };
+      setAuth(nextAuth);
+      return nextAuth;
     }
 
     const login = await loginTechMarket();

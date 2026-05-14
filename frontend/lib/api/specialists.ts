@@ -520,12 +520,12 @@ type ListResponse<T> = {
   Count: number;
 };
 
-export async function loginTechMarket() {
+export async function loginTechMarket(email?: string, password?: string) {
   return apiRequest<LoginResponse>("/api/auth/login", {
     method: "POST",
     body: {
-      email: "admin@gmail.com",
-      password: "admin",
+      email: email ?? "admin@gmail.com",
+      password: password ?? "admin",
     },
   });
 }
