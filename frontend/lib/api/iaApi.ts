@@ -215,7 +215,9 @@ export type ClientCommunity = {
 export type ClientCommunityPost = {
   id: string;
   autor: string;
+  titulo?: string;
   contenido: string;
+  creadoEn?: string;
 };
 
 export type ClientNotification = {
@@ -525,6 +527,21 @@ export async function listMarketplaceProducts(params?: {
   }
 
   const path = query.toString() ? `/api/marketplace/products?${query}` : "/api/marketplace/products";
+  return request<MarketplaceProductPage>(path, { method: "GET" });
+}
+
+export async function listMarketplaceServices(params?: {
+  search?: string;
+  pagina?: number;
+}): Promise<MarketplaceProductPage> {
+  const query = new URLSearchParams();
+  if (params?.search?.trim()) {
+    query.set("search", params.search.trim());
+  }
+  if (params?.pagina) {
+    query.set("pagina", String(params.pagina));
+  }
+  const path = query.toString() ? `/api/marketplace/services?${query}` : "/api/marketplace/services";
   return request<MarketplaceProductPage>(path, { method: "GET" });
 }
 

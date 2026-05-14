@@ -7,6 +7,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { requireAuth } from "@/lib/auth/authGuard";
 import {
   createSearchHistory,
+  listClientCommunities,
+  listClientCommunityPosts,
   listClientNotifications,
   listFavoriteCompanies,
   listFavoriteProducts,
@@ -25,6 +27,7 @@ import {
   CommunityFeedPost,
   mergeCommunityFeedPosts,
   readCommunityFeedPosts,
+  upsertCommunityFeedPosts,
 } from "../lib/communityFeed";
 import { ClientPageHeader } from "../components/ClientPageSections";
 import {
@@ -352,6 +355,45 @@ export default function ClientePage() {
       })),
     [favoriteCompanies],
   );
+
+  useEffect(() => {
+    let active = true;
+
+    listClientCommunities()
+      .then((communities) => {
+        if (!active) return;
+        return Promise.all(
+          communities.map((community) =>
+            listClientCommunityPosts(community.id)
+              .then((posts) =>
+                posts.map<CommunityFeedPost>((post) => ({
+                  id: post.id,
+                  author: post.autor,
+                  role: "Comunidad",
+                  time: "",
+                  title: post.titulo ?? post.contenido.slice(0, 72).replace(/[.,]$/, ""),
+                  body: post.contenido,
+                  tag: community.nombre,
+                  location: "TechMarket",
+                  createdAt: post.creadoEn ?? new Date().toISOString(),
+                })),
+              )
+              .catch(() => [] as CommunityFeedPost[]),
+          ),
+        ).then((grouped) => {
+          if (!active) return;
+          const allPosts = grouped.flat();
+          if (allPosts.length > 0) {
+            upsertCommunityFeedPosts(allPosts);
+          }
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
