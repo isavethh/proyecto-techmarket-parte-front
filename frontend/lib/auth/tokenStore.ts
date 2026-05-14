@@ -1,5 +1,7 @@
 const TOKEN_KEY = "accessToken";
 const USER_KEY = "user";
+const TM_TOKEN_KEY = "tmAccessToken";
+const TM_USER_ID_KEY = "tmUserId";
 
 const canUseLocalStorage = () => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 
@@ -60,4 +62,30 @@ export function clearUser(): void {
   }
 
   window.localStorage.removeItem(USER_KEY);
+}
+
+export function getTechmarketToken(): string | null {
+  if (!canUseLocalStorage()) return null;
+  return window.localStorage.getItem(TM_TOKEN_KEY);
+}
+
+export function setTechmarketToken(token: string): void {
+  if (!canUseLocalStorage()) return;
+  window.localStorage.setItem(TM_TOKEN_KEY, token);
+}
+
+export function getTechmarketUserId(): string | null {
+  if (!canUseLocalStorage()) return null;
+  return window.localStorage.getItem(TM_USER_ID_KEY);
+}
+
+export function setTechmarketUserId(userId: string): void {
+  if (!canUseLocalStorage()) return;
+  window.localStorage.setItem(TM_USER_ID_KEY, userId);
+}
+
+export function clearTechmarketAuth(): void {
+  if (!canUseLocalStorage()) return;
+  window.localStorage.removeItem(TM_TOKEN_KEY);
+  window.localStorage.removeItem(TM_USER_ID_KEY);
 }

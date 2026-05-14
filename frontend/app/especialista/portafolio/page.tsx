@@ -3,39 +3,35 @@
 import { ChangeEvent, FormEvent, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { SpecialistShell } from "../components/SpecialistShell";
-import { PortfolioItem, portfolioSeedItems } from "../specialistData";
+import { useSpecialistBackendData } from "../hooks/useSpecialistBackendData";
 
-type PortfolioEditForm = {
-  serviceType: string;
-  workDescription: string;
-  result: string;
-  date: string;
-  image: string;
-};
+const SERVICE_TYPE_OPTIONS = [
+  "Reparacion",
+  "Mantenimiento",
+  "Instalacion",
+  "Diagnostico",
+  "Soporte tecnico",
+  "Asesoria",
+  "Actualizacion",
+  "Configuracion",
+];
 
 export default function EspecialistaPortafolioPage() {
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>(portfolioSeedItems);
+  const { profile, portfolio, loading, error, createPortfolioItem } = useSpecialistBackendData();
   const [showPortfolioForm, setShowPortfolioForm] = useState(false);
   const [portfolioMessage, setPortfolioMessage] = useState("");
+  const [portfolioActionLoading, setPortfolioActionLoading] = useState(false);
   const [uploadedPortfolioImagePreview, setUploadedPortfolioImagePreview] = useState("");
   const [uploadedPortfolioImageName, setUploadedPortfolioImageName] = useState("");
   const [portfolioFileInputKey, setPortfolioFileInputKey] = useState(0);
-  const [showPortfolioEditModal, setShowPortfolioEditModal] = useState(false);
-  const [editingPortfolioId, setEditingPortfolioId] = useState<string | null>(null);
-  const [portfolioEditMessage, setPortfolioEditMessage] = useState("");
-  const [portfolioEditForm, setPortfolioEditForm] = useState<PortfolioEditForm>({
-    serviceType: "",
-    workDescription: "",
-    result: "",
-    date: "",
-    image: "",
-  });
   const [portfolioForm, setPortfolioForm] = useState({
     serviceType: "",
     workDescription: "",
     result: "",
     date: "",
   });
+
+  const portfolioItems = portfolio;
 
   const handlePortfolioFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -63,103 +59,56 @@ export default function EspecialistaPortafolioPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleAddPortfolioItem = (event: FormEvent<HTMLFormElement>) => {
+  const handleAddPortfolioItem = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const serviceType = portfolioForm.serviceType.trim();
     const workDescription = portfolioForm.workDescription.trim();
 
-    if (!serviceType || !workDescription) {
-      setPortfolioMessage("Completa tipo de servicio y descripcion del trabajo.");
+    if (!workDescription) {
+      setPortfolioMessage("Completa el titulo del trabajo.");
       return;
     }
 
-    setPortfolioItems((current) => [
-      {
-        id: `p-${Date.now()}`,
-        image: uploadedPortfolioImagePreview || "/productos/laptop-pro-14.jpg",
-        workDescription,
-        serviceType,
-        result: portfolioForm.result.trim() || undefined,
-        date: portfolioForm.date.trim() || undefined,
-      },
-      ...current,
-    ]);
+    try {
+      setPortfolioActionLoading(true);
+      setPortfolioMessage("");
+      await createPortfolioItem({
+        titulo: workDescription,
+        servicio: serviceType || undefined,
+        resultado: portfolioForm.result.trim() || undefined,
+        fecha: portfolioForm.date.trim() || undefined,
+      });
 
-    setPortfolioForm({
-      serviceType: "",
-      workDescription: "",
-      result: "",
-      date: "",
-    });
-    setUploadedPortfolioImagePreview("");
-    setUploadedPortfolioImageName("");
-    setPortfolioFileInputKey((current) => current + 1);
-    setPortfolioMessage("Trabajo agregado al portafolio.");
-    setShowPortfolioForm(false);
-  };
-
-  const openPortfolioEditModal = (item: PortfolioItem) => {
-    setEditingPortfolioId(item.id);
-    setPortfolioEditForm({
-      serviceType: item.serviceType,
-      workDescription: item.workDescription,
-      result: item.result ?? "",
-      date: item.date ?? "",
-      image: item.image,
-    });
-    setPortfolioEditMessage("");
-    setShowPortfolioEditModal(true);
-  };
-
-  const closePortfolioEditModal = () => {
-    setShowPortfolioEditModal(false);
-    setEditingPortfolioId(null);
-    setPortfolioEditMessage("");
-  };
-
-  const handleEditPortfolioItem = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!editingPortfolioId) {
-      return;
+      setPortfolioForm({
+        serviceType: "",
+        workDescription: "",
+        result: "",
+        date: "",
+      });
+      setUploadedPortfolioImagePreview("");
+      setUploadedPortfolioImageName("");
+      setPortfolioFileInputKey((current) => current + 1);
+      setPortfolioMessage("Trabajo agregado al portafolio.");
+      setShowPortfolioForm(false);
+    } catch (err) {
+      setPortfolioMessage(err instanceof Error ? err.message : "No se pudo agregar el trabajo.");
+    } finally {
+      setPortfolioActionLoading(false);
     }
-
-    const serviceType = portfolioEditForm.serviceType.trim();
-    const workDescription = portfolioEditForm.workDescription.trim();
-
-    if (!serviceType || !workDescription) {
-      setPortfolioEditMessage("Completa tipo de servicio y descripcion del trabajo.");
-      return;
-    }
-
-    setPortfolioItems((current) =>
-      current.map((item) =>
-        item.id === editingPortfolioId
-          ? {
-              ...item,
-              serviceType,
-              workDescription,
-              result: portfolioEditForm.result.trim() || undefined,
-              date: portfolioEditForm.date.trim() || undefined,
-              image: portfolioEditForm.image.trim() || item.image,
-            }
-          : item,
-      ),
-    );
-
-    closePortfolioEditModal();
   };
 
   return (
     <>
-      <SpecialistShell sectionLabel="Portafolio" statusMessage="Portafolio tecnico con evidencia activa">
+      <SpecialistShell sectionLabel="Portafolio" statusMessage="Portafolio tecnico con evidencia activa" profile={profile}>
         <section className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_34%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8">
           <p className="tech-mono text-xs text-cyan-200/75">PORTAFOLIO DEL ESPECIALISTA</p>
           <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Evidencia tecnica</h1>
           <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">
             Evidencia real de intervenciones tecnicas con contexto del problema y resultado obtenido.
           </p>
+          {error ? <p className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-400/10 p-3 text-sm text-amber-100">{error}</p> : null}
+          {!showPortfolioForm && portfolioMessage ? <p className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-400/10 p-3 text-sm text-cyan-100">{portfolioMessage}</p> : null}
         </section>
 
         <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
@@ -222,38 +171,44 @@ export default function EspecialistaPortafolioPage() {
 
                   <div className="mt-6 grid gap-4 md:grid-cols-2">
                     <label className="space-y-2 text-sm text-cyan-100/85">
-                      <span>Tipo de servicio aplicado</span>
-                      <input
+                      <span>Servicio asociado</span>
+                      <select
                         value={portfolioForm.serviceType}
                         onChange={(event) =>
                           setPortfolioForm((current) => ({ ...current, serviceType: event.target.value }))
                         }
-                        placeholder="Ej: Reparacion tecnica"
                         className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                      />
+                      >
+                        <option value="">Selecciona un tipo</option>
+                        {SERVICE_TYPE_OPTIONS.map((serviceType) => (
+                          <option key={serviceType} value={serviceType}>
+                            {serviceType}
+                          </option>
+                        ))}
+                      </select>
                     </label>
 
                     <label className="space-y-2 text-sm text-cyan-100/85">
                       <span>Fecha (opcional)</span>
                       <input
+                        type="date"
                         value={portfolioForm.date}
                         onChange={(event) =>
                           setPortfolioForm((current) => ({ ...current, date: event.target.value }))
                         }
-                        placeholder="Ej: Abr 2026"
                         className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                       />
                     </label>
 
                     <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                      <span>Problema o trabajo realizado</span>
+                      <span>Título del trabajo</span>
                       <textarea
                         value={portfolioForm.workDescription}
                         onChange={(event) =>
                           setPortfolioForm((current) => ({ ...current, workDescription: event.target.value }))
                         }
                         rows={3}
-                        placeholder="Describe que se atendio y que se hizo tecnicamente"
+                        placeholder="Ej. Optimización de laptop de trabajo"
                         className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                       />
                     </label>
@@ -300,9 +255,10 @@ export default function EspecialistaPortafolioPage() {
                   <div className="mt-6 flex flex-wrap gap-3">
                     <button
                       type="submit"
-                      className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
+                      disabled={portfolioActionLoading}
+                      className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Guardar trabajo
+                      {portfolioActionLoading ? "Guardando..." : "Guardar trabajo"}
                     </button>
 
                     <button
@@ -322,151 +278,66 @@ export default function EspecialistaPortafolioPage() {
 
 
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
-            {portfolioItems.map((item) => (
+            {loading ? (
+              <article className="rounded-3xl border border-cyan-100/10 bg-white/5 p-5 text-sm text-cyan-100/75 lg:col-span-2">
+                Cargando portafolio...
+              </article>
+            ) : null}
+            {!loading && portfolioItems.length === 0 ? (
+              <article className="rounded-3xl border border-cyan-100/10 bg-white/5 p-5 text-sm text-cyan-100/75 lg:col-span-2">
+                No hay elementos de portafolio registrados todavía.
+              </article>
+            ) : null}
+            {portfolioItems.map((item) => {
+              const portfolioItem = item as typeof item & {
+                titulo?: string;
+                servicio?: string;
+                resultado?: string;
+                fecha?: string;
+              };
+              const itemTitle = portfolioItem.titulo?.trim() || item.workDescription?.trim() || "Trabajo sin título";
+              const itemService = portfolioItem.servicio?.trim() || item.serviceType?.trim();
+              const itemResult = portfolioItem.resultado?.trim() || item.result?.trim();
+              const itemDate = portfolioItem.fecha?.trim() || item.date?.trim();
+
+              return (
               <article key={item.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-white/5">
                 <div className="flex h-56 w-full items-center justify-center bg-slate-100">
                   <img
                     src={item.image}
-                    alt={item.serviceType}
+                    alt={itemTitle}
                     className="h-full w-full object-contain object-center"
                     loading="lazy"
                   />
                 </div>
                 <div className="space-y-4 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100">
-                      {item.serviceType}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      {item.date ? <p className="text-xs text-cyan-200/70">{item.date}</p> : null}
-                      <button
-                        type="button"
-                        onClick={() => openPortfolioEditModal(item)}
-                        className="rounded-full border border-cyan-100/10 bg-cyan-400/15 px-3 py-1 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
-                      >
-                        Editar
-                      </button>
-                    </div>
+                    {itemService ? (
+                      <p className="rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                        {itemService}
+                      </p>
+                    ) : null}
+                    {itemDate ? <p className="text-xs text-cyan-200/70">{itemDate}</p> : null}
                   </div>
 
                   <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
-                    <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Trabajo realizado</p>
-                    <p className="mt-2 text-sm leading-7 text-cyan-100/85">{item.workDescription}</p>
+                    <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Título del trabajo</p>
+                    <p className="mt-2 text-base font-semibold leading-7 text-cyan-50">{itemTitle}</p>
                   </div>
 
-                  {item.result ? (
+                  {itemResult ? (
                     <div className="rounded-2xl border border-emerald-300/30 bg-emerald-400/10 p-3">
                       <p className="text-xs uppercase tracking-[0.24em] text-emerald-100/80">Resultado</p>
-                      <p className="mt-2 text-sm leading-7 text-emerald-100/90">{item.result}</p>
+                      <p className="mt-2 text-sm leading-7 text-emerald-100/90">{itemResult}</p>
                     </div>
                   ) : null}
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         </section>
       </SpecialistShell>
-
-      {showPortfolioEditModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
-          <form
-            onSubmit={handleEditPortfolioItem}
-            className="w-full max-w-3xl rounded-3xl border border-cyan-100/10 bg-[linear-gradient(180deg,_rgba(8,18,31,0.98),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/40"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Portafolio</p>
-                <h2 className="mt-2 text-2xl font-bold text-white">Editar trabajo</h2>
-              </div>
-              <button
-                type="button"
-                onClick={closePortfolioEditModal}
-                className="rounded-full border border-cyan-100/10 px-4 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
-              >
-                Cerrar
-              </button>
-            </div>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 text-sm text-cyan-100/85">
-                <span>Tipo de servicio aplicado</span>
-                <input
-                  value={portfolioEditForm.serviceType}
-                  onChange={(event) =>
-                    setPortfolioEditForm((current) => ({ ...current, serviceType: event.target.value }))
-                  }
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
-
-              <label className="space-y-2 text-sm text-cyan-100/85">
-                <span>Fecha (opcional)</span>
-                <input
-                  value={portfolioEditForm.date}
-                  onChange={(event) =>
-                    setPortfolioEditForm((current) => ({ ...current, date: event.target.value }))
-                  }
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
-
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                <span>Problema o trabajo realizado</span>
-                <textarea
-                  value={portfolioEditForm.workDescription}
-                  onChange={(event) =>
-                    setPortfolioEditForm((current) => ({ ...current, workDescription: event.target.value }))
-                  }
-                  rows={3}
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
-
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                <span>Resultado obtenido (opcional)</span>
-                <textarea
-                  value={portfolioEditForm.result}
-                  onChange={(event) =>
-                    setPortfolioEditForm((current) => ({ ...current, result: event.target.value }))
-                  }
-                  rows={2}
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
-
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                <span>URL de imagen</span>
-                <input
-                  value={portfolioEditForm.image}
-                  onChange={(event) =>
-                    setPortfolioEditForm((current) => ({ ...current, image: event.target.value }))
-                  }
-                  placeholder="/productos/laptop-pro-14.jpg"
-                  className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
-                />
-              </label>
-            </div>
-
-            {portfolioEditMessage ? <p className="mt-4 text-sm text-amber-200">{portfolioEditMessage}</p> : null}
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="submit"
-                className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-cyan-300/30"
-              >
-                Guardar cambios
-              </button>
-              <button
-                type="button"
-                onClick={closePortfolioEditModal}
-                className="rounded-full border border-cyan-100/10 px-5 py-2 text-sm font-semibold text-cyan-100/80 transition hover:bg-cyan-100/10"
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : null}
     </>
   );
 }

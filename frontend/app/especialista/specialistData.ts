@@ -42,6 +42,99 @@ export type AvailabilityCard = {
   tone: "positive" | "neutral";
 };
 
+export type SpecialistRequestItem = {
+  id: string;
+  customer: string;
+  service: string;
+  message: string;
+  status: string;
+  date: string;
+};
+
+export type SpecialistProjectItem = {
+  id: string;
+  customer: string;
+  title: string;
+  service: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  progress?: number;
+};
+
+export type SpecialistProjectHistoryItem = {
+  id: string;
+  project: string;
+  detail: string;
+  status: string;
+  date: string;
+};
+
+export type SpecialistChatMessageItem = {
+  id: string;
+  from: "customer" | "specialist";
+  text: string;
+  time: string;
+};
+
+export type SpecialistChatItem = {
+  id: string;
+  customer: string;
+  initials: string;
+  service: string;
+  status: string;
+  lastMessage: string;
+  time: string;
+  unread: number;
+  messages: SpecialistChatMessageItem[];
+};
+
+export type SpecialistFileItem = {
+  id: string;
+  name: string;
+  type: string;
+  size?: string;
+  uploadedAt: string;
+  relatedTo: string;
+  url?: string;
+};
+
+export type SpecialistWalletItem = {
+  availableBalance: string;
+  pendingBalance: string;
+  currency: string;
+  withdrawMethod: string;
+  status: string;
+};
+
+export type SpecialistEarningsSummaryItem = {
+  totalEarnings: string;
+  monthlyEarnings: string;
+  pendingPayments: string;
+  commissions: string;
+  paidServices: string;
+};
+
+export type SpecialistTransactionItem = {
+  id: string;
+  customer: string;
+  project: string;
+  amount: string;
+  commission: string;
+  status: string;
+  type: string;
+  date: string;
+};
+
+export type SpecialistCertificationItem = {
+  id: string;
+  title: string;
+  issuer: string;
+  status: string;
+  date: string;
+  credentialUrl?: string;
+};
+
 export const specialistProfile = {
   name: "Alejandro Torres",
   avatar: "AT",
@@ -213,11 +306,236 @@ export const specialistAvailabilityCards: AvailabilityCard[] = [
   },
 ];
 
+export const specialistRequests: SpecialistRequestItem[] = [
+  {
+    id: "req-1",
+    customer: "Carlos M.",
+    service: "Reparacion de laptops",
+    message: "Necesito diagnostico por sobrecalentamiento y posible cambio de pasta termica.",
+    status: "Pendiente",
+    date: "Hoy",
+  },
+  {
+    id: "req-2",
+    customer: "Laura P.",
+    service: "Mantenimiento preventivo",
+    message: "Busco mantenimiento para dos equipos esta semana con revision de rendimiento.",
+    status: "En revision",
+    date: "Ayer",
+  },
+  {
+    id: "req-3",
+    customer: "Andres T.",
+    service: "Instalacion y configuracion de redes",
+    message: "Requiero propuesta para mejorar la red de una oficina pequena.",
+    status: "Pendiente",
+    date: "Hace 2 dias",
+  },
+];
+
+export const specialistProjects: SpecialistProjectItem[] = [
+  {
+    id: "proj-1",
+    customer: "Sofia R.",
+    title: "Optimizacion de laptop de trabajo",
+    service: "Mantenimiento preventivo",
+    status: "En progreso",
+    startDate: "May 2026",
+    endDate: "Por definir",
+    progress: 65,
+  },
+  {
+    id: "proj-2",
+    customer: "Empresa Norte",
+    title: "Configuracion de red local",
+    service: "Instalacion y configuracion de redes",
+    status: "Planificado",
+    startDate: "May 2026",
+    endDate: "May 2026",
+    progress: 25,
+  },
+];
+
+export const specialistProjectHistory: SpecialistProjectHistoryItem[] = [
+  {
+    id: "hist-1",
+    project: "Optimizacion de laptop de trabajo",
+    detail: "Diagnostico inicial completado y piezas validadas.",
+    status: "En progreso",
+    date: "Hoy",
+  },
+  {
+    id: "hist-2",
+    project: "Configuracion de red local",
+    detail: "Relevamiento de equipos y cobertura realizado.",
+    status: "Planificado",
+    date: "Ayer",
+  },
+  {
+    id: "hist-3",
+    project: "Soporte remoto software",
+    detail: "Caso cerrado con validacion del cliente.",
+    status: "Finalizado",
+    date: "Hace 1 semana",
+  },
+];
+
+export const specialistChats: SpecialistChatItem[] = [
+  {
+    id: "chat-1",
+    customer: "Carlos M.",
+    initials: "CM",
+    service: "Reparacion de laptops",
+    status: "En linea",
+    lastMessage: "Quisiera saber si pueden revisar mi laptop hoy.",
+    time: "Hace 5 min",
+    unread: 2,
+    messages: [
+      { id: "m-1", from: "customer", text: "Hola, necesito ayuda con mi laptop.", time: "11:02" },
+      { id: "m-2", from: "specialist", text: "Claro, cuentame que problema presenta.", time: "11:04" },
+      { id: "m-3", from: "customer", text: "Se apaga sola y se calienta mucho.", time: "11:05" },
+    ],
+  },
+  {
+    id: "chat-2",
+    customer: "Laura P.",
+    initials: "LP",
+    service: "Mantenimiento preventivo",
+    status: "Disponible",
+    lastMessage: "Me interesa agendar mantenimiento para esta semana.",
+    time: "Hace 20 min",
+    unread: 1,
+    messages: [
+      { id: "m-4", from: "customer", text: "Hola, quisiera hacer mantenimiento preventivo.", time: "10:30" },
+      { id: "m-5", from: "specialist", text: "Si, tengo disponibilidad esta semana.", time: "10:34" },
+    ],
+  },
+  {
+    id: "chat-3",
+    customer: "Andres T.",
+    initials: "AT",
+    service: "Instalacion y configuracion de redes",
+    status: "Disponible",
+    lastMessage: "Necesito red estable para oficina pequena.",
+    time: "Hace 1 h",
+    unread: 0,
+    messages: [
+      { id: "m-6", from: "customer", text: "Busco instalacion de red para mi oficina.", time: "09:10" },
+      { id: "m-7", from: "specialist", text: "Perfecto, cuantos equipos necesitas conectar?", time: "09:15" },
+    ],
+  },
+];
+
+export const specialistFiles: SpecialistFileItem[] = [
+  {
+    id: "file-1",
+    name: "diagnostico-laptop-carlos.pdf",
+    type: "PDF",
+    size: "1.2 MB",
+    uploadedAt: "Hoy",
+    relatedTo: "Carlos M. - Reparacion de laptops",
+  },
+  {
+    id: "file-2",
+    name: "evidencia-red-oficina.jpg",
+    type: "Imagen",
+    size: "860 KB",
+    uploadedAt: "Ayer",
+    relatedTo: "Empresa Norte - Configuracion de red local",
+  },
+  {
+    id: "file-3",
+    name: "reporte-mantenimiento.docx",
+    type: "Documento",
+    size: "540 KB",
+    uploadedAt: "Hace 3 dias",
+    relatedTo: "Laura P. - Mantenimiento preventivo",
+  },
+];
+
+export const specialistWallet: SpecialistWalletItem = {
+  availableBalance: "Bs 2.450",
+  pendingBalance: "Bs 680",
+  currency: "BOB",
+  withdrawMethod: "Transferencia bancaria",
+  status: "Activa",
+};
+
+export const specialistEarningsSummary: SpecialistEarningsSummaryItem = {
+  totalEarnings: "Bs 8.920",
+  monthlyEarnings: "Bs 1.840",
+  pendingPayments: "Bs 680",
+  commissions: "Bs 320",
+  paidServices: "24",
+};
+
+export const specialistTransactions: SpecialistTransactionItem[] = [
+  {
+    id: "txn-1",
+    customer: "Carlos M.",
+    project: "Reparacion de laptops",
+    amount: "Bs 320",
+    commission: "Bs 24",
+    status: "Pagado",
+    type: "Servicio tecnico",
+    date: "Hoy",
+  },
+  {
+    id: "txn-2",
+    customer: "Laura P.",
+    project: "Mantenimiento preventivo",
+    amount: "Bs 180",
+    commission: "Bs 14",
+    status: "Pendiente",
+    type: "Servicio programado",
+    date: "Ayer",
+  },
+  {
+    id: "txn-3",
+    customer: "Empresa Norte",
+    project: "Configuracion de red local",
+    amount: "Bs 740",
+    commission: "Bs 58",
+    status: "Procesado",
+    type: "Proyecto",
+    date: "Hace 3 dias",
+  },
+];
+
+export const specialistCertifications: SpecialistCertificationItem[] = [
+  {
+    id: "cert-1",
+    title: "Soporte tecnico certificado",
+    issuer: "TechMarket Academy",
+    status: "Verificada",
+    date: "Abr 2026",
+  },
+  {
+    id: "cert-2",
+    title: "Redes domesticas y pymes",
+    issuer: "Instituto Tecnico Digital",
+    status: "Pendiente de verificacion",
+    date: "Mar 2026",
+  },
+  {
+    id: "cert-3",
+    title: "Mantenimiento preventivo de hardware",
+    issuer: "Hardware Lab Bolivia",
+    status: "Verificada",
+    date: "Ene 2026",
+  },
+];
+
 export const specialistNavLinks = [
   { title: "Resumen", href: "/especialista" },
   { title: "Portafolio", href: "/especialista/portafolio" },
   { title: "Servicios", href: "/especialista/servicios" },
+  { title: "Solicitudes", href: "/especialista/solicitudes" },
+  { title: "Proyectos", href: "/especialista/proyectos" },
   { title: "Chat", href: "/especialista/chat" },
+  { title: "Archivos", href: "/especialista/archivos" },
+  { title: "Pagos e ingresos", href: "/especialista/pagos" },
+  { title: "Certificaciones", href: "/especialista/certificaciones" },
   { title: "Reputacion", href: "/especialista/reputacion" },
   { title: "Disponibilidad", href: "/especialista/disponibilidad" },
 ];

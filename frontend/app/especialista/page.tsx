@@ -5,19 +5,43 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SpecialistShell } from "./components/SpecialistShell";
 import { SpecialistAiAssistant } from "./components/SpecialistAiAssistant";
+import { useSpecialistBackendData } from "./hooks/useSpecialistBackendData";
+import { useSpecialistAvailabilityData } from "./hooks/useSpecialistAvailabilityData";
+import { useSpecialistReviewsCertificationsData } from "./hooks/useSpecialistReviewsCertificationsData";
 import { requireAuth } from "@/lib/auth/authGuard";
 import { getUser, getToken } from "@/lib/auth/tokenStore";
-import {
-  portfolioSeedItems,
-  recentActivity,
-  specialistKpis,
-  specialistProfile,
-  specialistReviews,
-  specialistServices,
-} from "./specialistData";
+
+type CalendarActivityItem = {
+  id?: string;
+  servicio?: string;
+  cliente?: string;
+  fecha?: string;
+  hora?: string;
+  estado?: string;
+  modalidad?: string;
+  title?: string;
+  detail?: string;
+  time?: string;
+};
+
+function getActivityView(item: CalendarActivityItem) {
+  const id = item.id ?? "";
+  const isProject = id.startsWith("PROJ-");
+  const isBlock = id.startsWith("BLK-");
+  const label = isProject ? "Servicio agendado" : isBlock ? "Bloqueo" : "Actividad";
+  const title = item.servicio?.trim() || item.title?.trim() || label;
+  const fecha = item.fecha?.trim() || item.time?.trim();
+  const hora = item.hora?.trim();
+
+  return { label, title, fecha, hora };
+}
 
 export default function EspecialistaCorePage() {
   const router = useRouter();
+  const { profile, services, portfolio } = useSpecialistBackendData();
+  const { calendar, calendarDetail } = useSpecialistAvailabilityData();
+  const { reviews, kpis } = useSpecialistReviewsCertificationsData();
+  const profileWithBackendLocation = profile as typeof profile & { ubicacion?: string; location?: string };
 
   useEffect(() => {
     console.log("[Especialista page] Ejecutando requireAuth desde page.tsx");
@@ -27,37 +51,45 @@ export default function EspecialistaCorePage() {
     requireAuth(router);
   }, [router]);
 
-  const featuredServices = specialistServices.filter((service) => service.featured).length;
+  const featuredServices = services.filter((service) => service.featured).length;
+  const recentActivity = (calendarDetail.length > 0 ? calendarDetail : calendar) as CalendarActivityItem[];
+  const profileLocation =
+    profileWithBackendLocation.ubicacion?.trim() ||
+    (profileWithBackendLocation.location?.trim() && profileWithBackendLocation.location !== "No especificado"
+      ? profileWithBackendLocation.location.trim()
+      : "Información pendiente de completar");
+  const profileBio = profile.bio?.trim();
+  const shouldShowProfileBio = profileBio && profileBio !== "No especificado" && profileBio !== "Información pendiente de completar";
 
   return (
-    <SpecialistShell sectionLabel="Resumen especialista" statusMessage="Resumen de especialista independiente activo">
+    <SpecialistShell sectionLabel="Resumen especialista" statusMessage="Resumen de especialista independiente activo" profile={profile}>
       <section className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_32%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8">
         <p className="tech-mono text-xs text-cyan-200/75">RESUMEN ESPECIALISTA</p>
         <div className="mt-4 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-xl font-bold text-slate-950">
-                {specialistProfile.avatar}
+                {profile.avatar}
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-cyan-50 md:text-4xl">{specialistProfile.name}</h1>
-                <p className="text-sm text-cyan-100/80">{specialistProfile.specialization}</p>
-                <p className="text-sm text-cyan-100/80">{specialistProfile.location}</p>
+                <h1 className="text-3xl font-bold text-cyan-50 md:text-4xl">{profile.name}</h1>
+                <p className="text-sm text-cyan-100/80">{profile.specialization}</p>
+                <p className="text-sm text-cyan-100/80">{profileLocation}</p>
               </div>
             </div>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">{specialistProfile.bio}</p>
+            {shouldShowProfileBio ? <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">{profileBio}</p> : null}
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Valor diferencial</p>
                 <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-                  Perfil tecnico orientado a confianza, soporte claro y evidencia visible para que el cliente decida con mas seguridad.
+                  {profile.name === "Sin definir" ? "Perfil no configurado todavía." : "Información del perfil obtenida desde backend."}
                 </p>
               </article>
 
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cobertura principal</p>
                 <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-                  Atencion en Santa Cruz con soporte remoto, visitas tecnicas y seguimiento posterior para hogares y pequenos negocios.
+                  {profileLocation}
                 </p>
               </article>
             </div>
@@ -65,7 +97,7 @@ export default function EspecialistaCorePage() {
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
             <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Trabajos en portafolio</p>
-              <p className="mt-2 text-2xl font-bold text-cyan-50">{portfolioSeedItems.length}</p>
+              <p className="mt-2 text-2xl font-bold text-cyan-50">{portfolio.length}</p>
               <p className="mt-1 text-sm text-cyan-100/75">Evidencias visibles</p>
             </article>
             <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
@@ -75,8 +107,8 @@ export default function EspecialistaCorePage() {
             </article>
             <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificacion</p>
-              <p className="mt-2 text-2xl font-bold text-cyan-50">{specialistKpis.averageRating} / 5</p>
-              <p className="mt-1 text-sm text-cyan-100/75">{specialistKpis.totalReviews} resenas</p>
+              <p className="mt-2 text-2xl font-bold text-cyan-50">{kpis.averageRating} / 5</p>
+              <p className="mt-1 text-sm text-cyan-100/75">{kpis.totalReviews} reseñas</p>
             </article>
           </div>
         </div>
@@ -122,18 +154,35 @@ export default function EspecialistaCorePage() {
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {recentActivity.map((item) => (
-            <article key={item.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-              <p className="text-sm font-semibold text-cyan-50">{item.title}</p>
-              <p className="mt-2 text-sm text-cyan-100/80">{item.detail}</p>
-              <p className="mt-2 text-xs text-cyan-100/65">{item.time}</p>
+          {recentActivity.length === 0 ? (
+            <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4 text-sm text-cyan-100/75 md:col-span-3">
+              No hay actividad reciente registrada.
             </article>
-          ))}
+          ) : null}
+          {recentActivity.map((item, index) => {
+            const activity = getActivityView(item);
+
+            return (
+            <article key={item.id ?? `activity-${index}`} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+              <span className="inline-flex rounded-full border border-cyan-300/35 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100">
+                {activity.label}
+              </span>
+              <p className="mt-3 text-sm font-semibold text-cyan-50">{activity.title}</p>
+              {activity.fecha || activity.hora ? (
+                <p className="mt-2 text-xs text-cyan-100/65">
+                  {[activity.fecha, activity.hora].filter(Boolean).join(" · ")}
+                </p>
+              ) : null}
+            </article>
+            );
+          })}
         </div>
 
         <div className="mt-5 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
           <p className="text-sm text-cyan-100/80">
-            {specialistReviews.length} resenas recientes respaldan la calidad del trabajo tecnico.
+            {reviews.length > 0
+              ? `${reviews.length} reseñas recientes respaldan la calidad del trabajo técnico.`
+              : "No hay reseñas registradas todavía."}
           </p>
         </div>
       </section>

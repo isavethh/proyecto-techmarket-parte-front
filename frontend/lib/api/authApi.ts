@@ -1,4 +1,13 @@
-import { clearToken, clearUser, setToken, setUser } from "@/lib/auth/tokenStore";
+import {
+  clearTechmarketAuth,
+  clearToken,
+  clearUser,
+  setTechmarketToken,
+  setTechmarketUserId,
+  setToken,
+  setUser,
+} from "@/lib/auth/tokenStore";
+import { loginTechMarket } from "@/lib/api/specialists";
 
 export type AuthProfile = {
   id: string | number;
@@ -279,6 +288,17 @@ export async function login(credentials: LoginCredentials): Promise<AuthSession>
   console.log("[login] Sesión creada:", { user: session.user, tipo: session.user?.tipo });
 
   storeAuthSession(session);
+
+  // Autenticar también en TechMarket-IA para obtener el UUID del dominio
+  try {
+    const tmLogin = await loginTechMarket(credentials.email, credentials.password);
+    setTechmarketToken(tmLogin.accessToken);
+    setTechmarketUserId(tmLogin.userId);
+    console.log("[login] TechMarket-IA auth OK, userId:", tmLogin.userId);
+  } catch {
+    console.warn("[login] TechMarket-IA auth falló, se usará admin como fallback");
+  }
+
   return session;
 }
 
@@ -381,6 +401,7 @@ export function clearAuthSession(): void {
   clearToken();
   window.localStorage.removeItem("refreshToken");
   clearUser();
+  clearTechmarketAuth();
   try {
     // eliminar cookie usada por middleware
     document.cookie = "techmarket_role=; Max-Age=0; path=/";

@@ -5,11 +5,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { logout } from "@/lib/auth/authGuard";
 import { getUser, getToken } from "@/lib/auth/tokenStore";
-import { specialistNavLinks, specialistProfile } from "../specialistData";
+import { specialistNavLinks } from "../specialistData";
+import type { SpecialistUiProfile } from "../hooks/useSpecialistBackendData";
+import { useSpecialistProfileData } from "../hooks/useSpecialistProfileData";
 
 type SpecialistShellProps = {
   sectionLabel: string;
   statusMessage: string;
+  profile?: SpecialistUiProfile;
   children: ReactNode;
 };
 
@@ -22,6 +25,7 @@ type SpecialistSidebarSummary = {
 
 type SpecialistTopbarControlsProps = {
   sectionLabel: string;
+  profile: SpecialistUiProfile;
 };
 
 const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
@@ -58,6 +62,28 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
       "Acceso directo al chat",
     ],
   },
+  Solicitudes: {
+    eyebrow: "SOLICITUDES ACTIVAS",
+    title: "Pedidos por revisar",
+    description:
+      "Esta vista concentra solicitudes entrantes para evaluar cliente, servicio, propuesta y estado antes de responder.",
+    points: [
+      "Clientes interesados",
+      "Propuestas en revision",
+      "Respuesta pendiente",
+    ],
+  },
+  Proyectos: {
+    eyebrow: "PROYECTOS ACTIVOS",
+    title: "Seguimiento tecnico",
+    description:
+      "Aqui se revisan trabajos activos, fechas, progreso e historial operativo del especialista dentro de TechMarket.",
+    points: [
+      "Estado del trabajo",
+      "Progreso visible",
+      "Historial tecnico",
+    ],
+  },
   Chat: {
     eyebrow: "ATENCION DIRECTA",
     title: "Conversaciones activas",
@@ -67,6 +93,39 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
       "Consultas activas",
       "Seguimiento en tiempo real",
       "Canal de cierre comercial",
+    ],
+  },
+  Archivos: {
+    eyebrow: "ARCHIVOS TECNICOS",
+    title: "Evidencia y documentos",
+    description:
+      "Esta vista agrupa documentos, evidencias y archivos asociados a clientes o proyectos tecnicos del especialista.",
+    points: [
+      "Evidencia centralizada",
+      "Relacion con clientes",
+      "Documentos consultables",
+    ],
+  },
+  "Pagos e ingresos": {
+    eyebrow: "BILLETERA ACTIVA",
+    title: "Ingresos del especialista",
+    description:
+      "Esta vista resume saldos, pagos pendientes, comisiones y transacciones asociadas a servicios tecnicos.",
+    points: [
+      "Saldo disponible",
+      "Ingresos y comisiones",
+      "Historial de pagos",
+    ],
+  },
+  Certificaciones: {
+    eyebrow: "CREDENCIALES TECNICAS",
+    title: "Certificaciones verificables",
+    description:
+      "Esta vista muestra certificaciones, entidades emisoras y estados de validacion asociados al especialista.",
+    points: [
+      "Credenciales visibles",
+      "Estado de verificacion",
+      "Mayor confianza tecnica",
     ],
   },
   Reputacion: {
@@ -93,9 +152,9 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
   },
 };
 
-function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProps) {
-  const router = useRouter();
+function SpecialistTopbarControls({ sectionLabel, profile }: SpecialistTopbarControlsProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
@@ -155,7 +214,7 @@ function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProp
         aria-label="Abrir perfil de especialista"
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-300 to-blue-600 text-[11px] font-bold text-slate-950">
-          {specialistProfile.avatar}
+          {profile.avatar}
         </span>
         <span className="hidden text-xs font-semibold text-cyan-100 md:block">{sectionLabel}</span>
       </button>
@@ -168,17 +227,17 @@ function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProp
           aria-label="Menu de especialista"
         >
           <p className="tech-mono text-xs text-cyan-200/70">PERFIL ESPECIALISTA</p>
-          <p className="mt-2 text-base font-semibold text-cyan-50">{specialistProfile.name}</p>
-          <p className="mt-1 text-sm text-cyan-100/80">{specialistProfile.specialization}</p>
+          <p className="mt-2 text-base font-semibold text-cyan-50">{profile.name}</p>
+          <p className="mt-1 text-sm text-cyan-100/80">{profile.specialization}</p>
 
           <div className="mt-3 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-3 text-xs text-cyan-100/80">
             <div className="flex items-center justify-between gap-3">
               <span>Ciudad</span>
-              <strong className="text-cyan-50">Santa Cruz</strong>
+              <strong className="text-cyan-50">{profile.location}</strong>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span>Estado</span>
-              <strong className="text-cyan-50">Especialista verificado</strong>
+              <strong className="text-cyan-50">Pendiente</strong>
             </div>
           </div>
 
@@ -212,16 +271,19 @@ function SpecialistTopbarControls({ sectionLabel }: SpecialistTopbarControlsProp
   );
 }
 
-export function SpecialistShell({ sectionLabel, statusMessage, children }: SpecialistShellProps) {
+export function SpecialistShell({ sectionLabel, statusMessage, profile, children }: SpecialistShellProps) {
   const pathname = usePathname();
   const sidebarSummary = specialistSidebarSummaries[sectionLabel];
+  const shouldLoadProfile = !profile;
+  const { profile: backendProfile } = useSpecialistProfileData(shouldLoadProfile);
+  const shellProfile = profile ?? backendProfile;
 
   useEffect(() => {
     try {
       console.log("[SpecialistShell] mount - getToken():", getToken());
       console.log("[SpecialistShell] mount - getUser():", getUser());
       console.log("[SpecialistShell] mount - document.cookie:", typeof document !== 'undefined' ? document.cookie : 'no-document');
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, []);
@@ -241,7 +303,7 @@ export function SpecialistShell({ sectionLabel, statusMessage, children }: Speci
             </div>
           </div>
 
-          <SpecialistTopbarControls sectionLabel={sectionLabel} />
+          <SpecialistTopbarControls sectionLabel={sectionLabel} profile={shellProfile} />
         </div>
       </header>
 
@@ -249,19 +311,19 @@ export function SpecialistShell({ sectionLabel, statusMessage, children }: Speci
         <aside className="space-y-3 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-1">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">PERFIL ESPECIALISTA</p>
-            <h1 className="mt-2 text-xl font-semibold text-cyan-50">{specialistProfile.name}</h1>
-            <p className="mt-2 text-sm text-cyan-100/80">{specialistProfile.specialization}</p>
-            <p className="mt-2 text-xs text-cyan-100/75">{specialistProfile.location}</p>
+            <h1 className="mt-2 text-xl font-semibold text-cyan-50">{shellProfile.name}</h1>
+            <p className="mt-2 text-sm text-cyan-100/80">{shellProfile.specialization}</p>
+            <p className="mt-2 text-xs text-cyan-100/75">{shellProfile.location}</p>
           </section>
 
           <section className="tech-card">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                {specialistProfile.avatar}
+                {shellProfile.avatar}
               </div>
               <div>
                 <p className="text-sm font-semibold text-cyan-50">Mi panel</p>
-                <p className="text-xs text-cyan-100/75">Especialista activo</p>
+                <p className="text-xs text-cyan-100/75">Perfil especialista</p>
               </div>
             </div>
 
