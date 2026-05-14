@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { EmbajadorSidebar } from "../page";
+import { EmbajadorSidebar, EmbajadorTopbarControls } from "../page";
 import { useAmbassadorAiInsights, useAmbassadorProfile, useAmbassadorReferralsReport } from "../useAmbassadorApi";
 import { LiveApiBadge } from "../HardcodedBadge";
 
@@ -23,9 +23,7 @@ export default function EmbajadorVisionUsuariosPage() {
             Panel de embajador con seguimiento activo
           </div>
 
-          <span className="hidden rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-cyan-100/80 md:inline-flex">
-            Embajador
-          </span>
+          <EmbajadorTopbarControls profile={profile} />
         </div>
       </header>
 

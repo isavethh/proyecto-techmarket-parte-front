@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useMemo, useState } from "react";
-import { EmbajadorSidebar } from "../page";
+import { EmbajadorSidebar, EmbajadorTopbarControls } from "../page";
 import {
   createAmbassadorNetworkInvitation,
   deleteAmbassadorNetworkInvitation,
@@ -79,9 +79,7 @@ export default function EmbajadorEmbajadoresReferidosPage() {
             Panel de embajador con seguimiento activo
           </div>
 
-          <span className="hidden rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-cyan-100/80 md:inline-flex">
-            Embajador
-          </span>
+          <EmbajadorTopbarControls profile={profile} />
         </div>
       </header>
 

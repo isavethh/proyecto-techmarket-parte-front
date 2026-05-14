@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { logout, requireAuth } from "@/lib/auth/authGuard";
 import {
@@ -41,6 +41,96 @@ type EmbajadorSidebarProps = {
 const getSidebarLinkClass = (isActive: boolean) => {
   return isActive ? "auth-action active" : "auth-action";
 };
+
+export function EmbajadorTopbarControls({ profile }: { profile?: ApiProfile | null }) {
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const display = profile ? profileDisplayData(profile) : null;
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (menuRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
+      setIsOpen(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative flex items-center">
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex min-h-[40px] min-w-[44px] cursor-pointer items-center gap-2 rounded-2xl border border-cyan-100/20 bg-[linear-gradient(140deg,rgba(11,34,60,0.94),rgba(6,23,43,0.96))] px-2 py-1.5 pr-3 text-left shadow-lg shadow-slate-950/35 transition hover:border-cyan-300/45 hover:bg-[linear-gradient(140deg,rgba(15,42,73,0.96),rgba(8,29,53,0.98))] hover:shadow-cyan-900/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/35"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-label="Abrir perfil de embajador"
+      >
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-300 to-blue-600 text-[11px] font-bold text-slate-950">
+          {display?.initials ?? "EM"}
+        </span>
+        <span className="hidden text-xs font-semibold text-cyan-100 md:block">
+          {display?.fullName ?? "Embajador"}
+        </span>
+      </button>
+
+      {isOpen && (
+        <div
+          ref={menuRef}
+          className="absolute right-0 top-[calc(100%+0.55rem)] w-[300px] overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(165deg,rgba(10,33,57,0.96),rgba(4,18,34,0.98))] p-4 shadow-2xl shadow-slate-950/50"
+          role="menu"
+          aria-label="Menu de embajador"
+        >
+          <p className="tech-mono text-xs text-cyan-200/70">PERFIL EMBAJADOR</p>
+          <p className="mt-2 text-base font-semibold text-cyan-50">{display?.fullName ?? "—"}</p>
+          <p className="mt-1 text-sm text-cyan-100/80">
+            {profile?.estado === "ACTIVE" ? "Embajador verificado" : "Embajador"}
+          </p>
+
+          <div className="mt-3 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-3 text-xs text-cyan-100/80">
+            <div className="flex items-center justify-between gap-3">
+              <span>Nivel</span>
+              <strong className="text-cyan-50">{profile?.nivel ?? "—"}</strong>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span>Ciudad</span>
+              <strong className="text-cyan-50">{profile?.ciudad ?? "—"}</strong>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span>Codigo referido</span>
+              <strong className="text-cyan-50">{profile?.codigoReferido ?? "—"}</strong>
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-2">
+            <button
+              type="button"
+              onClick={() => logout(router)}
+              className="auth-action block w-full text-left"
+            >
+              Cerrar sesion
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function EmbajadorSidebar({
   activeSection = "resumen",
@@ -244,9 +334,7 @@ export default function EmbajadorPage() {
             >
               Referir
             </button>
-            <span className="hidden rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-cyan-100/80 md:inline-flex">
-              Embajador
-            </span>
+            <EmbajadorTopbarControls profile={profile} />
           </div>
         </div>
       </header>

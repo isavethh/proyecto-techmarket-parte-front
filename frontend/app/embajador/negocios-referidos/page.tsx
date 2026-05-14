@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
-import { EmbajadorSidebar } from "../page";
+import { EmbajadorSidebar, EmbajadorTopbarControls } from "../page";
 import {
   useAmbassadorProfile,
   useAmbassadorReferralActivity,

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { EmbajadorSidebar } from "../page";
+import { EmbajadorSidebar, EmbajadorTopbarControls } from "../page";
 import {
   useAmbassadorProfile,
   useAmbassadorCommissions,
@@ -35,9 +35,7 @@ export default function ComisionesPage() {
           <Link href="/" className="font-semibold text-cyan-100/90">
             TechMarket
           </Link>
-          <span className="hidden rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-cyan-100/80 md:inline-flex">
-            Embajador
-          </span>
+          <EmbajadorTopbarControls profile={profile} />
         </div>
       </header>
 
