@@ -3,64 +3,39 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { CompanySidebar } from "../CompanySidebar";
-import { fetchCompanyProfile, updateCompanyProfile } from "../../lib/companyApi";
+import { fetchCompanyProfile, updateCompanyProfile, type CompanyProfileData } from "../companyEndpoints";
 
 const businessData = {
-  name: "TechMarket Santa Cruz",
-  logo: "TC",
-  slogan: "Soluciones confiables en tecnologia para hogar y empresa en Santa Cruz de la Sierra.",
-  specialization: "Laptops, redes y reparacion tecnica",
-  rating: 4.8,
-  reviewCount: 128,
-  category: "Servicios y venta especializada en tecnologia en Bolivia",
-  experienceYears: 12,
-  businessType: "Tienda y centro tecnico en Santa Cruz",
+  name: "",
+  logo: "",
+  slogan: "",
+  specialization: "",
+  rating: 0,
+  reviewCount: 0,
+  category: "",
+  experienceYears: 0,
+  businessType: "",
 };
 
-const specialties = ["Diagnostico y reparacion", "Redes y cableado", "Mantenimiento preventivo", "Soporte para empresas"];
+const specialties: string[] = [];
 
-const coverageAreas = ["Centro de Santa Cruz", "Zona norte", "Equipetrol", "Atencion a domicilio en sectores cercanos"];
+const coverageAreas: string[] = [];
 
-const contactChannels = [
-  { label: "Telefono", value: "+591 7500 0001" },
-  { label: "WhatsApp", value: "+591 7500 0001" },
-  { label: "Correo", value: "contacto@techmarketscz.com" },
-];
+const contactChannels: CompanyProfileData["contactChannels"] = [];
 
-const socialLinks = [
-  { label: "Facebook", href: "https://facebook.com" },
-  { label: "Instagram", href: "https://instagram.com" },
-  { label: "LinkedIn", href: "https://linkedin.com" },
-];
+const socialLinks: CompanyProfileData["socialLinks"] = [];
 
-const schedules = [
-  { day: "Lunes a viernes", hours: "8:00 a. m. - 6:30 p. m." },
-  { day: "Sabado", hours: "9:00 a. m. - 2:00 p. m." },
-  { day: "Domingo y festivos", hours: "No atiende" },
-];
+const schedules: CompanyProfileData["schedules"] = [];
 
-const branches = [
-  {
-    name: "Sede Principal",
-    address: "Av. MonseÃ±or Rivero # 120, Santa Cruz de la Sierra",
-    phone: "+591 7500 0001",
-    hours: "Lunes a viernes 8:00 a. m. - 6:30 p. m.; Sabado 9:00 a. m. - 2:00 p. m.",
-  },
-  {
-    name: "Sucursal Norte",
-    address: "Avenida Cristo Redentor # 2800, Zona Norte",
-    phone: "+591 7500 0002",
-    hours: "Lunes a viernes 9:00 a. m. - 5:30 p. m.",
-  },
-];
+const branches: CompanyProfileData["branches"] = [];
 
 const locationOverview = {
-  mainAddressShort: "Av. MonseÃ±or Rivero # 120",
-  mainAddressLong: "Av. MonseÃ±or Rivero # 120, Santa Cruz de la Sierra",
-  city: "Santa Cruz de la Sierra",
-  zone: "Centro",
-  reference: "Cerca del Cristo Redentor",
-  mapAreas: ["Zona norte", "Centro", "Equipetrol"],
+  mainAddressShort: "",
+  mainAddressLong: "",
+  city: "",
+  zone: "",
+  reference: "",
+  mapAreas: [] as string[],
 };
 
 type ProfileEditForm = {
@@ -113,7 +88,7 @@ function RatingStars({ rating }: { rating: number }) {
             }`}
             aria-hidden="true"
           >
-            â˜…
+            ★
           </span>
         );
       })}
@@ -121,11 +96,22 @@ function RatingStars({ rating }: { rating: number }) {
   );
 }
 
+function EmptyData({ className = "" }: { className?: string }) {
+  return (
+    <div className={`rounded-2xl border border-dashed border-cyan-100/18 bg-slate-950/35 p-4 text-sm text-cyan-100/70 ${className}`}>
+      No hay datos para mostrar
+    </div>
+  );
+}
+
 export default function Perfil() {
   const [businessProfile, setBusinessProfile] = useState(businessData);
+  const [profileDescription, setProfileDescription] = useState("");
+  const [profileAbout, setProfileAbout] = useState<string[]>([]);
   const [specialtyItems, setSpecialtyItems] = useState(specialties);
   const [coverageItems, setCoverageItems] = useState(coverageAreas);
   const [contactItems, setContactItems] = useState(contactChannels);
+  const [socialLinkItems, setSocialLinkItems] = useState(socialLinks);
   const [scheduleItems, setScheduleItems] = useState(schedules);
   const [branchItems, setBranchItems] = useState(branches);
   const [locationCard, setLocationCard] = useState(locationOverview);
@@ -167,12 +153,15 @@ export default function Perfil() {
 
   useEffect(() => {
     void fetchCompanyProfile().then((profile) => {
-      const { businessData: profileBusinessData, specialties: profileSpecialties, coverageAreas: profileCoverageAreas, contactChannels: profileContactChannels, schedules: profileSchedules, branches: profileBranches, locationOverview: profileLocation } = profile;
+      const { businessData: profileBusinessData, specialties: profileSpecialties, coverageAreas: profileCoverageAreas, contactChannels: profileContactChannels, socialLinks: profileSocialLinks, schedules: profileSchedules, branches: profileBranches, locationOverview: profileLocation } = profile;
 
       setBusinessProfile(profileBusinessData);
+      setProfileDescription(profile.description ?? "");
+      setProfileAbout(profile.about ?? []);
       setSpecialtyItems(profileSpecialties);
       setCoverageItems(profileCoverageAreas);
       setContactItems(profileContactChannels);
+      setSocialLinkItems(profileSocialLinks);
       setScheduleItems(profileSchedules);
       setBranchItems(profileBranches);
       setLocationCard(profileLocation);
@@ -286,6 +275,8 @@ export default function Perfil() {
         experienceYears: Number(editForm.experienceYears) >= 0 ? Number(editForm.experienceYears) : businessProfile.experienceYears,
         businessType: editForm.businessType.trim() || businessProfile.businessType,
       },
+      description: profileDescription,
+      about: profileAbout,
       specialties: parseList(editForm.specialties),
       coverageAreas: parseList(editForm.coverageAreas),
       contactChannels: [
@@ -293,7 +284,7 @@ export default function Perfil() {
         { label: "WhatsApp", value: editForm.whatsapp.trim() },
         { label: "Correo", value: editForm.email.trim() },
       ],
-      socialLinks,
+      socialLinks: socialLinkItems,
       schedules: [
         { day: "Lunes a viernes", hours: editForm.scheduleWeek.trim() },
         { day: "Sabado", hours: editForm.scheduleSaturday.trim() },
@@ -396,13 +387,13 @@ export default function Perfil() {
                         </div>
                       </div>
                       <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                        <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">ReseÃ±as</p>
+                        <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Reseñas</p>
                         <p className="mt-3 text-2xl font-bold text-white">{businessProfile.reviewCount}</p>
                         <p className="mt-1 text-sm text-cyan-100/70">Opiniones registradas</p>
                       </div>
                       <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                         <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Experiencia</p>
-                        <p className="mt-3 text-2xl font-bold text-white">{businessProfile.experienceYears} aÃ±os</p>
+                        <p className="mt-3 text-2xl font-bold text-white">{businessProfile.experienceYears} años</p>
                         <p className="mt-1 text-sm text-cyan-100/70">Trayectoria en el sector</p>
                       </div>
                       <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
@@ -439,9 +430,13 @@ export default function Perfil() {
                         </div>
                       </div>
                       <div className="mt-5 grid grid-cols-3 gap-3 text-xs text-cyan-50/90">
-                        {locationCard.mapAreas.map((area) => (
-                          <div key={area} className="rounded-2xl bg-white/10 p-3 text-center">{area}</div>
-                        ))}
+                        {locationCard.mapAreas.length ? (
+                          locationCard.mapAreas.map((area) => (
+                            <div key={area} className="rounded-2xl bg-white/10 p-3 text-center">{area}</div>
+                          ))
+                        ) : (
+                          <EmptyData className="col-span-3" />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -452,11 +447,11 @@ export default function Perfil() {
                 <article className="h-full rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Informacion general</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Descripcion del negocio</h2>
-                  <p className="mt-4 text-sm leading-7 text-cyan-100/80">
-                    plataforma inteligente, social y comercial especializada en ElectrÃ³nica y ComputaciÃ³n,
-                    que conecta empresas, tÃ©cnicos, usuarios y embajadores para generar confianza, visibilidad, ventas y
-                    crecimiento sostenible dentro de un ecosistema digital escalable.
-                  </p>
+                  {profileDescription ? (
+                    <p className="mt-4 text-sm leading-7 text-cyan-100/80">{profileDescription}</p>
+                  ) : (
+                    <EmptyData className="mt-4" />
+                  )}
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
                     <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
@@ -472,11 +467,15 @@ export default function Perfil() {
                   <div className="mt-6 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
                     <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Areas de especializacion</p>
                     <div className="mt-4 flex flex-wrap gap-3">
-                      {specialtyItems.map((item) => (
-                        <span key={item} className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-50">
-                          {item}
-                        </span>
-                      ))}
+                      {specialtyItems.length ? (
+                        specialtyItems.map((item) => (
+                          <span key={item} className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-50">
+                            {item}
+                          </span>
+                        ))
+                      ) : (
+                        <EmptyData className="w-full" />
+                      )}
                     </div>
                   </div>
                 </article>
@@ -506,11 +505,15 @@ export default function Perfil() {
                     <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
                       <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cobertura del servicio</p>
                       <div className="mt-4 flex flex-wrap gap-3">
-                        {coverageItems.map((area) => (
-                          <span key={area} className="rounded-full border border-cyan-100/10 bg-white/5 px-3 py-2 text-sm text-cyan-100/85">
-                            {area}
-                          </span>
-                        ))}
+                        {coverageItems.length ? (
+                          coverageItems.map((area) => (
+                            <span key={area} className="rounded-full border border-cyan-100/10 bg-white/5 px-3 py-2 text-sm text-cyan-100/85">
+                              {area}
+                            </span>
+                          ))
+                        ) : (
+                          <EmptyData className="w-full" />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -523,28 +526,36 @@ export default function Perfil() {
                   <h2 className="mt-3 text-2xl font-bold text-white">Datos para comunicarse</h2>
 
                   <div className="mt-5 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                    {contactItems.map((channel) => (
-                      <div key={channel.label} className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4 break-words">
-                        <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">{channel.label}</p>
-                        <p className="mt-2 text-sm font-semibold text-white break-words">{channel.value}</p>
-                      </div>
-                    ))}
+                    {contactItems.length ? (
+                      contactItems.map((channel) => (
+                        <div key={channel.label} className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4 break-words">
+                          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">{channel.label}</p>
+                          <p className="mt-2 text-sm font-semibold text-white break-words">{channel.value}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <EmptyData className="md:col-span-2 lg:col-span-3" />
+                    )}
                   </div>
 
                   <div className="mt-6 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
                     <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Redes sociales</p>
                     <div className="mt-4 flex flex-wrap gap-3">
-                      {socialLinks.map((social) => (
-                        <a
-                          key={social.label}
-                          href={social.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-50 transition hover:bg-cyan-300/20"
-                        >
-                          {social.label}
-                        </a>
-                      ))}
+                      {socialLinkItems.length ? (
+                        socialLinkItems.map((social) => (
+                          <a
+                            key={social.label}
+                            href={social.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-50 transition hover:bg-cyan-300/20"
+                          >
+                            {social.label}
+                          </a>
+                        ))
+                      ) : (
+                        <EmptyData className="w-full" />
+                      )}
                     </div>
                   </div>
                 </article>
@@ -554,12 +565,16 @@ export default function Perfil() {
                   <h2 className="mt-3 text-2xl font-bold text-white">Disponibilidad semanal</h2>
 
                   <div className="mt-5 space-y-3">
-                    {scheduleItems.map((schedule) => (
-                      <div key={schedule.day} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
-                        <span className="font-semibold text-white">{schedule.day}</span>
-                        <span className="text-sm text-cyan-100/75">{schedule.hours}</span>
-                      </div>
-                    ))}
+                    {scheduleItems.length ? (
+                      scheduleItems.map((schedule) => (
+                        <div key={schedule.day} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
+                          <span className="font-semibold text-white">{schedule.day}</span>
+                          <span className="text-sm text-cyan-100/75">{schedule.hours}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <EmptyData />
+                    )}
                   </div>
                 </article>
               </section>
@@ -568,25 +583,29 @@ export default function Perfil() {
                 <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Sucursales o sedes</p>
                 <h2 className="mt-3 text-2xl font-bold text-white">Puntos de atencion</h2>
                 <div className="mt-6 grid gap-4 grid-cols-1 lg:grid-cols-2">
-                  {branchItems.map((branch) => (
-                    <div key={branch.name} className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-5">
-                      <p className="text-lg font-semibold text-white">{branch.name}</p>
-                      <div className="mt-4 space-y-3 text-sm text-cyan-100/80">
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Direccion</p>
-                          <p className="mt-1 break-words">{branch.address}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Telefono</p>
-                          <p className="mt-1 break-words">{branch.phone}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Horario de atencion</p>
-                          <p className="mt-1 leading-7 break-words">{branch.hours}</p>
+                  {branchItems.length ? (
+                    branchItems.map((branch) => (
+                      <div key={branch.name} className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-5">
+                        <p className="text-lg font-semibold text-white">{branch.name}</p>
+                        <div className="mt-4 space-y-3 text-sm text-cyan-100/80">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Direccion</p>
+                            <p className="mt-1 break-words">{branch.address}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Telefono</p>
+                            <p className="mt-1 break-words">{branch.phone}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Horario de atencion</p>
+                            <p className="mt-1 leading-7 break-words">{branch.hours}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <EmptyData className="lg:col-span-2" />
+                  )}
                 </div>
               </section>
 
@@ -599,7 +618,7 @@ export default function Perfil() {
                     <div className="mt-3">
                       <RatingStars rating={businessProfile.rating} />
                     </div>
-                    <p className="mt-4 text-sm text-cyan-100/75">Basado en {businessProfile.reviewCount} reseÃ±as de clientes.</p>
+                    <p className="mt-4 text-sm text-cyan-100/75">Basado en {businessProfile.reviewCount} reseñas de clientes.</p>
                   </div>
                 </article>
 
@@ -607,16 +626,11 @@ export default function Perfil() {
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Descripcion completa</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Quienes somos</h2>
                   <div className="mt-4 space-y-4 text-sm leading-7 text-cyan-100/80">
-                    <p>
-                      Somos una empresa enfocada en soluciones tecnicas para equipos de computo, redes y
-                      soporte operativo. Nuestra prioridad es ofrecer informacion clara del negocio para
-                      que cada usuario entienda con rapidez quienes somos y como contactarnos.
-                    </p>
-                    <p>
-                      Trabajamos con criterios de seriedad, cobertura definida y canales de atencion
-                      visibles para facilitar una relacion confiable con clientes residenciales y
-                      empresariales.
-                    </p>
+                    {profileAbout.length ? (
+                      profileAbout.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
+                    ) : (
+                      <EmptyData />
+                    )}
                   </div>
                 </article>
               </section>
@@ -649,8 +663,8 @@ export default function Perfil() {
               <label className="space-y-2 text-sm text-cyan-100/85"><span>Categoria</span><input value={editForm.category} onChange={(event) => setEditForm((current) => ({ ...current, category: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
               <label className="space-y-2 text-sm text-cyan-100/85"><span>Tipo de negocio</span><input value={editForm.businessType} onChange={(event) => setEditForm((current) => ({ ...current, businessType: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
               <label className="space-y-2 text-sm text-cyan-100/85"><span>Calificacion</span><input value={editForm.rating} onChange={(event) => setEditForm((current) => ({ ...current, rating: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>ReseÃ±as</span><input value={editForm.reviewCount} onChange={(event) => setEditForm((current) => ({ ...current, reviewCount: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>AÃ±os de experiencia</span><input value={editForm.experienceYears} onChange={(event) => setEditForm((current) => ({ ...current, experienceYears: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
+              <label className="space-y-2 text-sm text-cyan-100/85"><span>Reseñas</span><input value={editForm.reviewCount} onChange={(event) => setEditForm((current) => ({ ...current, reviewCount: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
+              <label className="space-y-2 text-sm text-cyan-100/85"><span>Años de experiencia</span><input value={editForm.experienceYears} onChange={(event) => setEditForm((current) => ({ ...current, experienceYears: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
               <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Areas de especializacion (separadas por coma)</span><input value={editForm.specialties} onChange={(event) => setEditForm((current) => ({ ...current, specialties: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
               <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Cobertura (separada por coma)</span><input value={editForm.coverageAreas} onChange={(event) => setEditForm((current) => ({ ...current, coverageAreas: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
 

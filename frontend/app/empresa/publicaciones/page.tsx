@@ -15,7 +15,7 @@ import {
   updateCompanyProduct,
   updateCompanyService,
   uploadCompanyImage,
-} from "../../lib/companyApi";
+} from "../companyEndpoints";
 import { CompanySidebar } from "../CompanySidebar";
 
 type MainFilter =
@@ -63,8 +63,8 @@ const interactionFilterLabels: Record<InteractionFilter, string> = {
 };
 
 const company = {
-  name: "TechMarket Santa Cruz",
-  logo: "TC",
+  name: "",
+  logo: "",
 };
 
 const buildCommunityFeedPost = (
@@ -230,37 +230,13 @@ type PublicationSocialState = {
 };
 
 function createInitialPublicationSocial(
-  item: Pick<CompanyFeedItem, "id" | "title" | "kind">,
-  index = 0,
+  _item: Pick<CompanyFeedItem, "id" | "title" | "kind">,
+  _index = 0,
 ): PublicationSocialState {
-  const baseLikes = 8 + (index % 5) * 3;
-
-  const comments: PublicationComment[] = [
-    {
-      id: `comment-${item.id}-1`,
-      author: "Alejandro",
-      text:
-        item.kind === "Producto"
-          ? "Tienen disponibilidad inmediata?"
-          : item.kind === "Servicio"
-            ? "Atienden esta semana?"
-            : item.kind === "Oferta"
-              ? "La promocion sigue activa?"
-              : "Me interesa, podrian darme mas informacion?",
-      time: "Hace 12 min",
-    },
-    {
-      id: `comment-${item.id}-2`,
-      author: "Laura P.",
-      text: "Se ve interesante, me gustaria saber mas detalles.",
-      time: "Hace 1 h",
-    },
-  ];
-
   return {
-    likes: baseLikes,
+    likes: 0,
     liked: false,
-    comments,
+    comments: [],
   };
 }
 
@@ -362,210 +338,20 @@ function PublicationActionButton({
   );
 }
 
-const products: ProductCard[] = [
-  {
-    id: "prod-1",
-    name: "Laptop Pro 14",
-    description: "Intel i7, 16 GB RAM, SSD 512 GB para trabajo y estudio.",
-    price: "Bs 3.650.000",
-    status: "Disponible",
-    image: "/productos/laptop-pro-14.jpg",
-  },
-  {
-    id: "prod-2",
-    name: "Monitor UltraWide 34",
-    description: "Pantalla amplia 3440 x 1440 para productividad y diseño.",
-    price: "Bs 1.480.000",
-    status: "Disponible",
-    image: "/productos/monitor-ultrawide-34.jpg",
-  },
-  {
-    id: "prod-3",
-    name: "Teclado mecanico TKL",
-    description: "Switch azul, RGB y formato compacto para setups modernos.",
-    price: "Bs 260.000",
-    status: "Disponible",
-    image: "/productos/teclado-tkl.jpg",
-  },
-  {
-    id: "prod-4",
-    name: "Kit limpieza PC",
-    description: "Brochas, aire y pasta termica para cuidado de equipos.",
-    price: "Bs 85.000",
-    status: "Disponible",
-    image: "/productos/kit-limpieza-pc.jpg",
-  },
-  {
-    id: "prod-5",
-    name: "Mouse ergonomico",
-    description: "Comodidad para jornadas largas de oficina o estudio.",
-    price: "Bs 95.000",
-    status: "Disponible",
-    image: "/productos/teclado-tkl.jpg",
-  },
-  {
-    id: "prod-6",
-    name: "Cableado de red Cat 6",
-    description: "Solucion para instalacion estable en oficinas y hogares.",
-    price: "Bs 12.000",
-    status: "Disponible",
-    image: "/productos/monitor-ultrawide-34.jpg",
-  },
-];
+const products: ProductCard[] = [];
+const services: ServiceCard[] = [];
+const offers: OfferCard[] = [];
+const surveys: SurveyCard[] = [];
+const posts: PostCard[] = [];
+const textPosts: TextPublicationCard[] = [];
 
-const services: ServiceCard[] = [
-  {
-    id: "serv-1",
-    name: "Reparacion de laptops",
-    description: "Diagnostico, mantenimiento y correccion de fallas tecnicas.",
-    price: "Consultar",
-    image: "/productos/laptop-pro-14.jpg",
-  },
-  {
-    id: "serv-2",
-    name: "Instalacion de redes",
-    description: "Cableado, configuracion y pruebas para conectividad estable.",
-    price: "Bs 120.000",
-    image: "/productos/monitor-ultrawide-34.jpg",
-  },
-  {
-    id: "serv-3",
-    name: "Mantenimiento preventivo",
-    description: "Limpieza interna, control de temperatura y optimizacion.",
-    price: "Bs 95.000",
-    image: "/productos/kit-limpieza-pc.jpg",
-  },
-  {
-    id: "serv-4",
-    name: "Soporte tecnico remoto",
-    description: "Asistencia rapida para configuraciones y solucion de errores.",
-    price: "Bs 65.000",
-    image: "/productos/teclado-tkl.jpg",
-  },
-];
-
-const offers: OfferCard[] = [
-  {
-    id: "offer-1",
-    title: "Descuento en diagnostico + limpieza",
-    description: "Promo especial para equipos con bajo rendimiento o sobrecalentamiento.",
-    currentPrice: "Bs 95.000",
-    previousPrice: "Bs 140.000",
-    label: "Oferta",
-    image: "/productos/monitor-ultrawide-34.jpg",
-  },
-  {
-    id: "offer-2",
-    title: "Combo empresarial para pequenas oficinas",
-    description: "Instalacion de red, soporte remoto y acompanamiento mensual.",
-    currentPrice: "Bs 420.000",
-    previousPrice: "Bs 520.000",
-    label: "Promocion",
-    image: "/productos/teclado-tkl.jpg",
-  },
-  {
-    id: "offer-3",
-    title: "Pack limpieza premium",
-    description: "Limpieza interna + revision termica con descuento por tiempo limitado.",
-    currentPrice: "Bs 110.000",
-    previousPrice: "Bs 150.000",
-    label: "Oferta",
-    image: "/productos/kit-limpieza-pc.jpg",
-  },
-  {
-    id: "offer-4",
-    title: "Servicio rapido de soporte",
-    description: "Atencion prioritaria para problemas frecuentes de software.",
-    currentPrice: "Bs 55.000",
-    previousPrice: "Bs 75.000",
-    label: "Promocion",
-    image: "/productos/laptop-pro-14.jpg",
-  },
-];
-
-const surveys: SurveyCard[] = [
-  {
-    id: "survey-1",
-    question: "Que servicio necesitas con mas frecuencia?",
-    options: ["Diagnostico", "Mantenimiento", "Redes", "Soporte remoto"],
-    votes: 184,
-  },
-  {
-    id: "survey-2",
-    question: "Que producto te interesa mas para tu trabajo?",
-    options: ["Laptop", "Monitor", "Teclado", "Mouse"],
-    votes: 132,
-  },
-  {
-    id: "survey-3",
-    question: "Que canal prefieres para contacto rapido?",
-    options: ["Chat", "WhatsApp", "Telefono", "Correo"],
-    votes: 211,
-  },
-];
-
-const posts: PostCard[] = [
-  {
-    id: "post-1",
-    title: "Nueva llegada de equipos para trabajo y estudio",
-    message: "Ya estan disponibles nuevos modelos de alto rendimiento para usuarios exigentes.",
-    date: "17 abr 2026",
-    image: "/productos/laptop-pro-14.jpg",
-  },
-  {
-    id: "post-2",
-    title: "Consejo rapido: mejora la vida util de tu laptop",
-    message: "Mantener limpieza interna y ventilacion correcta ayuda a evitar fallas por temperatura.",
-    date: "16 abr 2026",
-    image: "/productos/kit-limpieza-pc.jpg",
-  },
-  {
-    id: "post-3",
-    title: "Anuncio para empresas pequenas",
-    message: "Activamos acompanamiento tecnico mensual para oficinas con soporte prioritario.",
-    date: "15 abr 2026",
-    image: "/productos/monitor-ultrawide-34.jpg",
-  },
-];
-
-const textPosts: TextPublicationCard[] = [
-  {
-    id: "text-1",
-    title: "Atencion tecnica sin costo de evaluacion",
-    message: "Si tu equipo esta lento, escribenos por chat y te orientamos con una primera revision sin compromiso.",
-    date: "17 abr 2026",
-    image: "/productos/charla.png",
-  },
-  {
-    id: "text-2",
-    title: "Consejo para empresas pequenas",
-    message: "Mantener un respaldo semanal evita perdida de informacion y reduce tiempos muertos en oficina.",
-    date: "16 abr 2026",
-    image: "/productos/charla.png",
-  },
-  {
-    id: "text-3",
-    title: "Soporte rapido por mensaje",
-    message: "Escribenos si necesitas diagnostico, instalacion o mantenimiento. Respondemos desde Santa Cruz.",
-    date: "15 abr 2026",
-    image: "/productos/charla.png",
-  },
-];
-
-const users: UserCard[] = [
-  { id: "user-5", name: "Alejandro", avatar: "AL", activity: "Busco Laptop Pro 14 hace 2 min" },
-  { id: "user-1", name: "Carlos M.", avatar: "CM", activity: "Dio like a un producto hace 1 hora" },
-  { id: "user-2", name: "Laura P.", avatar: "LP", activity: "Participo en una encuesta hace 3 horas" },
-  { id: "user-3", name: "Sofia R.", avatar: "SR", activity: "Comento una publicacion informativa" },
-  { id: "user-4", name: "Andres T.", avatar: "AT", activity: "Reacciono a una promocion activa" },
-];
-
-const latestInteractionNotification: InteractionNotification = {
-  id: "notif-alejandro-1",
-  userName: "Alejandro",
-  productName: "Laptop Pro 14",
-  userId: "user-5",
-};
+function EmptyData({ className = "" }: { className?: string }) {
+  return (
+    <div className={`rounded-3xl border border-dashed border-cyan-100/18 bg-slate-950/35 p-5 text-sm text-cyan-100/70 ${className}`}>
+      No hay datos para mostrar
+    </div>
+  );
+}
 
 export default function PublicacionesPage() {
   const [activeFilter, setActiveFilter] = useState<MainFilter>("Publicaciones");
@@ -574,11 +360,11 @@ export default function PublicacionesPage() {
   const [showInteractionNotice, setShowInteractionNotice] = useState(true);
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [highlightedUserId, setHighlightedUserId] = useState<string | null>(null);
-  const [productItems, setProductItems] = useState<ProductCard[]>(products);
-  const [serviceItems, setServiceItems] = useState<ServiceCard[]>(services);
-  const [offerItems, setOfferItems] = useState<OfferCard[]>(offers);
-  const [postItems, setPostItems] = useState<PostCard[]>(posts);
-  const [textPostItems, setTextPostItems] = useState<TextPublicationCard[]>(textPosts);
+  const [productItems, setProductItems] = useState<ProductCard[]>([]);
+  const [serviceItems, setServiceItems] = useState<ServiceCard[]>([]);
+  const [offerItems, setOfferItems] = useState<OfferCard[]>([]);
+  const [postItems, setPostItems] = useState<PostCard[]>([]);
+  const [textPostItems, setTextPostItems] = useState<TextPublicationCard[]>([]);
   const [showProductEditModal, setShowProductEditModal] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productEditMessage, setProductEditMessage] = useState("");
@@ -632,7 +418,9 @@ export default function PublicacionesPage() {
     label: "Oferta",
     image: "",
   });
-  const [surveyItems, setSurveyItems] = useState<SurveyCard[]>(surveys);
+  const [surveyItems, setSurveyItems] = useState<SurveyCard[]>([]);
+  const [userItems, setUserItems] = useState<UserCard[]>([]);
+  const [latestInteractionNotice, setLatestInteractionNotice] = useState<InteractionNotification | null>(null);
   const [showSurveyCreateModal, setShowSurveyCreateModal] = useState(false);
   const [surveyCreateMessage, setSurveyCreateMessage] = useState("");
   const [surveyForm, setSurveyForm] = useState<SurveyFormData>({
@@ -645,12 +433,14 @@ export default function PublicacionesPage() {
 
   useEffect(() => {
     void fetchCompanyPublications().then((payload) => {
-      setProductItems(payload.products);
-      setServiceItems(payload.services);
-      setOfferItems(payload.offers);
-      setPostItems(payload.posts);
-      setTextPostItems(payload.textPosts);
-      setSurveyItems(payload.surveys);
+      setProductItems(payload.products as ProductCard[]);
+      setServiceItems(payload.services as ServiceCard[]);
+      setOfferItems(payload.offers as OfferCard[]);
+      setPostItems(payload.posts as PostCard[]);
+      setTextPostItems(payload.textPosts as TextPublicationCard[]);
+      setSurveyItems(payload.surveys as SurveyCard[]);
+      setUserItems(payload.users as UserCard[]);
+      setLatestInteractionNotice(payload.latestInteractionNotification as InteractionNotification | null);
     });
   }, []);
   const isServicesView = activeFilter === "Servicios";
@@ -724,7 +514,7 @@ export default function PublicacionesPage() {
               ? textPostItems.length
               : activeInteractionFilter === "Encuestas"
                 ? surveyItems.length
-                : users.length;
+                : userItems.length;
       
   
 
@@ -969,7 +759,7 @@ export default function PublicacionesPage() {
   };
 
   useEffect(() => {
-    const seededPosts = posts.map((post, index) =>
+    const seededPosts = postItems.map((post, index) =>
       buildCommunityFeedPost(
         `seed-company-${post.id}`,
         post.title,
@@ -981,7 +771,7 @@ export default function PublicacionesPage() {
     );
 
     upsertCommunityFeedPosts(seededPosts);
-  }, []);
+  }, [postItems]);
 
   const handleMainFilterChange = (filter: MainFilter) => {
     setActiveFilter(filter);
@@ -995,9 +785,10 @@ export default function PublicacionesPage() {
   };
 
   const handleInteractionNotificationClick = () => {
+    if (!latestInteractionNotice) return;
     setActiveFilter("Publicaciones de interacción");
     setActiveInteractionFilter("Lista de usuarios que interactúan");
-    setHighlightedUserId(latestInteractionNotification.userId);
+    setHighlightedUserId(latestInteractionNotice.userId);
     setShowInteractionNotice(false);
     setShowNotificationPanel(false);
   };
@@ -1580,7 +1371,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                         className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-100/10 bg-white/5 text-cyan-100/85 transition hover:bg-cyan-100/10"
                       >
                         <BellIcon />
-                        {showInteractionNotice ? (
+                        {showInteractionNotice && latestInteractionNotice ? (
                           <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.85)]" />
                         ) : null}
                       </button>
@@ -1599,19 +1390,19 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                               <p className="mt-1 text-xs text-cyan-100/65">Actividad reciente de usuarios</p>
                             </div>
 
-                            {showInteractionNotice ? (
+                            {showInteractionNotice && latestInteractionNotice ? (
                               <button
                                 type="button"
                                 onClick={handleInteractionNotificationClick}
                                 className="flex w-full items-start gap-3 px-4 py-4 text-left transition hover:bg-cyan-100/5"
                               >
                                 <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                                  AL
+                                  {latestInteractionNotice.userName.slice(0, 2).toUpperCase()}
                                 </div>
 
                                 <div className="min-w-0 flex-1">
                                   <p className="text-sm font-semibold text-white">
-                                    Alejandro buscó <span className="text-cyan-200">{latestInteractionNotification.productName}</span>
+                                    {latestInteractionNotice.userName} buscó <span className="text-cyan-200">{latestInteractionNotice.productName}</span>
                                   </p>
                                   <p className="mt-1 text-xs text-cyan-100/65">
                                     Haz clic para ver la lista de usuarios que interactúan.
@@ -1849,11 +1640,12 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                     </p>
                   </div>
 
-                  {companyFeedItems.map((item) => (
-                    <article
-                      key={`${item.kind}-${item.id}`}
-                      className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
-                    >
+                  {companyFeedItems.length ? (
+                    companyFeedItems.map((item) => (
+                      <article
+                        key={`${item.kind}-${item.id}`}
+                        className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
+                      >
                       <div className="space-y-4 p-5">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex items-center gap-3 text-sm text-cyan-100/75">
@@ -1968,20 +1760,24 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                           </div>
                         </div>
                       </div>
-                    </article>
-                  ))}
+                      </article>
+                    ))
+                  ) : (
+                    <EmptyData />
+                  )}
                 </div>
               )}
 
               {activeFilter === "Productos disponibles" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {productItems.map((product) => (
-                    <motion.article
-                      key={product.id}
-                      whileHover={{ y: -4, boxShadow: "0 18px 34px rgba(8,145,178,0.2)" }}
-                      transition={{ duration: 0.22, ease: "easeOut" }}
-                      className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
-                    >
+                  {productItems.length ? (
+                    productItems.map((product) => (
+                      <motion.article
+                        key={product.id}
+                        whileHover={{ y: -4, boxShadow: "0 18px 34px rgba(8,145,178,0.2)" }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
+                      >
                       <div className="flex h-44 w-full items-center justify-center bg-white">
                         <img
                           src={product.image}
@@ -2043,20 +1839,24 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                           </div>
                         </div>
                       </div>
-                    </motion.article>
-                  ))}
+                      </motion.article>
+                    ))
+                  ) : (
+                    <EmptyData className="md:col-span-2 xl:col-span-3" />
+                  )}
                 </div>
               )}
 
               {activeFilter === "Servicios" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {serviceItems.map((service) => (
-                    <motion.article
-                      key={service.id}
-                      whileHover={{ y: -4, boxShadow: "0 18px 34px rgba(8,145,178,0.2)" }}
-                      transition={{ duration: 0.22, ease: "easeOut" }}
-                      className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
-                    >
+                  {serviceItems.length ? (
+                    serviceItems.map((service) => (
+                      <motion.article
+                        key={service.id}
+                        whileHover={{ y: -4, boxShadow: "0 18px 34px rgba(8,145,178,0.2)" }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
+                      >
                       {service.image ? (
                           <div className="flex h-40 w-full items-center justify-center bg-white">
                             <img
@@ -2112,20 +1912,24 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                           </div>
                         </div>
                       </div>
-                    </motion.article>
-                  ))}
+                      </motion.article>
+                    ))
+                  ) : (
+                    <EmptyData className="md:col-span-2 xl:col-span-3" />
+                  )}
                 </div>
               )}
 
               {activeFilter === "Ofertas y promociones" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {offerItems.map((offer) => (
-                    <motion.article
-                      key={offer.id}
-                      whileHover={{ y: -4, boxShadow: "0 18px 34px rgba(8,145,178,0.2)" }}
-                      transition={{ duration: 0.22, ease: "easeOut" }}
-                      className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
-                    >
+                  {offerItems.length ? (
+                    offerItems.map((offer) => (
+                      <motion.article
+                        key={offer.id}
+                        whileHover={{ y: -4, boxShadow: "0 18px 34px rgba(8,145,178,0.2)" }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
+                      >
                       <div className="flex h-44 w-full items-center justify-center bg-white">
                         <img
                           src={offer.image}
@@ -2193,8 +1997,11 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                           </button>
                         </div>
                       </div>
-                    </motion.article>
-                  ))}
+                      </motion.article>
+                    ))
+                  ) : (
+                    <EmptyData className="md:col-span-2 xl:col-span-3" />
+                  )}
                 </div>
               )}
 
@@ -2229,9 +2036,10 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                   </div>
 
                   <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {activeInteractionFilter === "Encuestas" &&
-                      surveyItems.map((survey) => (
-                        <article key={survey.id} className="rounded-3xl border border-cyan-100/10 bg-white/5 p-5">
+                    {activeInteractionFilter === "Encuestas" ? (
+                      surveyItems.length ? (
+                        surveyItems.map((survey) => (
+                          <article key={survey.id} className="rounded-3xl border border-cyan-100/10 bg-white/5 p-5">
                           <div className="flex items-center gap-3 text-sm text-cyan-100/75">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
                               {company.logo}
@@ -2285,19 +2093,24 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                             })}
                           </div>
                           <p className="mt-4 text-sm text-cyan-100/75">{survey.votes} participaciones</p>
-                        </article>
-                      ))}
+                          </article>
+                        ))
+                      ) : (
+                        <EmptyData className="md:col-span-2 xl:col-span-3" />
+                      )
+                    ) : null}
 
-                    {activeInteractionFilter === "Lista de usuarios que interactúan" &&
-                      users.map((user) => (
-                        <article
-                          key={user.id}
-                          className={`rounded-3xl border p-5 ${
-                            highlightedUserId === user.id
-                              ? "border-emerald-300/40 bg-emerald-400/10"
-                              : "border-cyan-100/10 bg-white/5"
-                          }`}
-                        >
+                    {activeInteractionFilter === "Lista de usuarios que interactúan" ? (
+                      userItems.length ? (
+                        userItems.map((user) => (
+                          <article
+                            key={user.id}
+                            className={`rounded-3xl border p-5 ${
+                              highlightedUserId === user.id
+                                ? "border-emerald-300/40 bg-emerald-400/10"
+                                : "border-cyan-100/10 bg-white/5"
+                            }`}
+                          >
                           <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
                               {user.avatar}
@@ -2315,16 +2128,21 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                               Chatear
                             </Link>
                           </div>
-                        </article>
-                      ))}
+                          </article>
+                        ))
+                      ) : (
+                        <EmptyData className="md:col-span-2 xl:col-span-3" />
+                      )
+                    ) : null}
                   </div>
                 </div>
               )}
 
               {activeFilter === "Publicaciones de texto" && (
                 <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {textPostItems.map((post) => (
-                    <article key={post.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35">
+                  {textPostItems.length ? (
+                    textPostItems.map((post) => (
+                      <article key={post.id} className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35">
                       <div className="flex h-44 w-full items-center justify-center bg-white">
                         <img
                           src={post.image}
@@ -2363,8 +2181,11 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                           </button>
                         </div>
                       </div>
-                    </article>
-                  ))}
+                      </article>
+                    ))
+                  ) : (
+                    <EmptyData className="md:col-span-2 xl:col-span-3" />
+                  )}
                 </div>
               )}
             </div>

@@ -59,7 +59,7 @@ const ratingAverage = 4.4;
 const growthIndex = 27;
 
 function renderStars(stars: number) {
-  return "â˜…".repeat(stars) + "â˜†".repeat(5 - stars);
+  return "★".repeat(stars) + "☆".repeat(5 - stars);
 }
 
 export default function AnaliticasPage() {

@@ -27,7 +27,7 @@ const reviewFilters: ReviewFilter[] = ["Todas", "Sin responder", "5 estrellas", 
 const customerReviews: CustomerReview[] = customerReviewsData;
 
 function renderStars(stars: number) {
-  return "â˜…".repeat(stars) + "â˜†".repeat(5 - stars);
+  return "★".repeat(stars) + "☆".repeat(5 - stars);
 }
 
 function statusBadgeClass(review: CustomerReview) {
