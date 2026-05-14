@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\TechMarket-Back\\\\TechMarket-IA\\\\\" /b | findstr \".sql\")"
+    ]
+  }
+}

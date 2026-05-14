@@ -22,6 +22,7 @@ export default function AuthView({
   const [mode, setMode] = useState<Mode>(initialMode);
   const [accountType, setAccountType] = useState<AccountType>(initialType);
   const [feedback, setFeedback] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Login fields
   const [identifier, setIdentifier] = useState(""); // correo o usuario
@@ -62,6 +63,7 @@ export default function AuthView({
     }
 
     try {
+      setIsSubmitting(true);
       setFeedback("Iniciando sesión...");
       const session = await login({ email, password });
       setFeedback("Sesión iniciada correctamente.");
@@ -86,6 +88,8 @@ export default function AuthView({
       }
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "No se pudo iniciar sesión.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -113,6 +117,7 @@ export default function AuthView({
     }
 
     try {
+      setIsSubmitting(true);
       setFeedback("Registrando...");
       const session = await register({
         email: trimmedEmail,
@@ -138,6 +143,8 @@ export default function AuthView({
       router.push(redirectPath);
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "No se pudo completar el registro.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -147,6 +154,7 @@ export default function AuthView({
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isSubmitting) return;
     setFeedback("");
 
     if (mode === "login") {
@@ -329,8 +337,8 @@ export default function AuthView({
                 </div>
               )}
 
-              <button type="submit" className="tech-button tech-button-primary mt-2">
-                {mode === "login" ? "Ingresar" : "Crear cuenta"}
+              <button type="submit" disabled={isSubmitting} className="tech-button tech-button-primary mt-2 disabled:opacity-60">
+                {isSubmitting ? "Procesando..." : mode === "login" ? "Ingresar" : "Crear cuenta"}
               </button>
             </form>
 
