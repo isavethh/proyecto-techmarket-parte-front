@@ -315,13 +315,22 @@ function buildCompanyApiUrl(path: string) {
   return COMPANY_API_BASE_URL ? `${COMPANY_API_BASE_URL}${path}` : path;
 }
 
+function getCompanyAuthHeader(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const token = window.localStorage.getItem("accessToken");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function requestCompanyApi<T>(path: string, options?: RequestInit): Promise<T> {
+  const headers = new Headers(options?.headers);
+  if (!(options?.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  Object.entries(getCompanyAuthHeader()).forEach(([key, value]) => headers.set(key, value));
+
   const response = await fetch(buildCompanyApiUrl(path), {
     ...options,
-    headers: {
-      ...(options?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
-      ...options?.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -559,6 +568,7 @@ export type ChatThread = {
   id: string;
   name: string;
   product: string;
+  listingId?: string;
   lastMessage: string;
   time: string;
   unread?: number;

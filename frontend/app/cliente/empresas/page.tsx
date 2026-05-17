@@ -69,12 +69,9 @@ export default function ClienteEmpresasPage() {
             .map((token) => token[0]?.toUpperCase() ?? "")
             .join("") ||
             "TM"),
-        city: "Bolivia",
-        category: "Empresa registrada",
-        description: "Empresa registrada en TechMarket con catalogo disponible desde la API.",
-        specialties: ["Marketplace", "Productos", "Atencion al cliente"],
+        tipo: company.tipo ?? "Empresa",
+        description: company.descripcion ?? null,
         rating: company.calificacion ?? 0,
-        reviewCount: 0,
       })),
     [companies],
   );
@@ -185,30 +182,18 @@ export default function ClienteEmpresasPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-base font-semibold text-cyan-50">{profile.name}</p>
-                      <p className="truncate text-xs text-cyan-200/70">
-                        {profile.city} · {profile.category}
-                      </p>
+                      <p className="truncate text-xs text-cyan-200/70">{profile.tipo}</p>
                     </div>
                   </div>
 
-                  <p className="mt-4 text-sm leading-6 text-cyan-100/80">
-                    {profile.description}
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {profile.specialties.slice(0, 3).map((item) => (
-                      <span
-                        key={item}
-                        className="rounded-full border border-cyan-100/10 bg-white/5 px-3 py-1 text-xs text-cyan-100/80"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
+                  {profile.description ? (
+                    <p className="mt-4 text-sm leading-6 text-cyan-100/80">
+                      {profile.description}
+                    </p>
+                  ) : null}
 
                   <div className="mt-5 flex items-center justify-between border-t border-cyan-100/10 pt-4 text-xs text-cyan-200/75">
                     <span>Valoracion {profile.rating.toFixed(1)}</span>
-                    <span>{profile.reviewCount} opiniones</span>
                   </div>
                 </div>
               </Link>

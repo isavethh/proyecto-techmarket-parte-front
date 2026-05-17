@@ -1,7 +1,7 @@
 ﻿"use client";
 
-import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
+import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
 import { fetchCompanyProfile, updateCompanyProfile, type CompanyProfileData } from "../companyEndpoints";
 
@@ -320,23 +320,19 @@ export default function Perfil() {
 
   return (
     <div className="flex-1 pb-8">
-      <header className="tech-top-nav">
-        <div className="flex items-center justify-between px-6 py-4">
-          <Link href="/" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={openEditModal}
-              className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/30"
-            >
-              Editar
-            </button>
-            <span className="tech-chip">Panel empresa</span>
-          </div>
-        </div>
-      </header>
+      <CompanyPageHeader
+        sectionLabel="Perfil"
+        brandHref="/empresa"
+        rightSlot={
+          <button
+            type="button"
+            onClick={openEditModal}
+            className="rounded-full border border-cyan-300/45 bg-cyan-300/20 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/30"
+          >
+            Editar
+          </button>
+        }
+      />
 
       <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">

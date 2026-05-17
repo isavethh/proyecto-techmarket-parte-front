@@ -142,6 +142,8 @@ export type MarketplaceCompanySummary = {
   nombre: string;
   logo: string | null;
   calificacion: number | null;
+  descripcion: string | null;
+  tipo: string | null;
 };
 
 export type MarketplaceCompanyDetail = {

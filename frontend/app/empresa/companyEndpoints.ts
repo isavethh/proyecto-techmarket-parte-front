@@ -145,6 +145,12 @@ function companyContextHeaders() {
   return companyId ? { "X-Tenant-Id": companyId } : {};
 }
 
+function getAuthorizationHeader(): { Authorization: string } | Record<string, never> {
+  if (typeof window === "undefined") return {};
+  const token = window.localStorage.getItem("accessToken");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function requestEmpresa<T>(path: string, options?: RequestInit): Promise<T> {
   const headers = new Headers(options?.headers);
 
@@ -152,7 +158,7 @@ async function requestEmpresa<T>(path: string, options?: RequestInit): Promise<T
     headers.set("Content-Type", "application/json");
   }
 
-  Object.entries(companyContextHeaders()).forEach(([key, value]) => {
+  Object.entries({ ...companyContextHeaders(), ...getAuthorizationHeader() }).forEach(([key, value]) => {
     headers.set(key, value);
   });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getTechmarketToken, getTechmarketUserId } from "@/lib/auth/tokenStore";
 import {
   createSpecialistFile,
   deleteSpecialistFile,
@@ -298,7 +299,12 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
       setChatsError(null);
       setFilesError(null);
 
-      const currentAuth = authRef.current ?? (await loginTechMarket().then((login) => ({ token: login.accessToken, userId: login.userId })));
+      const storedToken = getTechmarketToken();
+      const storedUserId = getTechmarketUserId();
+      const currentAuth = authRef.current
+        ?? (storedToken && storedUserId
+          ? { token: storedToken, userId: storedUserId }
+          : await loginTechMarket().then((login) => ({ token: login.accessToken, userId: login.userId })));
       const [chatsResult, filesResult] = await Promise.allSettled([
         getSpecialistChats(currentAuth.token, currentAuth.userId),
         getSpecialistFiles(currentAuth.token, currentAuth.userId),

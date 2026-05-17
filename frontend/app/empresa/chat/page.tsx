@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
@@ -16,6 +17,7 @@ type ChatThread = {
   id: string;
   name: string;
   product: string;
+  listingId?: string;
   lastMessage: string;
   time: string;
   unread?: number;
@@ -221,6 +223,7 @@ export default function ChatPage() {
                   </div>
                 </aside>
 
+                {activeChat ? (
                 <section className="flex h-[calc(100vh-210px)] min-h-[500px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-3.5 md:p-4">
                   <div className="flex items-center justify-between border-b border-cyan-100/10 pb-4">
                     <div className="flex items-center gap-4">
@@ -229,7 +232,17 @@ export default function ChatPage() {
                       </div>
                       <div>
                         <p className="text-base font-semibold text-white">{activeChat.name}</p>
-                        <p className="text-xs text-cyan-100/70">Interesado en {activeChat.product}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-cyan-100/70">Interesado en {activeChat.product}</p>
+                          {activeChat.listingId ? (
+                            <Link
+                              href="/empresa/publicaciones"
+                              className="text-xs text-cyan-300/80 underline-offset-2 hover:text-cyan-300 hover:underline"
+                            >
+                              Ver publicación →
+                            </Link>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                     <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">En linea</span>
@@ -271,6 +284,17 @@ export default function ChatPage() {
                     </div>
                   </div>
                 </section>
+                ) : (
+                <section className="flex h-[calc(100vh-210px)] min-h-[500px] flex-col items-center justify-center rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-8 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-cyan-100/10 bg-cyan-400/10 text-2xl text-cyan-300/60">
+                    💬
+                  </div>
+                  <p className="mt-4 text-base font-semibold text-cyan-50">Sin conversaciones activas</p>
+                  <p className="mt-2 text-sm text-cyan-100/65">
+                    Cuando un cliente inicie un chat contigo aparecera aqui.
+                  </p>
+                </section>
+                )}
               </div>
             </div>
           </section>
