@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
+import { askCompanyAi } from "../../lib/companyApi";
 
 type AiBusinessInsight = {
   summary: string;
@@ -245,8 +246,13 @@ export default function ConsultorIAPage() {
     setThinkingMessageIndex(0);
 
     aiTimeoutRef.current = setTimeout(() => {
-      setAiInsight(buildAiInsight(trimmedQuestion));
-      setIsAiThinking(false);
+      void askCompanyAi(trimmedQuestion).then((insight) => {
+        setAiInsight({
+          ...buildAiInsight(trimmedQuestion),
+          ...(insight as AiBusinessInsight),
+        });
+        setIsAiThinking(false);
+      });
       setRecentQuestions((current) => {
         const withoutCurrent = current.filter(
           (item) => item.toLowerCase() !== trimmedQuestion.toLowerCase(),
@@ -549,3 +555,5 @@ export default function ConsultorIAPage() {
     </div>
   );
 }
+
+
