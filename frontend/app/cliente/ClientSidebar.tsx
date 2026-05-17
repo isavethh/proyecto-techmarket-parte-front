@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 
 type ClientSidebarProps = {
   className?: string;
+  /** Show the route-based context card. Set to false when the page provides its own context section. */
+  contextCard?: boolean;
 };
 
 type ClientSidebarContext = {
@@ -76,7 +78,7 @@ const clientSidebarContextByRoute: Record<string, ClientSidebarContext> = {
   },
 };
 
-export default function ClientSidebar({ className }: ClientSidebarProps) {
+export default function ClientSidebar({ className, contextCard = true }: ClientSidebarProps) {
   const pathname = usePathname();
 
   const isActiveRoute = (href: string) =>
@@ -90,7 +92,7 @@ export default function ClientSidebar({ className }: ClientSidebarProps) {
       .find((module) => isActiveRoute(module.href) && clientSidebarContextByRoute[module.href])
       ?.href;
 
-  const contextCard =
+  const contextCardData =
     typeof currentContext === "string"
       ? clientSidebarContextByRoute[currentContext]
       : currentContext;
@@ -127,16 +129,16 @@ export default function ClientSidebar({ className }: ClientSidebarProps) {
         </div>
       </section>
 
-      {contextCard ? (
+      {contextCard && contextCardData ? (
         <section className="tech-card mt-4">
-          <p className="tech-mono text-xs text-cyan-200/75">{contextCard.eyebrow}</p>
-          <h3 className="mt-2 text-xl font-semibold text-cyan-50">{contextCard.title}</h3>
+          <p className="tech-mono text-xs text-cyan-200/75">{contextCardData.eyebrow}</p>
+          <h3 className="mt-2 text-xl font-semibold text-cyan-50">{contextCardData.title}</h3>
           <p className="mt-3 text-sm leading-7 text-cyan-100/80">
-            {contextCard.description}
+            {contextCardData.description}
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {contextCard.chips.map((chip) => (
+            {contextCardData.chips.map((chip) => (
               <span
                 key={chip}
                 className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs text-cyan-100/85"

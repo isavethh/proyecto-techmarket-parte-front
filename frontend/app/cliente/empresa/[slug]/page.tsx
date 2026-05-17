@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { ClientPageHeader, ClientQuickLinksCard } from "../../../components/ClientPageSections";
+import ClientSidebar from "../../ClientSidebar";
 import {
   MarketplaceCompanyDetail,
   MarketplaceProductSummary,
@@ -16,16 +17,6 @@ import {
   toggleFollow,
   type FollowedAccount,
 } from "../../../lib/followStore";
-
-const clientMenuItems = [
-  { label: "Explorar marketplace", href: "/cliente/marketplace" },
-  { label: "Mis chats", href: "/cliente/chat" },
-  { label: "Buscar servicios", href: "/cliente/servicios" },
-  { label: "Versus de productos", href: "/cliente/versus" },
-  { label: "Explorar empresas", href: "/cliente/empresas" },
-  { label: "Comunidades", href: "/cliente/comunidades" },
-  { label: "Actividad reciente", href: "/cliente" },
-];
 
 const formatPrice = (value: number | null) =>
   typeof value === "number"
@@ -114,37 +105,7 @@ export default function ClienteEmpresaPerfilPage() {
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:px-6">
         <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:self-start lg:h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
-          <section className="tech-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                CM
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
-                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2">
-              {clientMenuItems.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`auth-action ${item.href === "/cliente/empresas" ? "active" : ""}`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          <section className="tech-card mt-4">
-            <p className="tech-mono text-xs text-cyan-200/75">PERFIL DE EMPRESA</p>
-            <h3 className="mt-2 text-xl font-semibold text-cyan-50">Datos desde API</h3>
-            <p className="mt-3 text-sm leading-7 text-cyan-100/80">
-              Esta vista consume el perfil publico y catalogo de la empresa.
-            </p>
-          </section>
+          <ClientSidebar />
 
           <ClientQuickLinksCard
             links={[

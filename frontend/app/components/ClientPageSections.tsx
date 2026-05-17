@@ -1,19 +1,6 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 import { ClientTopbarControls } from "./ClientExperienceShell";
-
-export const clientMenuItems = [
-  { label: "Actividad reciente", href: "/cliente" },
-  { label: "Explorar marketplace", href: "/cliente/marketplace" },
-  { label: "Buscar servicios", href: "/cliente/servicios" },
-  { label: "Mis chats", href: "/cliente/chat" },
-  { label: "Explorar empresas", href: "/cliente/empresas" },
-  { label: "Versus de productos", href: "/cliente/versus" },
-  { label: "Comunidades", href: "/cliente/comunidades" },
-];
 
 type ClientPageHeaderProps = {
   sectionLabel: string;
@@ -104,49 +91,3 @@ export function ClientQuickLinksCard({ links, className }: ClientQuickLinksCardP
   );
 }
 
-type ClientSidebarMenuProps = {
-  className?: string;
-  panelLabel?: string;
-  panelDescription?: string;
-};
-
-export function ClientSidebarMenu({
-  className,
-  panelLabel = "Tu panel",
-  panelDescription = "Cliente activo en TechMarket",
-}: ClientSidebarMenuProps) {
-  const pathname = usePathname();
-
-  return (
-    <section className={combineClassNames("tech-card", className)}>
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-          CM
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-cyan-50">{panelLabel}</p>
-          <p className="text-xs text-cyan-100/75">{panelDescription}</p>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-2">
-        {clientMenuItems.map((item) => {
-          const isActive =
-            item.href === "/cliente"
-              ? pathname === "/cliente"
-              : pathname.startsWith(item.href);
-
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`auth-action ${isActive ? "active" : ""}`}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </div>
-    </section>
-  );
-}

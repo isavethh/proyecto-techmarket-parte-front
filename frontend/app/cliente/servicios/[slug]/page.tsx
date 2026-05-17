@@ -6,8 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ClientPageHeader,
   ClientQuickLinksCard,
-  ClientSidebarMenu,
 } from "../../../components/ClientPageSections";
+import ClientSidebar from "../../ClientSidebar";
 import {
   getMarketplaceProduct,
   listProductReviews,
@@ -101,16 +101,7 @@ export default function ServicioDetallePage() {
       <ClientPageHeader sectionLabel="Detalle de servicio" />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:px-6">
-        <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
-          <ClientSidebarMenu />
-          <ClientQuickLinksCard
-            links={[
-              { href: "/cliente/servicios", label: "Volver a servicios" },
-              { href: "/cliente/marketplace", label: "Ir al marketplace" },
-              { href: "/cliente/chat", label: "Mis chats" },
-            ]}
-          />
-        </aside>
+        <ClientSidebar className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2" />
 
         <section className="space-y-5">
           {isLoading ? (

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   joinClientCommunity,
@@ -9,16 +8,7 @@ import {
   type ClientCommunity,
 } from "@/lib/api/iaApi";
 import { ClientPageHeader, ClientQuickLinksCard } from "../../components/ClientPageSections";
-
-const clientMenuItems = [
-  { label: "Explorar marketplace", href: "/cliente/marketplace" },
-  { label: "Mis chats", href: "/cliente/chat" },
-  { label: "Buscar servicios", href: "/cliente/servicios" },
-  { label: "Versus de productos", href: "/cliente/versus" },
-  { label: "Explorar empresas", href: "/cliente/empresas" },
-  { label: "Comunidades", href: "/cliente/comunidades" },
-  { label: "Actividad reciente", href: "/cliente" },
-];
+import ClientSidebar from "../ClientSidebar";
 
 type CommunityVisual = {
   tag: string;
@@ -83,7 +73,6 @@ const formatCommunityDate = (index: number) => {
 };
 
 export default function ComunidadesPage() {
-  const pathname = usePathname();
   const [communities, setCommunities] = useState<ClientCommunity[]>([]);
   const [remoteError, setRemoteError] = useState<string | null>(null);
   const [joinMessageById, setJoinMessageById] = useState<Record<string, string>>({});
@@ -145,36 +134,7 @@ export default function ComunidadesPage() {
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:h-[calc(100vh-120px)] lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:px-6">
         <aside className="chat-scrollbar min-w-0 space-y-4 lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:overflow-y-auto lg:overflow-x-hidden lg:pr-2">
-          <section className="tech-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                CM
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
-                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2">
-              {clientMenuItems.map((item) => {
-                const isActive =
-                  item.href === "/cliente"
-                    ? pathname === "/cliente"
-                    : pathname.startsWith(item.href);
-
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`auth-action ${isActive ? "active" : ""}`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
+          <ClientSidebar contextCard={false} />
 
           <section className="tech-card mt-4">
             <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD DESTACADA</p>

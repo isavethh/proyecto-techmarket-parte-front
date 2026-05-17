@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ClientPageHeader } from "../../components/ClientPageSections";
+import ClientSidebar from "../ClientSidebar";
 import {
   createClientChat,
   createClientChatMessage,
@@ -82,16 +83,6 @@ const saveMarketplaceChat = (productId: string, chatId: string): void => {
     JSON.stringify({ ...currentMap, [productId]: chatId }),
   );
 };
-
-const clientMenuItems = [
-  { label: "Explorar marketplace", href: "/cliente/marketplace" },
-  { label: "Mis chats", href: "/cliente/chat" },
-  { label: "Buscar servicios", href: "/cliente/servicios" },
-  { label: "Versus de productos", href: "/cliente/versus" },
-  { label: "Explorar empresas", href: "/cliente/empresas" },
-  { label: "Comunidades", href: "/cliente/comunidades" },
-  { label: "Actividad reciente", href: "/cliente" },
-];
 
 const sortThreadsByRecent = (threads: ChatThread[]): ChatThread[] =>
   [...threads].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
@@ -276,7 +267,6 @@ function ClienteChatContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const pathname = usePathname();
   const requestedChatId = searchParams.get("chatId")?.trim() ?? "";
 
   const marketplaceIntent = useMemo<MarketplaceChatIntent | null>(() => {
@@ -658,36 +648,7 @@ function ClienteChatContent() {
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:h-[calc(100vh-120px)] lg:grid-cols-[260px_minmax(300px,390px)_minmax(0,1fr)] lg:items-start lg:px-6">
         <aside className="chat-scrollbar min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start lg:h-[calc(100vh-120px)] lg:overflow-y-auto lg:overflow-x-hidden lg:pr-2">
-          <section className="tech-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                CM
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
-                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2">
-              {clientMenuItems.map((item) => {
-                const isActive =
-                  item.href === "/cliente"
-                    ? pathname === "/cliente"
-                    : pathname.startsWith(item.href);
-
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`auth-action ${isActive ? "active" : ""}`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
+          <ClientSidebar contextCard={false} />
 
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">BANDEJA DE CHATS</p>

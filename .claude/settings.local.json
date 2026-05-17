@@ -6,7 +6,9 @@
       "Bash(cd /c/Users/bruno/Documentos/Proyectos/proyecto-techmarket-parte-front/frontend/app && find . -type f -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.json\" | head -100)",
       "Read(//c/c/Users/bruno/Documentos/Proyectos/proyecto-techmarket-parte-front/frontend/**)",
       "Bash(npx tsc *)",
-      "Bash(grep -E \"\\(carrito|checkout|servicios\\\\\\\\[slug\\\\\\\\]|resenas|marketplace/page|ClientPageSections|ClientExperienceShell|app/page\\)\")"
+      "Bash(grep -E \"\\(carrito|checkout|servicios\\\\\\\\[slug\\\\\\\\]|resenas|marketplace/page|ClientPageSections|ClientExperienceShell|app/page\\)\")",
+      "Bash(Get-ChildItem -Recurse \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\" -Filter \"page.tsx\")",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

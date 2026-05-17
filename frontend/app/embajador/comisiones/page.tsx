@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { EmbajadorSidebar, EmbajadorTopbarControls } from "../page";
+import { EmbajadorSidebar } from "../EmbajadorSidebar";
+import { EmbajadorPageHeader } from "../EmbajadorPageHeader";
 import {
   useAmbassadorProfile,
   useAmbassadorCommissions,
@@ -30,14 +31,7 @@ export default function ComisionesPage() {
 
   return (
     <div className="flex-1 pb-10">
-      <header className="tech-top-nav sticky top-0 z-30">
-        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
-          <Link href="/" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <EmbajadorTopbarControls profile={profile} />
-        </div>
-      </header>
+      <EmbajadorPageHeader profile={profile} />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
         <EmbajadorSidebar activeSection="comisiones" profile={profile} />

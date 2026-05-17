@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { EmbajadorSidebar, EmbajadorTopbarControls } from "../page";
+import { EmbajadorSidebar } from "../EmbajadorSidebar";
+import { EmbajadorPageHeader } from "../EmbajadorPageHeader";
 import {
   completeAmbassadorOnboardingMilestone,
   createAmbassadorOnboardingAction,
@@ -580,20 +581,10 @@ export default function EmbajadorOnboardingPage() {
 
   return (
     <div className="flex-1 pb-10">
-      <header className="tech-top-nav sticky top-0 z-30">
-        <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between gap-4 px-4 py-3 lg:px-6">
-          <Link href="/" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-
-          <div className="hidden rounded-full border border-cyan-100/15 bg-slate-950/45 px-3 py-1.5 text-xs text-cyan-100/80 md:inline-flex md:items-center md:gap-2">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.85)]" />
-            Seguimiento de onboarding de negocios
-          </div>
-
-          <EmbajadorTopbarControls profile={profile} />
-        </div>
-      </header>
+      <EmbajadorPageHeader
+        profile={profile}
+        statusMessage="Seguimiento de onboarding de negocios"
+      />
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-6 px-4 lg:grid-cols-[280px_320px_minmax(0,1fr)] xl:grid-cols-[300px_360px_minmax(0,1fr)] lg:px-6">
         <EmbajadorSidebar activeSection="onboarding" profile={profile} />

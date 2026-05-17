@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ClientPageHeader, ClientQuickLinksCard } from "../../../components/ClientPageSections";
+import ClientSidebar from "../../ClientSidebar";
 import {
   ClientCommunityPost,
   joinClientCommunity,
@@ -11,16 +12,6 @@ import {
   listClientCommunityPosts,
   type ClientCommunity,
 } from "../../../../lib/api/iaApi";
-
-const clientMenuItems = [
-  { label: "Explorar marketplace", href: "/cliente/marketplace" },
-  { label: "Mis chats", href: "/cliente/chat" },
-  { label: "Buscar servicios", href: "/cliente/servicios" },
-  { label: "Versus de productos", href: "/cliente/versus" },
-  { label: "Explorar empresas", href: "/cliente/empresas" },
-  { label: "Comunidades", href: "/cliente/comunidades" },
-  { label: "Actividad reciente", href: "/cliente" },
-];
 
 const coverImages = [
   "https://images.unsplash.com/photo-1593640408182-31c70c8268f5?auto=format&fit=crop&w=1400&q=80",
@@ -177,29 +168,7 @@ export default function CommunityDetailPage() {
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:h-[calc(100vh-120px)] lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
         <aside className="chat-scrollbar min-w-0 space-y-4 lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:overflow-y-auto lg:overflow-x-hidden lg:pr-2">
-          <section className="tech-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                CM
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
-                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2">
-              {clientMenuItems.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`auth-action ${item.href === "/cliente/comunidades" ? "active" : ""}`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </section>
+          <ClientSidebar contextCard={false} />
 
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD</p>

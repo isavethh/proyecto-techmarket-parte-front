@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   getMarketplaceProduct,
@@ -15,6 +15,7 @@ import {
   ClientPageHeader,
   ClientQuickLinksCard,
 } from "../../components/ClientPageSections";
+import ClientSidebar from "../ClientSidebar";
 import {
   PublicationViewerData,
   PublicationViewerModal,
@@ -37,16 +38,6 @@ type MarketplaceListing = {
   condition: string;
   priceLabel: string;
 };
-
-const clientMenuItems = [
-  { label: "Explorar marketplace", href: "/cliente/marketplace" },
-  { label: "Mis chats", href: "/cliente/chat" },
-  { label: "Buscar servicios", href: "/cliente/servicios" },
-  { label: "Versus de productos", href: "/cliente/versus" },
-  { label: "Explorar empresas", href: "/cliente/empresas" },
-  { label: "Comunidades", href: "/cliente/comunidades" },
-  { label: "Actividad reciente", href: "/cliente" },
-];
 
 type SortMode = "recientes" | "precio-bajo" | "precio-alto";
 type CategoryFilter = string;
@@ -130,7 +121,6 @@ const productToListing = (
 
 export default function ClienteMarketplacePage() {
   const router = useRouter();
-  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("Todos");
   const [selectedCity, setSelectedCity] = useState("Todas");
@@ -339,55 +329,7 @@ export default function ClienteMarketplacePage() {
 
       <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:px-6">
         <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
-          <section className="tech-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                CM
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
-                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2">
-              {clientMenuItems.map((item) => {
-                const isActive =
-                  item.href === "/cliente"
-                    ? pathname === "/cliente"
-                    : pathname.startsWith(item.href);
-
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`auth-action ${isActive ? "active" : ""}`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="tech-card mt-4">
-            <p className="tech-mono text-xs text-cyan-200/75">MARKETPLACE</p>
-            <h3 className="mt-2 text-xl font-semibold text-cyan-50">Exploracion comercial</h3>
-            <p className="mt-3 text-sm leading-7 text-cyan-100/80">
-              Descubre productos, ofertas y servicios publicados por empresas y tecnicos en TechMarket.
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {["Marketplace", "Ofertas", "Productos", "Servicios"].map((chip) => (
-                <span
-                  key={chip}
-                  className="rounded-full border border-cyan-100/15 bg-white/5 px-3 py-1 text-xs text-cyan-100/85"
-                >
-                  {chip}
-                </span>
-              ))}
-            </div>
-          </section>
+          <ClientSidebar />
           <div className="space-y-4">
             <section className="tech-card">
               <p className="text-sm font-semibold text-cyan-50">Filtros rapidos</p>

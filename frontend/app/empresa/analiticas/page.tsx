@@ -1,7 +1,7 @@
 ﻿"use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
 import {
   growthSeriesData,
@@ -68,14 +68,7 @@ export default function AnaliticasPage() {
 
   return (
     <div className="flex-1 pb-8">
-      <header className="tech-top-nav">
-        <div className="flex items-center justify-between px-6 py-4">
-          <Link href="/" className="font-semibold text-cyan-100/90">
-            TechMarket
-          </Link>
-          <span className="tech-chip">Panel empresa</span>
-        </div>
-      </header>
+      <CompanyPageHeader sectionLabel="Analíticas" brandHref="/" />
 
       <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
