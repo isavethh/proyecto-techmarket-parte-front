@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { ClientPageHeader, ClientQuickLinksCard } from "../../../components/ClientPageSections";
 import {
   MarketplaceCompanyDetail,
@@ -10,6 +10,12 @@ import {
   getMarketplaceCompany,
   listMarketplaceCompanyProducts,
 } from "../../../../lib/api/iaApi";
+import {
+  FOLLOW_UPDATED_EVENT,
+  readFollowing,
+  toggleFollow,
+  type FollowedAccount,
+} from "../../../lib/followStore";
 
 const clientMenuItems = [
   { label: "Explorar marketplace", href: "/cliente/marketplace" },
@@ -26,6 +32,20 @@ const formatPrice = (value: number | null) =>
     ? new Intl.NumberFormat("es-BO", { style: "currency", currency: "BOB" }).format(value)
     : "Sin precio";
 
+const subscribeFollowing = (onStoreChange: () => void) => {
+  if (typeof window === "undefined") return () => {};
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === "techmarket.following") onStoreChange();
+  };
+  const handleUpdate = () => onStoreChange();
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(FOLLOW_UPDATED_EVENT, handleUpdate);
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(FOLLOW_UPDATED_EVENT, handleUpdate);
+  };
+};
+
 export default function ClienteEmpresaPerfilPage() {
   const params = useParams<{ slug: string }>();
   const companyId = useMemo(
@@ -36,6 +56,13 @@ export default function ClienteEmpresaPerfilPage() {
   const [products, setProducts] = useState<MarketplaceProductSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const followingAccounts = useSyncExternalStore(
+    subscribeFollowing,
+    readFollowing,
+    () => [] as FollowedAccount[],
+  );
+  const isFollowed = followingAccounts.some((a) => a.id === companyId);
 
   useEffect(() => {
     let isMounted = true;
@@ -138,6 +165,22 @@ export default function ClienteEmpresaPerfilPage() {
               <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/80 sm:text-base">
                 {company?.descripcion ?? error ?? "No hay informacion para mostrar desde la API."}
               </p>
+
+              {!isLoading && company && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    toggleFollow({ id: companyId, name: company.nombre, type: "empresa" })
+                  }
+                  className={`mt-5 inline-flex items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-semibold transition ${
+                    isFollowed
+                      ? "border-cyan-300/40 bg-cyan-300/15 text-cyan-300 hover:bg-cyan-300/10"
+                      : "border-cyan-100/20 bg-white/5 text-cyan-50 hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-cyan-300"
+                  }`}
+                >
+                  {isFollowed ? "✓ Siguiendo" : "+ Seguir empresa"}
+                </button>
+              )}
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">

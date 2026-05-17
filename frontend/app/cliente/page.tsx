@@ -35,6 +35,12 @@ import {
   readCommunityFeedPosts,
   upsertCommunityFeedPosts,
 } from "../lib/communityFeed";
+import {
+  FOLLOW_UPDATED_EVENT,
+  readFollowing,
+  toggleFollow,
+  type FollowedAccount,
+} from "../lib/followStore";
 import { ClientPageHeader } from "../components/ClientPageSections";
 import { useClientExperience } from "../components/ClientExperienceShell";
 import {
@@ -256,6 +262,23 @@ const subscribeCommunityFeed = (onStoreChange: () => void) => {
   };
 };
 
+const subscribeFollowing = (onStoreChange: () => void) => {
+  if (typeof window === "undefined") return () => {};
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === "techmarket.following") onStoreChange();
+  };
+  const handleUpdate = () => onStoreChange();
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(FOLLOW_UPDATED_EVENT, handleUpdate);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(FOLLOW_UPDATED_EVENT, handleUpdate);
+  };
+};
+
 const followingPosts: FollowingPost[] = [];
 
 const formatPublishedAt = (isoDate: string): string => {
@@ -349,6 +372,11 @@ export default function ClientePage() {
     subscribeCommunityFeed,
     readCommunityFeedPosts,
     () => emptyFeedSnapshot,
+  );
+  const followingAccounts = useSyncExternalStore(
+    subscribeFollowing,
+    readFollowing,
+    () => [] as FollowedAccount[],
   );
   const [activeChatId, setActiveChatId] = useState("");
   const [draftMessage, setDraftMessage] = useState("");
@@ -1025,12 +1053,6 @@ export default function ClientePage() {
 
           {topView === "feed" && (
             <>
-          <section className="tech-card overflow-hidden">
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              []
-            </div>
-          </section>
-
           <section className="tech-card">
             <div className="flex flex-wrap items-center gap-3">
               <button
@@ -1481,22 +1503,41 @@ export default function ClientePage() {
                       .slice(0, 2)
                       .map((token) => token[0]?.toUpperCase() ?? "")
                       .join("") || "TM";
+                  const followed = followingAccounts.some((a) => a.id === company.id);
                   return (
-                    <Link
+                    <div
                       key={company.id}
-                      href={`/cliente/empresa/${company.id}`}
                       className="flex items-center gap-3 rounded-2xl border border-cyan-100/15 bg-slate-950/30 p-3 transition hover:bg-slate-950/50"
                     >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
-                        {initials}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-cyan-50">{company.nombre}</p>
-                        {company.calificacion != null && company.calificacion > 0 && (
-                          <p className="text-xs text-cyan-200/70">Valoracion {company.calificacion.toFixed(1)}</p>
-                        )}
-                      </div>
-                    </Link>
+                      <Link
+                        href={`/cliente/empresa/${company.id}`}
+                        className="flex min-w-0 flex-1 items-center gap-3"
+                      >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-cyan-50">{company.nombre}</p>
+                          {company.calificacion != null && company.calificacion > 0 && (
+                            <p className="text-xs text-cyan-200/70">Valoracion {company.calificacion.toFixed(1)}</p>
+                          )}
+                        </div>
+                      </Link>
+                      <button
+                        type="button"
+                        title={followed ? "Dejar de seguir" : "Seguir"}
+                        onClick={() =>
+                          toggleFollow({ id: company.id, name: company.nombre, type: "empresa" })
+                        }
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition ${
+                          followed
+                            ? "border-cyan-300/40 bg-cyan-300/15 text-cyan-300"
+                            : "border-cyan-100/20 bg-white/5 text-cyan-100/70 hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-cyan-300"
+                        }`}
+                      >
+                        {followed ? "✓" : "+"}
+                      </button>
+                    </div>
                   );
                 })
               ) : (

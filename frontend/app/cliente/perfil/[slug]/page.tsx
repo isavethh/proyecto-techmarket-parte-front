@@ -23,6 +23,12 @@ import {
   mergeCommunityFeedPosts,
   readCommunityFeedPosts,
 } from "../../../lib/communityFeed";
+import {
+  FOLLOW_UPDATED_EVENT,
+  readFollowing,
+  toggleFollow,
+  type FollowedAccount,
+} from "../../../lib/followStore";
 
 const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
 type EditableClientProfile = {
@@ -77,6 +83,20 @@ const subscribeCommunityFeed = (onStoreChange: () => void) => {
   };
 };
 
+const subscribeFollowing = (onStoreChange: () => void) => {
+  if (typeof window === "undefined") return () => {};
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === "techmarket.following") onStoreChange();
+  };
+  const handleUpdate = () => onStoreChange();
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(FOLLOW_UPDATED_EVENT, handleUpdate);
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(FOLLOW_UPDATED_EVENT, handleUpdate);
+  };
+};
+
 const formatPublishedAt = (isoDate: string): string => {
   const parsed = Date.parse(isoDate);
 
@@ -126,7 +146,8 @@ function ClienteUsuarioPerfilContent() {
     account: "Cliente",
     generalInfo: [] as string[],
   };
-  const isOwnProfile = true;
+  const [ownSlug, setOwnSlug] = useState<string | null>(null);
+  const isOwnProfile = ownSlug === null || ownSlug === normalizedSlug;
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editableProfile, setEditableProfile] = useState<EditableClientProfile>({
     name: "",
@@ -142,6 +163,13 @@ function ClienteUsuarioPerfilContent() {
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  const followingAccounts = useSyncExternalStore(
+    subscribeFollowing,
+    readFollowing,
+    () => [] as FollowedAccount[],
+  );
+  const isFollowed = followingAccounts.some((a) => a.id === normalizedSlug);
 
   const dynamicFeedPosts = useSyncExternalStore(
     subscribeCommunityFeed,
@@ -185,10 +213,6 @@ function ClienteUsuarioPerfilContent() {
   ]);
 
   useEffect(() => {
-    if (!isOwnProfile) {
-      return;
-    }
-
     let active = true;
 
     const loadRemoteProfile = async () => {
@@ -207,6 +231,9 @@ function ClienteUsuarioPerfilContent() {
           .join(" ")
           .trim();
 
+        const computedOwnSlug = toClientProfileSlug(fullName || remoteProfile.email || "perfil");
+        setOwnSlug(computedOwnSlug);
+
         setEditableProfile((current) => ({
           ...current,
           name: fullName || current.name,
@@ -218,6 +245,7 @@ function ClienteUsuarioPerfilContent() {
         setProfileError(null);
       } catch (error) {
         if (active) {
+          setOwnSlug("__unknown__");
           setProfileError(error instanceof Error ? error.message : "No se pudo cargar perfil");
         }
       }
@@ -228,7 +256,7 @@ function ClienteUsuarioPerfilContent() {
     return () => {
       active = false;
     };
-  }, [isOwnProfile]);
+  }, []);
 
   const profileView = isOwnProfile
     ? { ...profile, ...editableProfile, generalInfo: [] }
@@ -427,12 +455,27 @@ function ClienteUsuarioPerfilContent() {
                     No puedes enviarte mensajes a ti mismo
                   </button>
                 ) : (
-                  <Link
-                    href="/cliente/chat"
-                    className="mt-4 inline-flex rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-3 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
-                  >
-                    Enviar mensaje
-                  </Link>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        toggleFollow({ id: normalizedSlug, name: profileView.name || normalizedSlug, type: "usuario" })
+                      }
+                      className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                        isFollowed
+                          ? "border-cyan-300/40 bg-cyan-300/15 text-cyan-300 hover:bg-cyan-300/10"
+                          : "border-cyan-100/20 bg-white/5 text-cyan-50 hover:border-cyan-300/40 hover:bg-cyan-300/10 hover:text-cyan-300"
+                      }`}
+                    >
+                      {isFollowed ? "✓ Siguiendo" : "+ Seguir"}
+                    </button>
+                    <Link
+                      href="/cliente/chat"
+                      className="inline-flex rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                    >
+                      Enviar mensaje
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>

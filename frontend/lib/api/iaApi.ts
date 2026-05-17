@@ -1,3 +1,5 @@
+import { refreshAuthSession } from "@/lib/api/authApi";
+
 type ApiErrorBody = {
   message?: string;
   error?: string;
@@ -300,6 +302,10 @@ function buildHeaders(existing: HeadersInit | undefined, hasBody: boolean): Head
     headers.set("Content-Type", "application/json");
   }
 
+  if (!headers.has("X-Tenant-Id")) {
+    headers.set("X-Tenant-Id", "00000000-0000-0000-0000-000000000000");
+  }
+
   const userId = readCurrentUserId();
   if (userId && !headers.has("X-User-Id")) {
     headers.set("X-User-Id", userId);
@@ -356,10 +362,19 @@ function resolveErrorMessage(body: unknown, fallback: string): string {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const hasBody = Boolean(options?.body);
-  const response = await fetch(buildUrl(path), {
-    ...options,
-    headers: buildHeaders(options?.headers, hasBody),
-  });
+  const builtHeaders = buildHeaders(options?.headers, hasBody);
+  const fetchOptions: RequestInit = { ...options, headers: builtHeaders };
+  let response = await fetch(buildUrl(path), fetchOptions);
+
+  if (response.status === 401 && typeof window !== "undefined" && window.localStorage.getItem("accessToken")) {
+    try {
+      const refreshed = await refreshAuthSession();
+      builtHeaders.set("Authorization", `Bearer ${refreshed.accessToken}`);
+      response = await fetch(buildUrl(path), { ...fetchOptions, headers: builtHeaders });
+    } catch {
+      // refresh failed — let it fall through to the 401 error below
+    }
+  }
 
   const responseBody = await readResponseBody(response);
 
