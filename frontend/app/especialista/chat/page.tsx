@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, Suspense, useMemo, useState } from "react";
+import { FormEvent, KeyboardEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SpecialistShell } from "../components/SpecialistShell";
 import { useSpecialistChatFilesData } from "../hooks/useSpecialistChatFilesData";
@@ -32,6 +32,7 @@ function EspecialistaChatContent() {
   } = useSpecialistChatFilesData();
   const [draftMessage, setDraftMessage] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
 
   const orderedChats = useMemo(() => {
     if (!serviceFromQuery) {
@@ -48,6 +49,15 @@ function EspecialistaChatContent() {
   }, [chats, serviceFromQuery]);
 
   const displayedActiveChat = activeChat ?? orderedChats.find((chat) => chat.id === selectedChatId) ?? orderedChats[0];
+  const activeChatMessageCount = displayedActiveChat?.messages.length ?? 0;
+
+  useEffect(() => {
+    messageListRef.current?.scrollTo({
+      top: messageListRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [displayedActiveChat?.id, activeChatMessageCount]);
+
   const showInitialChatsLoading = isLoadingChats && !hasLoadedChats && orderedChats.length === 0;
   const showChatsError = Boolean(chatsError && !isLoadingChats && orderedChats.length === 0);
   const showEmptyChats = hasLoadedChats && !isLoadingChats && !chatsError && orderedChats.length === 0;
@@ -71,6 +81,13 @@ function EspecialistaChatContent() {
     setSendError(null);
     await sendMessage(displayedActiveChat.id, messageText);
     setDraftMessage("");
+  }
+
+  function handleTextareaKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
   }
 
   return (
@@ -176,7 +193,7 @@ function EspecialistaChatContent() {
                 </div>
               </header>
 
-              <div className="chat-scrollbar mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto rounded-3xl bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.10),_transparent_32%),linear-gradient(135deg,_rgba(15,23,42,0.88),_rgba(2,6,23,0.94))] px-4 py-3 pb-5">
+              <div ref={messageListRef} className="chat-scrollbar mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto rounded-3xl bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.10),_transparent_32%),linear-gradient(135deg,_rgba(15,23,42,0.88),_rgba(2,6,23,0.94))] px-4 py-3 pb-5">
                 {detailError ? (
                   <div className="rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4 text-sm text-amber-100">
                     No se pudo cargar el detalle de la conversación.
@@ -220,18 +237,20 @@ function EspecialistaChatContent() {
               </div>
 
               <footer className="mt-3 shrink-0 rounded-3xl border border-cyan-100/10 bg-white/5 px-4 py-3">
-                <form onSubmit={handleSendMessage} className="flex gap-3">
-                  <input
+                <form onSubmit={handleSendMessage} className="flex items-end gap-3">
+                  <textarea
                     value={draftMessage}
                     onChange={(event) => setDraftMessage(event.target.value)}
-                    placeholder="Escribe un mensaje para el cliente..."
+                    onKeyDown={handleTextareaKeyDown}
+                    placeholder="Escribe un mensaje... (Enter para enviar, Shift+Enter para nueva línea)"
+                    rows={2}
                     disabled={actionLoading}
-                    className="flex-1 rounded-full border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                    className="flex-1 resize-none rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30 disabled:opacity-60"
                   />
                   <button
                     type="submit"
                     disabled={!canSendMessage}
-                    className="rounded-full border border-cyan-100/10 bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-2xl border border-cyan-100/10 bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {actionLoading ? "Enviando..." : "Enviar"}
                   </button>

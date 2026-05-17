@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
 import { chatThreadsData, fetchCompanyChats, markCompanyChatAsRead, sendCompanyChatMessage } from "../../lib/companyApi";
@@ -25,82 +25,14 @@ type ChatThread = {
   messages: ChatMessage[];
 };
 
-const chatThreads: ChatThread[] = [
-  {
-    id: "chat-5",
-    name: "Alejandro",
-    product: "Laptop Pro 14",
-    lastMessage: "Busque la Laptop Pro 14 y quiero mas informacion.",
-    time: "Ahora",
-    unread: 1,
-    avatar: "AL",
-    messages: [
-      { id: "m1", author: "cliente", text: "Hola, busque la Laptop Pro 14 en sus publicaciones.", time: "11:02" },
-      { id: "m2", author: "empresa", text: "Hola Alejandro, claro. Te comparto caracteristicas y disponibilidad.", time: "11:04" },
-      { id: "m3", author: "cliente", text: "Busque la Laptop Pro 14 y quiero mas informacion.", time: "11:05" },
-    ],
-  },
-  {
-    id: "chat-1",
-    name: "Carlos M.",
-    product: "Laptop Pro 14",
-    lastMessage: "Quisiera saber si sigue disponible.",
-    time: "Hace 5 min",
-    unread: 2,
-    avatar: "CM",
-    messages: [
-      { id: "m1", author: "cliente", text: "Hola, vi la Laptop Pro 14 en publicaciones.", time: "10:05" },
-      { id: "m2", author: "empresa", text: "Hola Carlos, si, sigue disponible. Te comparto la informacion.", time: "10:07" },
-      { id: "m3", author: "cliente", text: "Quisiera saber si sigue disponible.", time: "10:09" },
-      { id: "m4", author: "empresa", text: "Si, esta disponible y te podemos asesorar por aqui mismo.", time: "10:10" },
-    ],
-  },
-  {
-    id: "chat-2",
-    name: "Laura P.",
-    product: "Mantenimiento preventivo",
-    lastMessage: "Me interesa agendar para esta semana.",
-    time: "Hace 20 min",
-    unread: 1,
-    avatar: "LP",
-    messages: [
-      { id: "m1", author: "cliente", text: "Buenos dias, vi el mantenimiento preventivo.", time: "09:30" },
-      { id: "m2", author: "empresa", text: "Hola Laura, claro. Te explico el alcance del servicio.", time: "09:33" },
-      { id: "m3", author: "cliente", text: "Me interesa agendar para esta semana.", time: "09:40" },
-    ],
-  },
-  {
-    id: "chat-3",
-    name: "Sofia R.",
-    product: "Combo empresarial",
-    lastMessage: "Necesito informacion para mi oficina.",
-    time: "Hace 1 h",
-    avatar: "SR",
-    messages: [
-      { id: "m1", author: "cliente", text: "Hola, estoy revisando el combo empresarial.", time: "08:20" },
-      { id: "m2", author: "empresa", text: "Hola Sofia, el combo incluye soporte y red interna.", time: "08:24" },
-      { id: "m3", author: "cliente", text: "Necesito informacion para mi oficina.", time: "08:31" },
-    ],
-  },
-  {
-    id: "chat-4",
-    name: "Andres T.",
-    product: "Monitor UltraWide 34",
-    lastMessage: "Quiero confirmar el precio.",
-    time: "Ayer",
-    avatar: "AT",
-    messages: [
-      { id: "m1", author: "cliente", text: "Vi el monitor en la publicacion.", time: "17:10" },
-      { id: "m2", author: "empresa", text: "Hola Andres, si lo tenemos disponible.", time: "17:12" },
-      { id: "m3", author: "cliente", text: "Quiero confirmar el precio.", time: "17:18" },
-    ],
-  },
-];
-
 export default function ChatPage() {
   const [chatThreadsState, setChatThreadsState] = useState(chatThreadsData);
   const [activeChatId, setActiveChatId] = useState(chatThreadsData[0].id);
   const [draftMessage, setDraftMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const messageListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     void fetchCompanyChats().then((threads) => {
@@ -111,36 +43,69 @@ export default function ChatPage() {
 
   const activeChat =
     chatThreadsState.find((chat) => chat.id === activeChatId) ?? chatThreadsState[0];
+
+  const activeChatMessageCount = activeChat?.messages.length ?? 0;
+
+  useEffect(() => {
+    messageListRef.current?.scrollTo({
+      top: messageListRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [activeChatId, activeChatMessageCount]);
+
+  const filteredThreads = chatThreadsState.filter((chat) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      chat.name.toLowerCase().includes(q) ||
+      chat.product.toLowerCase().includes(q) ||
+      chat.lastMessage.toLowerCase().includes(q)
+    );
+  });
+
   const handleSelectChat = (chatId: string) => {
     setActiveChatId(chatId);
     void markCompanyChatAsRead(chatId);
+    setChatThreadsState((current) =>
+      current.map((chat) =>
+        chat.id === chatId ? { ...chat, unread: undefined } : chat,
+      ),
+    );
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     const text = draftMessage.trim();
-    if (!text || !activeChat) return;
+    if (!text || !activeChat || isSending) return;
 
-    const newMessage = {
+    setIsSending(true);
+    const newMessage: ChatMessage = {
       id: `local-${Date.now()}`,
-      author: "empresa" as const,
+      author: "empresa",
       text,
-      time: "Ahora",
+      time: new Date().toLocaleTimeString("es-BO", { hour: "2-digit", minute: "2-digit" }),
     };
 
     setChatThreadsState((current) =>
       current.map((chat) =>
         chat.id === activeChat.id
-          ? {
-              ...chat,
-              lastMessage: text,
-              unread: undefined,
-              messages: [...chat.messages, newMessage],
-            }
+          ? { ...chat, lastMessage: text, unread: undefined, messages: [...chat.messages, newMessage] }
           : chat,
       ),
     );
     setDraftMessage("");
-    void sendCompanyChatMessage(activeChat.id, text);
+
+    try {
+      await sendCompanyChatMessage(activeChat.id, text);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void handleSendMessage();
+    }
   };
 
   return (
@@ -182,8 +147,22 @@ export default function ChatPage() {
                     <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">{chatThreadsState.length}</span>
                   </div>
 
-                  <div className="chat-scrollbar mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
-                    {chatThreadsState.map((chat) => {
+                  <div className="mt-3">
+                    <input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Buscar por cliente o producto..."
+                      className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-3 py-2 text-xs text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-1 focus:ring-cyan-300/30"
+                    />
+                  </div>
+
+                  <div className="chat-scrollbar mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+                    {filteredThreads.length === 0 ? (
+                      <p className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-3 text-xs text-cyan-100/60">
+                        No hay conversaciones para esa busqueda.
+                      </p>
+                    ) : null}
+                    {filteredThreads.map((chat) => {
                       const isActive = chat.id === activeChatId;
 
                       return (
@@ -248,7 +227,10 @@ export default function ChatPage() {
                     <span className="rounded-full border border-cyan-100/10 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">En linea</span>
                   </div>
 
-                  <div className="chat-scrollbar mt-3 flex-1 space-y-2.5 overflow-y-auto rounded-3xl bg-slate-950/30 p-3.5 md:p-4">
+                  <div
+                    ref={messageListRef}
+                    className="chat-scrollbar mt-3 flex-1 space-y-2.5 overflow-y-auto rounded-3xl bg-slate-950/30 p-3.5 md:p-4"
+                  >
                     {activeChat.messages.map((message) => (
                       <div key={message.id} className={`flex ${message.author === "empresa" ? "justify-end" : "justify-start"}`}>
                         <div
@@ -267,19 +249,23 @@ export default function ChatPage() {
 
                   <div className="mt-3 shrink-0 rounded-3xl border border-cyan-100/10 bg-white/5 p-3.5">
                     <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Responder</p>
-                    <div className="mt-3 flex flex-col gap-3 md:flex-row">
-                      <input
+                    <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end">
+                      <textarea
                         value={draftMessage}
                         onChange={(event) => setDraftMessage(event.target.value)}
-                        placeholder="Escribe un mensaje para el cliente..."
-                        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-3.5 py-2.5 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                        onKeyDown={handleKeyDown}
+                        placeholder="Escribe un mensaje... (Enter para enviar, Shift+Enter para nueva línea)"
+                        rows={2}
+                        disabled={isSending}
+                        className="w-full resize-none rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-3.5 py-2.5 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30 disabled:opacity-60"
                       />
                       <button
                         type="button"
-                        onClick={handleSendMessage}
-                        className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-4 py-2.5 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                        onClick={() => void handleSendMessage()}
+                        disabled={!draftMessage.trim() || isSending}
+                        className="rounded-2xl border border-cyan-100/10 bg-cyan-400/15 px-4 py-2.5 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Enviar
+                        {isSending ? "Enviando..." : "Enviar"}
                       </button>
                     </div>
                   </div>
@@ -303,6 +289,3 @@ export default function ChatPage() {
     </div>
   );
 }
-
-
-

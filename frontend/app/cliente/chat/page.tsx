@@ -134,8 +134,6 @@ const formatHour = (isoDate: string): string => {
 
   return `${String(normalizedHour).padStart(2, "0")}:${minutes} ${period}`;
 };
-const REFERENCE_NOW = Date.parse("2026-04-19T10:30:00.000Z");
-
 const formatRelativeTime = (isoDate: string): string => {
   const parsed = Date.parse(isoDate);
 
@@ -143,7 +141,7 @@ const formatRelativeTime = (isoDate: string): string => {
     return "Reciente";
   }
 
-  const diffMs = REFERENCE_NOW - parsed;
+  const diffMs = Date.now() - parsed;
   const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
 
   if (diffMinutes < 1) {
@@ -374,9 +372,7 @@ function ClienteChatContent() {
             } else {
               const createdChat = await createClientChat({
                 empresaId: marketplaceIntent.companyId,
-                asunto: marketplaceIntent.productId
-                  ? `${marketplaceIntent.product} (${marketplaceIntent.productId})`
-                  : marketplaceIntent.product,
+                asunto: marketplaceIntent.product,
               });
 
               let createdMessages: ChatMessage[] = [];
@@ -528,6 +524,8 @@ function ClienteChatContent() {
     };
   }, [activeThread, currentUserId]);
 
+  const activeThreadMessageCount = activeThread?.messages.length ?? 0;
+
   useEffect(() => {
     if (!activeThread) {
       return;
@@ -537,7 +535,7 @@ function ClienteChatContent() {
       top: messageListRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [activeThread]);
+  }, [activeThread?.id, activeThreadMessageCount]);
 
   const handleSelectThread = (threadId: string) => {
     setActiveThreadId(threadId);
@@ -852,7 +850,13 @@ function ClienteChatContent() {
                   <textarea
                     value={draftMessage}
                     onChange={(event) => setDraftMessage(event.target.value)}
-                    placeholder="Escribe tu mensaje..."
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault();
+                        event.currentTarget.form?.requestSubmit();
+                      }
+                    }}
+                    placeholder="Escribe tu mensaje... (Enter para enviar, Shift+Enter para nueva línea)"
                     rows={2}
                     className="w-full resize-none rounded-2xl border border-cyan-100/12 bg-slate-950/45 px-3 py-2 text-sm text-cyan-50 placeholder:text-cyan-100/45 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                   />

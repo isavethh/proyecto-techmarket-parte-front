@@ -648,10 +648,17 @@ export const chatThreadsData: ChatThread[] = [
   },
 ];
 
+const stripProductIdFromSubject = (subject: string): string =>
+  subject.replace(/\s*\([A-Za-z]+-[0-9a-f-]{36}\)\s*$/i, "").trim() || subject;
+
 export async function fetchCompanyChats() {
   const payload = await requestCompanyApiWithFallback<unknown>("/api/empresa/chat/conversaciones", chatThreadsData);
   const source = asRecord(payload);
-  return (Array.isArray(source.conversations) ? source.conversations : payload) as ChatThread[];
+  const threads = (Array.isArray(source.conversations) ? source.conversations : payload) as ChatThread[];
+  return threads.map((thread) => ({
+    ...thread,
+    product: stripProductIdFromSubject(thread.product),
+  }));
 }
 
 export async function fetchCompanyChatMessages(conversationId: string) {
