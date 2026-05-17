@@ -1,72 +1,281 @@
+"use client";
+
 import Link from "next/link";
-import { ClientPageHeader, ClientQuickLinksCard } from "../../../components/ClientPageSections";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ClientPageHeader,
+  ClientQuickLinksCard,
+  ClientSidebarMenu,
+} from "../../../components/ClientPageSections";
+import {
+  getMarketplaceProduct,
+  listProductReviews,
+  type MarketplaceProductDetail,
+  type ProductReview,
+} from "@/lib/api/iaApi";
 
-const clientMenuItems = [
-  { label: "Explorar marketplace", href: "/cliente/marketplace" },
-  { label: "Mis chats", href: "/cliente/chat" },
-  { label: "Buscar servicios", href: "/cliente/servicios" },
-  { label: "Versus de productos", href: "/cliente/versus" },
-  { label: "Explorar empresas", href: "/cliente/empresas" },
-  { label: "Comunidades", href: "/cliente/comunidades" },
-  { label: "Actividad reciente", href: "/cliente" },
-];
-
-export default async function ServicioPage() {
+function StarRow({ value, size = "sm" }: { value: number; size?: "sm" | "md" }) {
+  const sizeClass = size === "md" ? "text-base" : "text-xs";
   return (
-    <div className="flex-1 pb-6 xl:pb-0">
-      <ClientPageHeader
-        sectionLabel="Detalle de servicio"
-        brandHref="/"
-        rightSlot={(
-          <Link href="/cliente" className="text-sm text-cyan-200/80">
-            Volver a cliente
-          </Link>
-        )}
-      />
+    <span className={`inline-flex items-center gap-0.5 ${sizeClass} text-amber-300`}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span key={star} className={star <= Math.round(value) ? "" : "text-cyan-100/30"}>
+          ★
+        </span>
+      ))}
+    </span>
+  );
+}
 
-      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 xl:grid-cols-[280px_minmax(0,1fr)] xl:h-[calc(100vh-140px)] xl:items-start xl:px-6">
-        <aside className="chat-scrollbar space-y-4 xl:sticky xl:top-24 xl:self-start xl:h-[calc(100vh-140px)] xl:overflow-y-auto xl:pr-2">
-          <section className="tech-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-blue-600 text-sm font-bold text-slate-950">
-                CM
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-50">Tu panel</p>
-                <p className="text-xs text-cyan-100/75">Cliente activo en TechMarket</p>
-              </div>
-            </div>
+export default function ServicioDetallePage() {
+  const params = useParams<{ slug: string }>();
+  const router = useRouter();
+  const serviceId = params?.slug ?? "";
 
-            <div className="mt-4 grid gap-2">
-              {clientMenuItems.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`auth-action ${item.href === "/cliente/servicios" ? "active" : ""}`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </section>
+  const [service, setService] = useState<MarketplaceProductDetail | null>(null);
+  const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!serviceId) return;
+    let active = true;
+    setIsLoading(true);
+    setError(null);
+
+    Promise.all([
+      getMarketplaceProduct(serviceId).catch(() => null),
+      listProductReviews(serviceId).catch(() => [] as ProductReview[]),
+    ])
+      .then(([detail, reviewList]) => {
+        if (!active) return;
+        if (!detail) {
+          setError("No se encontró el servicio solicitado.");
+          setService(null);
+        } else {
+          setService(detail);
+        }
+        setReviews(reviewList);
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [serviceId]);
+
+  const averageRating = useMemo(() => {
+    if (!reviews.length) return 0;
+    const total = reviews.reduce((sum, r) => sum + (r.calificacion ?? 0), 0);
+    return total / reviews.length;
+  }, [reviews]);
+
+  const heroImage = service?.imagenes?.[0] ?? "/productos/laptop-pro-14.jpg";
+  const otherImages = service?.imagenes?.slice(1, 4) ?? [];
+
+  const handleContactCompany = () => {
+    if (!service?.empresa?.id) {
+      setActionMessage("Esta publicación no tiene empresa asociada para contactar.");
+      return;
+    }
+
+    const params = new URLSearchParams({
+      source: "marketplace",
+      seller: service.empresa.nombre,
+      company: service.empresa.nombre,
+      companyId: service.empresa.id,
+      productId: service.id,
+      product: service.nombre,
+      message: `Hola, vi tu servicio "${service.nombre}" y me interesa saber más.`,
+    });
+    router.push(`/cliente/chat?${params.toString()}`);
+  };
+
+
+  return (
+    <div className="flex-1 pb-10">
+      <ClientPageHeader sectionLabel="Detalle de servicio" />
+
+      <main className="mx-auto mt-5 grid w-full max-w-[1500px] gap-5 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:px-6">
+        <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
+          <ClientSidebarMenu />
           <ClientQuickLinksCard
             links={[
-              { href: "/cliente", label: "Volver al feed" },
-              { href: "/cliente/servicios", label: "Ver servicios" },
-              { href: "/cliente/chat", label: "Ir a chat" },
+              { href: "/cliente/servicios", label: "Volver a servicios" },
+              { href: "/cliente/marketplace", label: "Ir al marketplace" },
+              { href: "/cliente/chat", label: "Mis chats" },
             ]}
           />
         </aside>
 
-        <section className="chat-scrollbar space-y-5 overflow-y-auto xl:h-[calc(100vh-140px)] xl:pr-4">
-          <section className="tech-card">
-            <p className="tech-mono text-xs text-cyan-200/75">API</p>
-            <h1 className="mt-2 text-2xl font-semibold text-cyan-50">No hay detalle de servicio desde la API.</h1>
-            <p className="mt-3 text-sm text-cyan-100/80">
-              No se encontro un endpoint de servicios en el backend revisado, asi que esta pantalla no usa datos locales de muestra.
-            </p>
-          </section>
+        <section className="space-y-5">
+          {isLoading ? (
+            <section className="tech-card">
+              <p className="text-sm text-cyan-100/80">Cargando información del servicio...</p>
+            </section>
+          ) : error || !service ? (
+            <section className="tech-card text-center">
+              <p className="tech-mono text-xs text-amber-200/80">ERROR</p>
+              <h1 className="mt-2 text-2xl font-semibold text-cyan-50">
+                {error ?? "Servicio no disponible"}
+              </h1>
+              <p className="mt-3 text-sm text-cyan-100/75">
+                Es posible que el servicio haya sido eliminado o que no esté visible para clientes.
+              </p>
+              <Link
+                href="/cliente/servicios"
+                className="mt-5 inline-flex rounded-xl border border-cyan-100/15 bg-cyan-300/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/25"
+              >
+                ← Volver a servicios
+              </Link>
+            </section>
+          ) : (
+            <>
+              <section className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(165deg,rgba(11,34,60,0.95),rgba(6,23,43,0.96))] shadow-2xl shadow-slate-950/30">
+                <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_360px]">
+                  <div className="relative h-72 overflow-hidden md:h-full">
+                    <img
+                      src={heroImage}
+                      alt={service.nombre}
+                      className="h-full w-full object-cover"
+                      onError={(event) => {
+                        (event.target as HTMLImageElement).src = "/productos/laptop-pro-14.jpg";
+                      }}
+                    />
+                    {otherImages.length > 0 ? (
+                      <div className="absolute bottom-3 left-3 right-3 flex gap-2 overflow-x-auto">
+                        {otherImages.map((src, idx) => (
+                          <img
+                            key={idx}
+                            src={src}
+                            alt={`${service.nombre} ${idx + 2}`}
+                            className="h-14 w-14 rounded-xl border border-cyan-100/25 object-cover shadow-md"
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="flex flex-col gap-4 p-6">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="rounded-full border border-cyan-100/20 bg-cyan-300/15 px-3 py-1 text-xs font-semibold text-cyan-100">
+                        Servicio técnico
+                      </span>
+                      {reviews.length > 0 ? (
+                        <div className="flex items-center gap-2 text-xs text-cyan-100/70">
+                          <StarRow value={averageRating} />
+                          <span>({reviews.length})</span>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <h1 className="text-2xl font-bold text-cyan-50 leading-tight">{service.nombre}</h1>
+
+                    {service.empresa ? (
+                      <Link
+                        href={`/cliente/marketplace/vendedor/${service.empresa.id}`}
+                        className="inline-flex items-center gap-2 text-sm text-cyan-200/85 transition hover:text-cyan-100"
+                      >
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-[10px] font-bold text-slate-950">
+                          {service.empresa.nombre.slice(0, 2).toUpperCase()}
+                        </span>
+                        <span className="font-medium">{service.empresa.nombre}</span>
+                        <span className="text-cyan-300/70">→ ver perfil</span>
+                      </Link>
+                    ) : null}
+
+                    {service.precio != null ? (
+                      <p className="text-3xl font-bold text-cyan-300">
+                        Bs {service.precio.toLocaleString("es-BO", { minimumFractionDigits: 2 })}
+                      </p>
+                    ) : (
+                      <p className="text-base text-cyan-100/80">Precio a consultar</p>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleContactCompany}
+                      className="mt-2 rounded-2xl border border-cyan-200/35 bg-cyan-300/25 px-4 py-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/35"
+                    >
+                      💬 Contactar al especialista
+                    </button>
+
+                    {actionMessage ? (
+                      <p className="rounded-xl border border-cyan-100/12 bg-cyan-300/10 px-3 py-2 text-xs text-cyan-100">
+                        {actionMessage}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </section>
+
+              {service.descripcion ? (
+                <section className="tech-card">
+                  <p className="tech-mono text-xs text-cyan-200/75">DESCRIPCIÓN</p>
+                  <h2 className="mt-2 text-lg font-semibold text-cyan-50">Sobre este servicio</h2>
+                  <p className="mt-3 whitespace-pre-line text-sm leading-7 text-cyan-100/85">
+                    {service.descripcion}
+                  </p>
+                </section>
+              ) : null}
+
+              <section className="tech-card">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="tech-mono text-xs text-cyan-200/75">OPINIONES</p>
+                    <h2 className="mt-2 text-lg font-semibold text-cyan-50">
+                      Reseñas de clientes ({reviews.length})
+                    </h2>
+                  </div>
+                  {reviews.length > 0 ? (
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-cyan-50">{averageRating.toFixed(1)}</p>
+                      <StarRow value={averageRating} size="md" />
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {reviews.length === 0 ? (
+                    <p className="rounded-2xl border border-dashed border-cyan-100/15 bg-slate-950/30 p-4 text-sm text-cyan-100/70">
+                      Aún no hay reseñas para este servicio. ¡Sé el primero en compartir tu experiencia!
+                    </p>
+                  ) : (
+                    reviews.map((review) => (
+                      <article
+                        key={review.id}
+                        className="rounded-2xl border border-cyan-100/12 bg-slate-950/30 p-4"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-[11px] font-bold text-slate-950">
+                              {(review.cliente?.nombre ?? "CL").slice(0, 2).toUpperCase()}
+                            </span>
+                            <div>
+                              <p className="text-sm font-semibold text-cyan-50">
+                                {review.cliente?.nombre ?? "Cliente anónimo"}
+                              </p>
+                              <p className="text-xs text-cyan-100/60">{review.fecha ?? "—"}</p>
+                            </div>
+                          </div>
+                          <StarRow value={review.calificacion ?? 0} />
+                        </div>
+                        {review.comentario ? (
+                          <p className="mt-3 text-sm leading-6 text-cyan-100/85">
+                            {review.comentario}
+                          </p>
+                        ) : null}
+                      </article>
+                    ))
+                  )}
+                </div>
+              </section>
+            </>
+          )}
         </section>
       </main>
     </div>

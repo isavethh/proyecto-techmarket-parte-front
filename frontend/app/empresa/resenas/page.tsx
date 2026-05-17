@@ -24,8 +24,6 @@ type CustomerReview = {
 
 const reviewFilters: ReviewFilter[] = ["Todas", "Sin responder", "5 estrellas", "Con mejora"];
 
-const customerReviews: CustomerReview[] = customerReviewsData;
-
 function renderStars(stars: number) {
   return "★".repeat(stars) + "☆".repeat(5 - stars);
 }
@@ -57,18 +55,56 @@ function statusLabel(review: CustomerReview) {
 export default function ResenasPage() {
   const [activeFilter, setActiveFilter] = useState<ReviewFilter>("Todas");
   const [customerReviews, setCustomerReviews] = useState<CustomerReview[]>(customerReviewsData);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [responseDraft, setResponseDraft] = useState("");
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
     void fetchCompanyReviews().then(setCustomerReviews);
   }, []);
 
-  const handleRespondReview = (reviewId: string) => {
-    setCustomerReviews((current) =>
-      current.map((review) =>
-        review.id === reviewId ? { ...review, wasResponded: true } : review,
-      ),
-    );
-    void respondCompanyReview(reviewId, "Respondida desde el panel de empresa.");
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 3500);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const handleOpenResponse = (reviewId: string) => {
+    setRespondingId(reviewId);
+    setResponseDraft("");
+  };
+
+  const handleCancelResponse = () => {
+    setRespondingId(null);
+    setResponseDraft("");
+  };
+
+  const handleSubmitResponse = async (reviewId: string) => {
+    const trimmed = responseDraft.trim();
+    if (trimmed.length < 5) {
+      setToast({ kind: "error", message: "Escribí una respuesta más completa (mínimo 5 caracteres)." });
+      return;
+    }
+    setSubmittingId(reviewId);
+    try {
+      await respondCompanyReview(reviewId, trimmed);
+      setCustomerReviews((current) =>
+        current.map((review) =>
+          review.id === reviewId ? { ...review, wasResponded: true } : review,
+        ),
+      );
+      setRespondingId(null);
+      setResponseDraft("");
+      setToast({ kind: "success", message: "Respuesta enviada al cliente." });
+    } catch (err) {
+      setToast({
+        kind: "error",
+        message: err instanceof Error ? err.message : "No se pudo enviar la respuesta.",
+      });
+    } finally {
+      setSubmittingId(null);
+    }
   };
 
   const filteredReviews = useMemo(() => {
@@ -251,22 +287,67 @@ export default function ResenasPage() {
                       </div>
 
                       <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <Link
-                          href="/empresa/chat"
-                          className="rounded-xl border border-cyan-100/20 bg-cyan-400/15 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/22"
-                        >
-                          Responder por chat
-                        </Link>
                         {review.wasResponded ? (
                           <span className="rounded-xl border border-emerald-300/35 bg-emerald-300/12 px-3 py-2 text-xs font-semibold text-emerald-100">
-                            Respondida
+                            ✓ Respondida
                           </span>
-                        ) : (
+                        ) : respondingId === review.id ? null : (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenResponse(review.id)}
+                            className="rounded-xl border border-cyan-200/35 bg-cyan-300/20 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/30"
+                          >
+                            💬 Responder reseña
+                          </button>
+                        )}
+                        <Link
+                          href="/empresa/chat"
+                          className="rounded-xl border border-cyan-100/15 bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10"
+                        >
+                          Abrir chat con cliente
+                        </Link>
+                        {!review.wasResponded && respondingId !== review.id ? (
                           <span className="rounded-xl border border-amber-300/35 bg-amber-300/12 px-3 py-2 text-xs font-semibold text-amber-100">
                             Pendiente
                           </span>
-                        )}
+                        ) : null}
                       </div>
+
+                      {respondingId === review.id ? (
+                        <div className="mt-4 rounded-2xl border border-cyan-100/15 bg-slate-950/55 p-4">
+                          <label className="tech-mono text-xs text-cyan-200/75">
+                            TU RESPUESTA PÚBLICA
+                          </label>
+                          <textarea
+                            value={responseDraft}
+                            onChange={(event) => setResponseDraft(event.target.value)}
+                            placeholder={`Hola ${review.customer.split(" ")[0]}, gracias por tu reseña. ...`}
+                            rows={3}
+                            className="mt-2 w-full resize-none rounded-xl border border-cyan-100/12 bg-slate-950/45 px-3 py-2 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+                          />
+                          <p className="mt-2 text-[11px] text-cyan-100/55">
+                            Esta respuesta será visible para todos los clientes que vean la reseña.
+                          </p>
+                          <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={handleCancelResponse}
+                              disabled={submittingId === review.id}
+                              className="rounded-xl border border-cyan-100/15 bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10 disabled:opacity-60"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleSubmitResponse(review.id)}
+                              disabled={submittingId === review.id || responseDraft.trim().length < 5}
+                              className="rounded-xl border border-cyan-200/35 bg-cyan-300/25 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/35 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {submittingId === review.id ? "Enviando..." : "Publicar respuesta"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
                     </article>
                   ))}
                 </div>
@@ -275,6 +356,18 @@ export default function ResenasPage() {
           </section>
         </section>
       </main>
+
+      {toast ? (
+        <div
+          className={`fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl border px-4 py-3 text-sm font-medium shadow-2xl ${
+            toast.kind === "success"
+              ? "border-emerald-300/35 bg-emerald-500/15 text-emerald-100"
+              : "border-rose-400/35 bg-rose-500/15 text-rose-100"
+          }`}
+        >
+          {toast.message}
+        </div>
+      ) : null}
     </div>
   );
 }
