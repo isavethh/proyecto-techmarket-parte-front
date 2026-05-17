@@ -1,6 +1,10 @@
 "use client";
 
+<<<<<<< HEAD
 import { FormEvent, Suspense, useMemo, useState } from "react";
+=======
+import { Suspense, useMemo, useState } from "react";
+>>>>>>> Nobre
 import { useSearchParams } from "next/navigation";
 import { SpecialistShell } from "../components/SpecialistShell";
 import { useSpecialistChatFilesData } from "../hooks/useSpecialistChatFilesData";
@@ -254,7 +258,11 @@ function EspecialistaChatContent() {
 
 export default function EspecialistaChatPage() {
   return (
+<<<<<<< HEAD
     <Suspense fallback={<div className="flex-1 pb-0" />}>
+=======
+    <Suspense fallback={null}>
+>>>>>>> Nobre
       <EspecialistaChatContent />
     </Suspense>
   );

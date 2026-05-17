@@ -1,8 +1,22 @@
 "use client";
 
 import Link from "next/link";
+<<<<<<< HEAD
 import { useParams, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+=======
+import { useParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  createClientAddress,
+  deleteClientAddress,
+  getClientProfile,
+  listClientAddresses,
+  setDefaultClientAddress,
+  updateClientProfile,
+  type ClientAddress,
+} from "@/lib/api/iaApi";
+>>>>>>> Nobre
 import {
   ClientInfoCard,
   ClientPageHeader,
@@ -14,22 +28,34 @@ import {
   mergeCommunityFeedPosts,
   readCommunityFeedPosts,
 } from "../../../lib/communityFeed";
-import {
-  clientProfileSeedPosts,
-  resolveClientUserProfile,
-  toClientProfileSlug,
-} from "../../../lib/clientUserProfiles";
 
 const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
-const ACTIVE_CLIENT_SLUG = "camila-mendoza";
-const ACTIVE_CLIENT_PROFILE_STORAGE_KEY = "techmarket.client.profile.camila-mendoza";
-
 type EditableClientProfile = {
   name: string;
   email: string;
   city: string;
   residenceArea: string;
   bio: string;
+  phone: string;
+  avatar: string;
+};
+
+type AddressDraft = {
+  titulo: string;
+  pais: string;
+  ciudad: string;
+  direccion: string;
+  referencia: string;
+  esPredeterminada: boolean;
+};
+
+const emptyAddressDraft: AddressDraft = {
+  titulo: "",
+  pais: "Bolivia",
+  ciudad: "",
+  direccion: "",
+  referencia: "",
+  esPredeterminada: false,
 };
 
 const subscribeCommunityFeed = (onStoreChange: () => void) => {
@@ -81,26 +107,52 @@ const getInitials = (name: string): string =>
     .map((token) => token[0]?.toUpperCase() ?? "")
     .join("") || "US";
 
+<<<<<<< HEAD
 function ClienteUsuarioPerfilContent() {
   const params = useParams<{ slug: string | string[] }>();
   const searchParams = useSearchParams();
+=======
+const toClientProfileSlug = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "perfil";
+>>>>>>> Nobre
 
+function ClienteUsuarioPerfilContent() {
+  const params = useParams<{ slug: string | string[] }>();
   const slugValue = Array.isArray(params.slug) ? (params.slug[0] ?? "") : params.slug;
   const normalizedSlug = toClientProfileSlug(slugValue);
 
-  const nameHint = searchParams.get("name")?.trim() ?? "";
-  const locationHint = searchParams.get("location")?.trim() ?? "";
-
-  const profile = resolveClientUserProfile(normalizedSlug, nameHint, locationHint);
-  const isOwnProfile = profile.slug === ACTIVE_CLIENT_SLUG;
+  const profile = {
+    slug: normalizedSlug,
+    name: "",
+    email: "",
+    city: "",
+    residenceArea: "",
+    bio: "",
+    account: "Cliente",
+    generalInfo: [] as string[],
+  };
+  const isOwnProfile = true;
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editableProfile, setEditableProfile] = useState<EditableClientProfile>({
-    name: profile.name,
-    email: profile.email,
-    city: profile.city,
-    residenceArea: profile.residenceArea,
-    bio: profile.bio,
+    name: "",
+    email: "",
+    city: "",
+    residenceArea: "",
+    bio: "",
+    phone: "",
+    avatar: "",
   });
+  const [addresses, setAddresses] = useState<ClientAddress[]>([]);
+  const [addressDraft, setAddressDraft] = useState<AddressDraft>(emptyAddressDraft);
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const dynamicFeedPosts = useSyncExternalStore(
     subscribeCommunityFeed,
@@ -109,24 +161,22 @@ function ClienteUsuarioPerfilContent() {
   );
 
   const authoredPosts = useMemo(() => {
-    const seedPosts = clientProfileSeedPosts.filter(
-      (post) => toClientProfileSlug(post.author) === profile.slug,
-    );
-
     const dynamicPosts = dynamicFeedPosts.filter(
       (post) => toClientProfileSlug(post.author) === profile.slug,
     );
 
-    return mergeCommunityFeedPosts([...seedPosts, ...dynamicPosts]);
+    return mergeCommunityFeedPosts(dynamicPosts);
   }, [dynamicFeedPosts, profile.slug]);
 
   useEffect(() => {
     const initialProfile: EditableClientProfile = {
-      name: profile.name,
-      email: profile.email,
-      city: profile.city,
-      residenceArea: profile.residenceArea,
-      bio: profile.bio,
+      name: isOwnProfile ? "" : profile.name,
+      email: isOwnProfile ? "" : profile.email,
+      city: isOwnProfile ? "" : profile.city,
+      residenceArea: isOwnProfile ? "" : profile.residenceArea,
+      bio: isOwnProfile ? "" : profile.bio,
+      phone: "",
+      avatar: "",
     };
 
     if (!isOwnProfile || typeof window === "undefined") {
@@ -135,26 +185,7 @@ function ClienteUsuarioPerfilContent() {
       return;
     }
 
-    const rawStoredProfile = window.localStorage.getItem(ACTIVE_CLIENT_PROFILE_STORAGE_KEY);
-
-    if (!rawStoredProfile) {
-      setEditableProfile(initialProfile);
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(rawStoredProfile) as Partial<EditableClientProfile>;
-
-      setEditableProfile({
-        name: parsed.name?.trim() || initialProfile.name,
-        email: parsed.email?.trim() || initialProfile.email,
-        city: parsed.city?.trim() || initialProfile.city,
-        residenceArea: parsed.residenceArea?.trim() || initialProfile.residenceArea,
-        bio: parsed.bio?.trim() || initialProfile.bio,
-      });
-    } catch {
-      setEditableProfile(initialProfile);
-    }
+    setEditableProfile(initialProfile);
   }, [
     isOwnProfile,
     profile.bio,
@@ -164,9 +195,57 @@ function ClienteUsuarioPerfilContent() {
     profile.residenceArea,
   ]);
 
-  const profileView = isOwnProfile ? { ...profile, ...editableProfile } : profile;
+  useEffect(() => {
+    if (!isOwnProfile) {
+      return;
+    }
 
-  const handleProfileSave = (event: FormEvent<HTMLFormElement>) => {
+    let active = true;
+
+    const loadRemoteProfile = async () => {
+      try {
+        const [remoteProfile, remoteAddresses] = await Promise.all([
+          getClientProfile(),
+          listClientAddresses(),
+        ]);
+
+        if (!active) {
+          return;
+        }
+
+        const fullName = [remoteProfile.nombre, remoteProfile.apellido]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+
+        setEditableProfile((current) => ({
+          ...current,
+          name: fullName || current.name,
+          email: remoteProfile.email || current.email,
+          phone: remoteProfile.telefono ?? "",
+          avatar: remoteProfile.avatar ?? "",
+        }));
+        setAddresses(remoteAddresses);
+        setProfileError(null);
+      } catch (error) {
+        if (active) {
+          setProfileError(error instanceof Error ? error.message : "No se pudo cargar perfil");
+        }
+      }
+    };
+
+    loadRemoteProfile();
+
+    return () => {
+      active = false;
+    };
+  }, [isOwnProfile]);
+
+  const profileView = isOwnProfile
+    ? { ...profile, ...editableProfile, generalInfo: [] }
+    : profile;
+
+  const handleProfileSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!isOwnProfile || typeof window === "undefined") {
@@ -174,16 +253,101 @@ function ClienteUsuarioPerfilContent() {
     }
 
     const normalizedProfile: EditableClientProfile = {
-      name: editableProfile.name.trim() || profile.name,
-      email: editableProfile.email.trim() || profile.email,
-      city: editableProfile.city.trim() || profile.city,
-      residenceArea: editableProfile.residenceArea.trim() || profile.residenceArea,
-      bio: editableProfile.bio.trim() || profile.bio,
+      name: editableProfile.name.trim(),
+      email: editableProfile.email.trim(),
+      city: editableProfile.city.trim(),
+      residenceArea: editableProfile.residenceArea.trim(),
+      bio: editableProfile.bio.trim(),
+      phone: editableProfile.phone.trim(),
+      avatar: editableProfile.avatar.trim(),
     };
 
-    setEditableProfile(normalizedProfile);
-    window.localStorage.setItem(ACTIVE_CLIENT_PROFILE_STORAGE_KEY, JSON.stringify(normalizedProfile));
-    setIsEditingProfile(false);
+    setIsSavingProfile(true);
+    setProfileMessage(null);
+    setProfileError(null);
+
+    try {
+      const [nombre, ...apellidoParts] = normalizedProfile.name.split(" ").filter(Boolean);
+      const updatedProfile = await updateClientProfile({
+        nombre: nombre || normalizedProfile.name,
+        apellido: apellidoParts.join(" "),
+        telefono: normalizedProfile.phone,
+        avatar: normalizedProfile.avatar,
+      });
+
+      const remoteName = [updatedProfile.nombre, updatedProfile.apellido].filter(Boolean).join(" ");
+      const nextProfile = {
+        ...normalizedProfile,
+        name: remoteName || normalizedProfile.name,
+        email: updatedProfile.email || normalizedProfile.email,
+        phone: updatedProfile.telefono ?? normalizedProfile.phone,
+        avatar: updatedProfile.avatar ?? normalizedProfile.avatar,
+      };
+
+      setEditableProfile(nextProfile);
+      setProfileMessage("Perfil actualizado correctamente");
+      setIsEditingProfile(false);
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "No se pudo actualizar perfil");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleCreateAddress = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setProfileMessage(null);
+    setProfileError(null);
+
+    try {
+      const createdAddress = await createClientAddress({
+        titulo: addressDraft.titulo.trim(),
+        pais: addressDraft.pais.trim(),
+        ciudad: addressDraft.ciudad.trim(),
+        direccion: addressDraft.direccion.trim(),
+        referencia: addressDraft.referencia.trim(),
+        esPredeterminada: addressDraft.esPredeterminada,
+      });
+      const nextAddresses = addressDraft.esPredeterminada
+        ? addresses.map((address) => ({ ...address, esPredeterminada: false }))
+        : addresses;
+      setAddresses([createdAddress, ...nextAddresses]);
+      setAddressDraft(emptyAddressDraft);
+      setProfileMessage("Direccion creada correctamente");
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "No se pudo crear direccion");
+    }
+  };
+
+  const handleDeleteAddress = async (addressId: string) => {
+    setProfileMessage(null);
+    setProfileError(null);
+
+    try {
+      await deleteClientAddress(addressId);
+      setAddresses((current) => current.filter((address) => address.id !== addressId));
+      setProfileMessage("Direccion eliminada correctamente");
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "No se pudo eliminar direccion");
+    }
+  };
+
+  const handleDefaultAddress = async (addressId: string) => {
+    setProfileMessage(null);
+    setProfileError(null);
+
+    try {
+      await setDefaultClientAddress(addressId);
+      setAddresses((current) =>
+        current.map((address) => ({
+          ...address,
+          esPredeterminada: address.id === addressId,
+        })),
+      );
+      setProfileMessage("Direccion establecida como predeterminada");
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "No se pudo actualizar direccion");
+    }
   };
 
   return (
@@ -259,7 +423,7 @@ function ClienteUsuarioPerfilContent() {
               <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-5">
                 <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Informacion general</p>
                 <div className="mt-4 space-y-2">
-                  {profile.generalInfo.map((item) => (
+                  {profileView.generalInfo.map((item) => (
                     <div key={item} className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-sm text-cyan-100/85">
                       {item}
                     </div>
@@ -328,6 +492,28 @@ function ClienteUsuarioPerfilContent() {
                     />
                   </div>
                   <div>
+                    <label className="text-xs text-cyan-100/75" htmlFor="profile-phone">Telefono</label>
+                    <input
+                      id="profile-phone"
+                      value={editableProfile.phone}
+                      onChange={(event) =>
+                        setEditableProfile((current) => ({ ...current, phone: event.target.value }))
+                      }
+                      className="auth-input mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-cyan-100/75" htmlFor="profile-avatar">Avatar URL</label>
+                    <input
+                      id="profile-avatar"
+                      value={editableProfile.avatar}
+                      onChange={(event) =>
+                        setEditableProfile((current) => ({ ...current, avatar: event.target.value }))
+                      }
+                      className="auth-input mt-1"
+                    />
+                  </div>
+                  <div>
                     <label className="text-xs text-cyan-100/75" htmlFor="profile-city">Ciudad</label>
                     <input
                       id="profile-city"
@@ -371,6 +557,8 @@ function ClienteUsuarioPerfilContent() {
                           city: profileView.city,
                           residenceArea: profileView.residenceArea,
                           bio: profileView.bio,
+                          phone: editableProfile.phone,
+                          avatar: editableProfile.avatar,
                         });
                         setIsEditingProfile(false);
                       }}
@@ -378,16 +566,144 @@ function ClienteUsuarioPerfilContent() {
                     >
                       Cancelar
                     </button>
-                    <button type="submit" className="tech-button tech-button-primary">
-                      Guardar cambios
+                    <button type="submit" disabled={isSavingProfile} className="tech-button tech-button-primary">
+                      {isSavingProfile ? "Guardando..." : "Guardar cambios"}
                     </button>
                   </div>
                 </form>
               ) : (
                 <p className="mt-4 text-sm text-cyan-100/78">
-                  Tus cambios se guardan en este navegador para personalizar como se muestra tu perfil.
+                  Tus cambios se guardan usando la API de cliente autenticado.
                 </p>
               )}
+              {profileMessage ? <p className="mt-3 text-sm text-emerald-200">{profileMessage}</p> : null}
+              {profileError ? <p className="mt-3 text-sm text-amber-200">{profileError}</p> : null}
+            </section>
+          ) : null}
+
+          {isOwnProfile ? (
+            <section className="rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Direcciones</p>
+                  <h2 className="mt-2 text-2xl font-bold text-white">Gestiona tus direcciones</h2>
+                </div>
+                <span className="rounded-full border border-cyan-100/15 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100/90">
+                  {addresses.length} guardadas
+                </span>
+              </div>
+
+              <form onSubmit={handleCreateAddress} className="mt-5 grid gap-3 md:grid-cols-2">
+                <input
+                  value={addressDraft.titulo}
+                  onChange={(event) =>
+                    setAddressDraft((current) => ({ ...current, titulo: event.target.value }))
+                  }
+                  placeholder="Titulo, ej. Casa"
+                  className="auth-input"
+                  required
+                />
+                <input
+                  value={addressDraft.ciudad}
+                  onChange={(event) =>
+                    setAddressDraft((current) => ({ ...current, ciudad: event.target.value }))
+                  }
+                  placeholder="Ciudad"
+                  className="auth-input"
+                  required
+                />
+                <input
+                  value={addressDraft.pais}
+                  onChange={(event) =>
+                    setAddressDraft((current) => ({ ...current, pais: event.target.value }))
+                  }
+                  placeholder="Pais"
+                  className="auth-input"
+                  required
+                />
+                <input
+                  value={addressDraft.referencia}
+                  onChange={(event) =>
+                    setAddressDraft((current) => ({ ...current, referencia: event.target.value }))
+                  }
+                  placeholder="Referencia"
+                  className="auth-input"
+                />
+                <textarea
+                  value={addressDraft.direccion}
+                  onChange={(event) =>
+                    setAddressDraft((current) => ({ ...current, direccion: event.target.value }))
+                  }
+                  placeholder="Direccion completa"
+                  className="auth-input min-h-[90px] md:col-span-2"
+                  required
+                />
+                <label className="flex items-center gap-2 text-sm text-cyan-100/80">
+                  <input
+                    type="checkbox"
+                    checked={addressDraft.esPredeterminada}
+                    onChange={(event) =>
+                      setAddressDraft((current) => ({
+                        ...current,
+                        esPredeterminada: event.target.checked,
+                      }))
+                    }
+                  />
+                  Usar como predeterminada
+                </label>
+                <div className="flex justify-end md:col-span-2">
+                  <button type="submit" className="tech-button tech-button-primary">
+                    Crear direccion
+                  </button>
+                </div>
+              </form>
+
+              <div className="mt-5 grid gap-3">
+                {addresses.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-cyan-100/18 bg-slate-950/35 p-4 text-sm text-cyan-100/75">
+                    Aun no tienes direcciones guardadas.
+                  </div>
+                ) : (
+                  addresses.map((address) => (
+                    <article key={address.id} className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-base font-semibold text-cyan-50">{address.titulo}</p>
+                          <p className="mt-1 text-sm text-cyan-100/80">
+                            {address.direccion} · {address.ciudad}, {address.pais}
+                          </p>
+                          {address.referencia ? (
+                            <p className="mt-1 text-xs text-cyan-200/70">{address.referencia}</p>
+                          ) : null}
+                        </div>
+                        {address.esPredeterminada ? (
+                          <span className="rounded-full border border-emerald-200/25 bg-emerald-300/12 px-3 py-1 text-xs text-emerald-100">
+                            Predeterminada
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {!address.esPredeterminada ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDefaultAddress(address.id)}
+                            className="rounded-xl border border-cyan-100/15 bg-cyan-300/12 px-3 py-2 text-xs font-semibold text-cyan-50"
+                          >
+                            Hacer predeterminada
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAddress(address.id)}
+                          className="rounded-xl border border-rose-200/20 bg-rose-300/10 px-3 py-2 text-xs font-semibold text-rose-100"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
             </section>
           ) : null}
 

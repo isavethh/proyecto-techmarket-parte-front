@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
+<<<<<<< HEAD
 import { EmbajadorSidebar, EmbajadorTopbarControls } from "../page";
 import {
   useAmbassadorProfile,
@@ -36,6 +37,11 @@ type BusinessView = {
   strengths: string[];
   risks: string[];
 };
+=======
+import { EmbajadorSidebar } from "../page";
+import { ambassadorProfile } from "../ambassadorData";
+import { useReferredBusinessesState } from "../businessStore";
+>>>>>>> Nobre
 
 const scoreTone = (score: number) => {
   if (score >= 85) {
@@ -110,6 +116,7 @@ const getRecommendations = (business: {
   return recommendations.slice(0, 3);
 };
 
+<<<<<<< HEAD
 const normalizeReferralStatus = (status?: string | null): BusinessView["status"] => {
   const normalizedStatus = status?.trim().toUpperCase();
   return normalizedStatus?.includes("ACTIVE") || normalizedStatus?.includes("ACTIVO") ? "Activo" : "En onboarding";
@@ -156,6 +163,8 @@ const mapReferralToBusiness = (referral: ApiReferral, index: number): BusinessVi
   };
 };
 
+=======
+>>>>>>> Nobre
 function EmbajadorNegociosReferidosContent() {
   const searchParams = useSearchParams();
   const requestedBusinessId = searchParams.get("business") ?? "";
@@ -514,7 +523,11 @@ function EmbajadorNegociosReferidosContent() {
 
 export default function EmbajadorNegociosReferidosPage() {
   return (
+<<<<<<< HEAD
     <Suspense fallback={<div className="flex-1 pb-10" />}>
+=======
+    <Suspense fallback={null}>
+>>>>>>> Nobre
       <EmbajadorNegociosReferidosContent />
     </Suspense>
   );

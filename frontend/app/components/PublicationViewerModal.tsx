@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 const PUBLICATION_ENGAGEMENT_STORAGE_KEY = "techmarket.publication.engagement";
-const CURRENT_CLIENT_NAME = "Camila Mendoza";
+const CURRENT_CLIENT_NAME = "Cliente";
 
 export type PublicationViewerComment = {
   id: string;

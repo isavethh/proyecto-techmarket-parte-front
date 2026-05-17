@@ -16,7 +16,6 @@ import {
   useState,
 } from "react";
 import { CommunityFeedPost, upsertCommunityFeedPosts } from "../lib/communityFeed";
-import { buildClientProfileHref } from "../lib/clientUserProfiles";
 
 type ClientExperienceShellProps = {
   children: ReactNode;
@@ -33,17 +32,33 @@ type ClientExperienceContextValue = {
 const ClientExperienceContext = createContext<ClientExperienceContextValue | null>(null);
 
 const CLIENT_PROFILE = {
-  name: "Camila Mendoza",
-  email: "camila.mendoza@techmarket.bo",
-  city: "La Paz",
-  account: "Cliente verificado",
-  initials: "CM",
+  name: "Cliente",
+  email: "cliente.test@techmarket.com",
+  city: "Bolivia",
+  account: "Cliente",
+  initials: "US",
+};
+
+const buildClientProfileHref = (name: string): string => {
+  const slug =
+    name
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "perfil";
+
+  return `/cliente/perfil/${slug}`;
 };
 
 const CLIENT_ALLOWED_POST_CATEGORY = "Consulta";
 
 const isClientCommunityDetailRoute = (pathname: string | null) =>
   typeof pathname === "string" && /^\/cliente\/comunidades\/[^/]+$/.test(pathname);
+
+const canCreateClientPostOnRoute = (pathname: string | null) =>
+  pathname === "/cliente" || isClientCommunityDetailRoute(pathname);
 
 const getCurrentIso = () => new Date().toISOString();
 
@@ -55,7 +70,7 @@ const formatQuickTimestamp = () => {
   return `Hoy ${hours}:${minutes}`;
 };
 
-const useClientExperience = (): ClientExperienceContextValue => {
+export const useClientExperience = (): ClientExperienceContextValue => {
   const contextValue = useContext(ClientExperienceContext);
 
   if (!contextValue) {
@@ -69,7 +84,7 @@ export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps
   const router = useRouter();
   const { openPostModal } = useClientExperience();
   const pathname = usePathname();
-  const canCreatePost = isClientCommunityDetailRoute(pathname);
+  const canCreatePost = canCreateClientPostOnRoute(pathname);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
@@ -251,7 +266,7 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
   };
 
   const openPostModal = () => {
-    if (!isClientCommunityDetailRoute(pathname)) {
+    if (!canCreateClientPostOnRoute(pathname)) {
       return;
     }
 

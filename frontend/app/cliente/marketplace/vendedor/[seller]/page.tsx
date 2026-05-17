@@ -3,87 +3,47 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+<<<<<<< HEAD
 import { Suspense, useMemo, useState, useSyncExternalStore } from "react";
+=======
+import { Suspense, useMemo, useState } from "react";
+>>>>>>> Nobre
 import {
   ClientInfoCard,
   ClientPageHeader,
   ClientQuickLinksCard,
 } from "../../../../components/ClientPageSections";
 import {
-  PublicationViewerComment,
   PublicationViewerData,
   PublicationViewerModal,
 } from "../../../../components/PublicationViewerModal";
-import {
-  COMMUNITY_FEED_UPDATED_EVENT,
-  CommunityFeedPost,
-  readCommunityFeedPosts,
-} from "../../../../lib/communityFeed";
-import {
-  buildMarketplaceListings,
-  createMarketplaceSellerKey,
-  marketplaceSeedPosts,
-} from "../../../../lib/marketplaceFeed";
-
-const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
-
-const marketplaceBaseLikesById: Record<string, number> = {
-  "market-seed-1": 18,
-  "market-seed-2": 11,
-  "market-seed-3": 15,
-  "market-seed-4": 9,
-  "market-seed-5": 6,
-  "market-seed-6": 13,
+type MarketplaceListing = {
+  post: {
+    id: string;
+    author: string;
+    role: string;
+    time: string;
+    title: string;
+    body: string;
+    tag: string;
+    location: string;
+    image?: string;
+    createdAt: string;
+  };
+  category: string;
+  condition: string;
+  priceLabel: string;
 };
 
-const marketplaceSeedCommentsById: Record<string, PublicationViewerComment[]> = {
-  "market-seed-1": [
-    {
-      id: "market-seed-1-comment-1",
-      author: "Luis G.",
-      text: "Sigue disponible? Me interesa y podria pasar hoy.",
-      time: "Hace 22 min",
-    },
-    {
-      id: "market-seed-1-comment-2",
-      author: "Carla M.",
-      text: "Buen precio para esa configuracion.",
-      time: "Hace 9 min",
-    },
-  ],
-  "market-seed-3": [
-    {
-      id: "market-seed-3-comment-1",
-      author: "Rene P.",
-      text: "El monitor incluye caja original?",
-      time: "Hace 41 min",
-    },
-  ],
-};
+const createMarketplaceSellerKey = (sellerName: string): string =>
+  sellerName
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "empresa";
 
-const subscribeCommunityFeed = (onStoreChange: () => void) => {
-  if (typeof window === "undefined") {
-    return () => {};
-  }
-
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key === "techmarket.community.feed") {
-      onStoreChange();
-    }
-  };
-
-  const handleFeedUpdate = () => {
-    onStoreChange();
-  };
-
-  window.addEventListener("storage", handleStorage);
-  window.addEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
-
-  return () => {
-    window.removeEventListener("storage", handleStorage);
-    window.removeEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
-  };
-};
 
 const getSellerInitials = (sellerName: string): string => {
   const chunks = sellerName
@@ -107,16 +67,7 @@ function MarketplaceSellerProfileContent() {
     return Array.isArray(rawValue) ? (rawValue[0] ?? "") : rawValue;
   }, [params]);
 
-  const dynamicFeedPosts = useSyncExternalStore(
-    subscribeCommunityFeed,
-    readCommunityFeedPosts,
-    () => EMPTY_FEED_SNAPSHOT,
-  );
-
-  const allListings = useMemo(
-    () => buildMarketplaceListings([...marketplaceSeedPosts, ...dynamicFeedPosts]),
-    [dynamicFeedPosts],
-  );
+  const allListings = useMemo<MarketplaceListing[]>(() => [], []);
 
   const sellerListings = useMemo(
     () =>
@@ -176,9 +127,9 @@ function MarketplaceSellerProfileContent() {
       priceLabel: listing.priceLabel,
       conditionLabel: listing.condition,
       categoryLabel: listing.category,
-      initialLikeCount: marketplaceBaseLikesById[listing.post.id] ?? 0,
+      initialLikeCount: 0,
       initiallyLiked: false,
-      initialComments: marketplaceSeedCommentsById[listing.post.id] ?? [],
+      initialComments: [],
     });
   };
 

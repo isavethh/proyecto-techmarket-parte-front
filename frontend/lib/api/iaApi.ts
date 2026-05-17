@@ -5,7 +5,12 @@ type ApiErrorBody = {
   description?: string;
 };
 
+<<<<<<< HEAD
 const IA_BASE_URL = process.env.NEXT_PUBLIC_IA_URL ?? "http://localhost:8092";
+=======
+const IA_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_IA_URL ?? "http://localhost:8092";
+>>>>>>> Nobre
 
 export type GlobalSearchItem = {
   id: string;
@@ -71,6 +76,164 @@ export type MessageResponse = {
   mensaje: string;
 };
 
+<<<<<<< HEAD
+=======
+export type ClientProfile = {
+  id: string;
+  email: string;
+  nombre: string;
+  apellido: string;
+  telefono: string;
+  avatar: string | null;
+};
+
+export type UpdateClientProfilePayload = Partial<{
+  nombre: string;
+  apellido: string;
+  telefono: string;
+  avatar: string;
+}>;
+
+export type ClientAddress = {
+  id: string;
+  titulo: string;
+  pais: string;
+  ciudad: string;
+  direccion: string;
+  referencia: string | null;
+  esPredeterminada: boolean;
+};
+
+export type UpsertClientAddressPayload = Partial<{
+  titulo: string;
+  pais: string;
+  ciudad: string;
+  direccion: string;
+  referencia: string;
+  esPredeterminada: boolean;
+}>;
+
+export type MarketplaceProductSummary = {
+  id: string;
+  nombre: string;
+  precio: number | null;
+  imagenPrincipal: string | null;
+  calificacion: number | null;
+};
+
+export type MarketplaceProductPage = {
+  total: number;
+  pagina: number;
+  productos: MarketplaceProductSummary[];
+};
+
+export type MarketplaceProductDetail = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  precio: number | null;
+  imagenes: string[];
+  empresa: MarketplaceCompanySummary | null;
+  stock: number | null;
+};
+
+export type MarketplaceCategoryNode = {
+  id: string;
+  nombre: string;
+  subcategorias: MarketplaceCategoryNode[];
+};
+
+export type MarketplaceCompanySummary = {
+  id: string;
+  nombre: string;
+  logo: string | null;
+  calificacion: number | null;
+};
+
+export type MarketplaceCompanyDetail = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  fechaRegistro: string | null;
+  ventasCompletadas: number | null;
+};
+
+export type ProductReview = {
+  id: string;
+  cliente: {
+    nombre: string;
+    avatar: string | null;
+  };
+  calificacion: number | null;
+  comentario: string | null;
+  fecha: string | null;
+};
+
+export type UpsertReviewPayload = {
+  calificacion: number;
+  comentario: string;
+};
+
+export type CreateReviewResponse = {
+  id: string;
+  mensaje: string;
+};
+
+export type ReviewResponse = {
+  id: string;
+  calificacion: number | null;
+  comentario: string | null;
+  fecha: string | null;
+};
+
+export type ClientChatSummary = {
+  id: string;
+  empresa: {
+    nombre: string | null;
+  };
+  ultimoMensaje: string | null;
+  mensajesSinLeer: number;
+};
+
+export type CreateClientChatPayload = {
+  empresaId: string;
+  asunto: string;
+};
+
+export type CreateClientChatResponse = {
+  chatId: string;
+  estado: string;
+};
+
+export type ClientChatMessage = {
+  id: string;
+  remitente: "cliente" | "empresa" | string;
+  contenido: string;
+  fecha: string;
+};
+
+export type ClientCommunity = {
+  id: string;
+  nombre: string;
+  miembros: number;
+};
+
+export type ClientCommunityPost = {
+  id: string;
+  autor: string;
+  titulo?: string;
+  contenido: string;
+  creadoEn?: string;
+};
+
+export type ClientNotification = {
+  id: string;
+  titulo: string;
+  leido: boolean;
+  enlace: string | null;
+};
+
+>>>>>>> Nobre
 function buildUrl(path: string): string {
   return new URL(path, IA_BASE_URL).toString();
 }
@@ -147,6 +310,16 @@ function buildHeaders(existing: HeadersInit | undefined, hasBody: boolean): Head
     headers.set("X-User-Id", userId);
   }
 
+<<<<<<< HEAD
+=======
+  if (typeof window !== "undefined" && !headers.has("Authorization")) {
+    const token = window.localStorage.getItem("accessToken");
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+  }
+
+>>>>>>> Nobre
   return headers;
 }
 
@@ -199,7 +372,16 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const responseBody = await readResponseBody(response);
 
   if (!response.ok) {
+<<<<<<< HEAD
     throw new Error(resolveErrorMessage(responseBody, "Error de solicitud"));
+=======
+    const fallbackMessage =
+      response.status === 401 || response.status === 403
+        ? "No autorizado. Inicia sesion nuevamente para usar esta seccion."
+        : `Error de solicitud (${response.status})`;
+
+    throw new Error(resolveErrorMessage(responseBody, fallbackMessage));
+>>>>>>> Nobre
   }
 
   return responseBody as T;
@@ -293,3 +475,290 @@ export async function deleteConversationMessage(messageId: string): Promise<Mess
     method: "DELETE",
   });
 }
+<<<<<<< HEAD
+=======
+
+export async function getClientProfile(): Promise<ClientProfile> {
+  return request<ClientProfile>("/api/clients/profile", { method: "GET" });
+}
+
+export async function updateClientProfile(
+  payload: UpdateClientProfilePayload,
+): Promise<ClientProfile> {
+  return request<ClientProfile>("/api/clients/profile", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function listClientAddresses(): Promise<ClientAddress[]> {
+  return request<ClientAddress[]>("/api/clients/addresses", { method: "GET" });
+}
+
+export async function createClientAddress(
+  payload: UpsertClientAddressPayload,
+): Promise<ClientAddress> {
+  return request<ClientAddress>("/api/clients/addresses", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateClientAddress(
+  addressId: string,
+  payload: UpsertClientAddressPayload,
+): Promise<ClientAddress> {
+  return request<ClientAddress>(`/api/clients/addresses/${addressId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteClientAddress(addressId: string): Promise<MessageResponse> {
+  return request<MessageResponse>(`/api/clients/addresses/${addressId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function setDefaultClientAddress(addressId: string): Promise<MessageResponse> {
+  return request<MessageResponse>(`/api/clients/addresses/${addressId}/default`, {
+    method: "PUT",
+  });
+}
+
+export async function listMarketplaceProducts(params?: {
+  search?: string;
+  category?: string;
+  pagina?: number;
+}): Promise<MarketplaceProductPage> {
+  const query = new URLSearchParams();
+  if (params?.search?.trim()) {
+    query.set("search", params.search.trim());
+  }
+  if (params?.category?.trim() && params.category !== "Todos") {
+    query.set("category", params.category.trim());
+  }
+  if (params?.pagina) {
+    query.set("pagina", String(params.pagina));
+  }
+
+  const path = query.toString() ? `/api/marketplace/products?${query}` : "/api/marketplace/products";
+  return request<MarketplaceProductPage>(path, { method: "GET" });
+}
+
+export async function listMarketplaceServices(params?: {
+  search?: string;
+  pagina?: number;
+}): Promise<MarketplaceProductPage> {
+  const query = new URLSearchParams();
+  if (params?.search?.trim()) {
+    query.set("search", params.search.trim());
+  }
+  if (params?.pagina) {
+    query.set("pagina", String(params.pagina));
+  }
+  const path = query.toString() ? `/api/marketplace/services?${query}` : "/api/marketplace/services";
+  return request<MarketplaceProductPage>(path, { method: "GET" });
+}
+
+export async function getMarketplaceProduct(
+  productId: string,
+): Promise<MarketplaceProductDetail> {
+  return request<MarketplaceProductDetail>(`/api/marketplace/products/${productId}`, {
+    method: "GET",
+  });
+}
+
+export async function listMarketplaceCategories(): Promise<MarketplaceCategoryNode[]> {
+  return request<MarketplaceCategoryNode[]>("/api/marketplace/categories", { method: "GET" });
+}
+
+export async function listMarketplaceCategoryProducts(
+  categoryId: string,
+  pagina = 1,
+): Promise<MarketplaceProductPage> {
+  return request<MarketplaceProductPage>(
+    `/api/marketplace/categories/${categoryId}/products?pagina=${pagina}`,
+    { method: "GET" },
+  );
+}
+
+export async function listMarketplaceCompanies(): Promise<MarketplaceCompanySummary[]> {
+  return request<MarketplaceCompanySummary[]>("/api/marketplace/companies", { method: "GET" });
+}
+
+export async function getMarketplaceCompany(
+  companyId: string,
+): Promise<MarketplaceCompanyDetail> {
+  return request<MarketplaceCompanyDetail>(`/api/marketplace/companies/${companyId}`, {
+    method: "GET",
+  });
+}
+
+export async function listMarketplaceCompanyProducts(
+  companyId: string,
+  pagina = 1,
+): Promise<MarketplaceProductPage> {
+  return request<MarketplaceProductPage>(
+    `/api/marketplace/companies/${companyId}/products?pagina=${pagina}`,
+    { method: "GET" },
+  );
+}
+
+export async function createProductReview(
+  productId: string,
+  payload: UpsertReviewPayload,
+): Promise<CreateReviewResponse> {
+  return request<CreateReviewResponse>(`/api/clients/reviews/products/${productId}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateClientReview(
+  reviewId: string,
+  payload: UpsertReviewPayload,
+): Promise<ReviewResponse> {
+  return request<ReviewResponse>(`/api/clients/reviews/${reviewId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteClientReview(reviewId: string): Promise<MessageResponse> {
+  return request<MessageResponse>(`/api/clients/reviews/${reviewId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function createCompanyReview(
+  companyId: string,
+  payload: UpsertReviewPayload,
+): Promise<CreateReviewResponse> {
+  return request<CreateReviewResponse>(`/api/clients/reviews/companies/${companyId}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function listProductReviews(productId: string): Promise<ProductReview[]> {
+  return request<ProductReview[]>(`/api/marketplace/products/${productId}/reviews`, {
+    method: "GET",
+  });
+}
+
+export async function listClientChats(): Promise<ClientChatSummary[]> {
+  return request<ClientChatSummary[]>("/api/clients/chats", { method: "GET" });
+}
+
+export async function createClientChat(
+  payload: CreateClientChatPayload,
+): Promise<CreateClientChatResponse> {
+  return request<CreateClientChatResponse>("/api/clients/chats", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getClientChatMessages(chatId: string): Promise<ClientChatMessage[]> {
+  return request<ClientChatMessage[]>(`/api/clients/chats/${chatId}/messages`, {
+    method: "GET",
+  });
+}
+
+export async function createClientChatMessage(
+  chatId: string,
+  contenido: string,
+): Promise<ClientChatMessage> {
+  return request<ClientChatMessage>(`/api/clients/chats/${chatId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ contenido }),
+  });
+}
+
+export async function markClientChatRead(chatId: string): Promise<MessageResponse> {
+  return request<MessageResponse>(`/api/clients/chats/${chatId}/read`, { method: "PUT" });
+}
+
+export async function listFavoriteProducts(): Promise<MarketplaceProductSummary[]> {
+  return request<MarketplaceProductSummary[]>("/api/clients/favorites/products", {
+    method: "GET",
+  });
+}
+
+export async function addFavoriteProduct(productId: string): Promise<MessageResponse> {
+  return request<MessageResponse>(`/api/clients/favorites/products/${productId}`, {
+    method: "POST",
+  });
+}
+
+export async function removeFavoriteProduct(productId: string): Promise<MessageResponse> {
+  return request<MessageResponse>(`/api/clients/favorites/products/${productId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function listFavoriteCompanies(): Promise<MarketplaceCompanySummary[]> {
+  return request<MarketplaceCompanySummary[]>("/api/clients/favorites/companies", {
+    method: "GET",
+  });
+}
+
+export async function followCompany(companyId: string): Promise<MessageResponse> {
+  return request<MessageResponse>(`/api/clients/favorites/companies/${companyId}`, {
+    method: "POST",
+  });
+}
+
+export async function unfollowCompany(companyId: string): Promise<MessageResponse> {
+  return request<MessageResponse>(`/api/clients/favorites/companies/${companyId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function listClientCommunities(): Promise<ClientCommunity[]> {
+  return request<ClientCommunity[]>("/api/clients/communities", { method: "GET" });
+}
+
+export async function joinClientCommunity(communityId: string): Promise<MessageResponse> {
+  return request<MessageResponse>(`/api/clients/communities/${communityId}/join`, {
+    method: "POST",
+  });
+}
+
+export async function leaveClientCommunity(communityId: string): Promise<MessageResponse> {
+  return request<MessageResponse>(`/api/clients/communities/${communityId}/leave`, {
+    method: "DELETE",
+  });
+}
+
+export async function listClientCommunityPosts(
+  communityId: string,
+): Promise<ClientCommunityPost[]> {
+  return request<ClientCommunityPost[]>(`/api/clients/communities/${communityId}/posts`, {
+    method: "GET",
+  });
+}
+
+export async function listClientNotifications(): Promise<ClientNotification[]> {
+  return request<ClientNotification[]>("/api/clients/notifications", { method: "GET" });
+}
+
+export async function markClientNotificationRead(
+  notificationId: string,
+): Promise<ClientNotification> {
+  return request<ClientNotification>(`/api/clients/notifications/${notificationId}/read`, {
+    method: "PUT",
+  });
+}
+
+export async function markAllClientNotificationsRead(): Promise<MessageResponse> {
+  return request<MessageResponse>("/api/clients/notifications/read-all", { method: "PUT" });
+}
+
+export async function deleteClientNotification(notificationId: string): Promise<MessageResponse> {
+  return request<MessageResponse>(`/api/clients/notifications/${notificationId}`, {
+    method: "DELETE",
+  });
+}
+>>>>>>> Nobre

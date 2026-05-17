@@ -3,16 +3,23 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  getMarketplaceProduct,
+  listMarketplaceCategories,
+  listMarketplaceProducts,
+  type MarketplaceProductDetail,
+  type MarketplaceProductSummary,
+} from "@/lib/api/iaApi";
 import {
   ClientPageHeader,
   ClientQuickLinksCard,
 } from "../../components/ClientPageSections";
 import {
-  PublicationViewerComment,
   PublicationViewerData,
   PublicationViewerModal,
 } from "../../components/PublicationViewerModal";
+<<<<<<< HEAD
 import {
   COMMUNITY_FEED_UPDATED_EVENT,
   CommunityFeedPost,
@@ -27,6 +34,26 @@ import {
 } from "../../lib/marketplaceFeed";
 
 const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
+=======
+type MarketplaceListing = {
+  post: {
+    id: string;
+    author: string;
+    role: string;
+    time: string;
+    title: string;
+    body: string;
+    tag: string;
+    location: string;
+    image?: string;
+    createdAt: string;
+    companyId?: string;
+  };
+  category: string;
+  condition: string;
+  priceLabel: string;
+};
+>>>>>>> Nobre
 
 const clientMenuItems = [
   { label: "Explorar marketplace", href: "/cliente/marketplace" },
@@ -39,64 +66,38 @@ const clientMenuItems = [
 ];
 
 type SortMode = "recientes" | "precio-bajo" | "precio-alto";
+type CategoryFilter = string;
 
-const marketplaceBaseLikesById: Record<string, number> = {
-  "market-seed-1": 18,
-  "market-seed-2": 11,
-  "market-seed-3": 15,
-  "market-seed-4": 9,
-  "market-seed-5": 6,
-  "market-seed-6": 13,
-};
+const MARKETPLACE_CHAT_MAP_KEY = "techmarket.client.marketplace.chatByProduct";
 
-const marketplaceSeedCommentsById: Record<string, PublicationViewerComment[]> = {
-  "market-seed-1": [
-    {
-      id: "market-seed-1-comment-1",
-      author: "Luis G.",
-      text: "Sigue disponible? Me interesa y podria pasar hoy.",
-      time: "Hace 22 min",
-    },
-    {
-      id: "market-seed-1-comment-2",
-      author: "Carla M.",
-      text: "Buen precio para esa configuracion.",
-      time: "Hace 9 min",
-    },
-  ],
-  "market-seed-3": [
-    {
-      id: "market-seed-3-comment-1",
-      author: "Rene P.",
-      text: "El monitor incluye caja original?",
-      time: "Hace 41 min",
-    },
-  ],
-};
-
-const subscribeCommunityFeed = (onStoreChange: () => void) => {
+const readMarketplaceChatMap = (): Record<string, string> => {
   if (typeof window === "undefined") {
-    return () => {};
+    return {};
   }
 
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key === "techmarket.community.feed") {
-      onStoreChange();
+  try {
+    const rawValue = window.localStorage.getItem(MARKETPLACE_CHAT_MAP_KEY);
+    if (!rawValue) {
+      return {};
     }
-  };
 
-  const handleFeedUpdate = () => {
-    onStoreChange();
-  };
-
-  window.addEventListener("storage", handleStorage);
-  window.addEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
-
-  return () => {
-    window.removeEventListener("storage", handleStorage);
-    window.removeEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
-  };
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === "object" && !Array.isArray(parsedValue)
+      ? (parsedValue as Record<string, string>)
+      : {};
+  } catch {
+    return {};
+  }
 };
+
+const createMarketplaceSellerKey = (sellerName: string): string =>
+  sellerName
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "empresa";
 
 const parsePriceToNumber = (priceLabel: string): number => {
   const numeric = priceLabel.replace(/[^\d.,]/g, "").replace(/,/g, "");
@@ -109,24 +110,127 @@ const parsePriceToNumber = (priceLabel: string): number => {
   return parsed;
 };
 
+const formatCurrency = (value: number | null): string => {
+  if (value === null || value === undefined) {
+    return "Precio por inbox";
+  }
+
+  return `Bs ${value.toLocaleString("es-BO", {
+    minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+const productToListing = (
+  product: MarketplaceProductSummary,
+  detail?: MarketplaceProductDetail,
+): MarketplaceListing => ({
+  post: {
+    id: product.id,
+    author: detail?.empresa?.nombre ?? product.id,
+    role: "Empresa",
+    time: "Disponible",
+    title: product.nombre,
+    body:
+      detail?.descripcion ??
+      `Producto publicado en TechMarket${product.calificacion ? ` con calificacion ${product.calificacion}/5` : ""}.`,
+    tag: "Producto",
+    location: "Bolivia",
+    image: product.imagenPrincipal ?? undefined,
+    createdAt: new Date().toISOString(),
+    companyId: detail?.empresa?.id,
+  },
+  category: "Otros",
+  condition: "Sin dato",
+  priceLabel: formatCurrency(product.precio),
+});
+
 export default function ClienteMarketplacePage() {
   const router = useRouter();
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<MarketplaceCategory>("Todos");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("Todos");
   const [selectedCity, setSelectedCity] = useState("Todas");
   const [sortMode, setSortMode] = useState<SortMode>("recientes");
   const [activePublication, setActivePublication] = useState<PublicationViewerData | null>(null);
+  const [apiListings, setApiListings] = useState<MarketplaceListing[]>([]);
+  const [apiCategories, setApiCategories] = useState<string[]>([]);
+  const [isLoadingApi, setIsLoadingApi] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [chatByProductId, setChatByProductId] = useState<Record<string, string>>({});
 
-  const dynamicFeedPosts = useSyncExternalStore(
-    subscribeCommunityFeed,
-    readCommunityFeedPosts,
-    () => EMPTY_FEED_SNAPSHOT,
-  );
+  const allListings = useMemo(() => apiListings, [apiListings]);
 
-  const allListings = useMemo(
-    () => buildMarketplaceListings([...marketplaceSeedPosts, ...dynamicFeedPosts]),
-    [dynamicFeedPosts],
+  useEffect(() => {
+    const refreshChatMap = () => setChatByProductId(readMarketplaceChatMap());
+
+    refreshChatMap();
+    window.addEventListener("focus", refreshChatMap);
+    window.addEventListener("storage", refreshChatMap);
+
+    return () => {
+      window.removeEventListener("focus", refreshChatMap);
+      window.removeEventListener("storage", refreshChatMap);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadMarketplace = async () => {
+      setIsLoadingApi(true);
+      setApiError(null);
+
+      try {
+        const [productPage, categories] = await Promise.all([
+          listMarketplaceProducts({ pagina: 1 }),
+          listMarketplaceCategories(),
+        ]);
+
+        if (!active) {
+          return;
+        }
+
+        const productDetails = await Promise.all(
+          productPage.productos.map((product) =>
+            getMarketplaceProduct(product.id).catch(() => null),
+          ),
+        );
+
+        setApiListings(
+          productPage.productos.map((product, index) =>
+            productToListing(product, productDetails[index] ?? undefined),
+          ),
+        );
+        setApiCategories(categories.flatMap((category) => [
+          category.nombre,
+          ...category.subcategorias.map((subcategory) => subcategory.nombre),
+        ]));
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+
+        setApiListings([]);
+        setApiCategories([]);
+        setApiError(error instanceof Error ? error.message : "No se pudo cargar marketplace");
+      } finally {
+        if (active) {
+          setIsLoadingApi(false);
+        }
+      }
+    };
+
+    loadMarketplace();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const categoryOptions = useMemo(
+    () => ["Todos", ...new Set(apiCategories)],
+    [apiCategories],
   );
 
   const listingCountBySeller = useMemo(() => {
@@ -151,7 +255,10 @@ export default function ClienteMarketplacePage() {
           .toLowerCase()
           .includes(normalizedSearch);
 
-      const matchesCategory = selectedCategory === "Todos" || listing.category === selectedCategory;
+      const matchesCategory =
+        selectedCategory === "Todos" ||
+        listing.category === selectedCategory ||
+        listing.post.tag === selectedCategory;
       const matchesCity = selectedCity === "Todas" || listing.post.location === selectedCity;
 
       return matchesQuery && matchesCategory && matchesCity;
@@ -171,6 +278,13 @@ export default function ClienteMarketplacePage() {
   }, [allListings, searchQuery, selectedCategory, selectedCity, sortMode]);
 
   const highlightedListings = filteredListings.slice(0, 3);
+  const activePublicationListing = useMemo(
+    () =>
+      activePublication
+        ? allListings.find((item) => item.post.id === activePublication.id) ?? null
+        : null,
+    [activePublication, allListings],
+  );
 
   const handleOpenListing = (listing: (typeof filteredListings)[number]) => {
     const normalizedText = `${listing.post.tag} ${listing.post.title} ${listing.post.body}`.toLowerCase();
@@ -196,18 +310,38 @@ export default function ClienteMarketplacePage() {
       priceLabel: listing.priceLabel,
       conditionLabel: listing.condition,
       categoryLabel: listing.category,
-      initialLikeCount: marketplaceBaseLikesById[listing.post.id] ?? 0,
+      initialLikeCount: 0,
       initiallyLiked: false,
-      initialComments: marketplaceSeedCommentsById[listing.post.id] ?? [],
+      initialComments: [],
     });
   };
 
-  const redirectToSellerChat = (sellerName: string, productTitle: string) => {
+  const redirectToSellerChat = (listing: MarketplaceListing) => {
+    const existingChatId = chatByProductId[listing.post.id];
+    if (existingChatId) {
+      setActivePublication(null);
+      router.push(`/cliente/chat?chatId=${encodeURIComponent(existingChatId)}`);
+      return;
+    }
+
+    const sellerName = listing.post.author;
+    const productTitle = listing.post.title;
     const message = `Hola, vi tu anuncio \"${productTitle}\". Sigue disponible?`;
+
+    if (!listing.post.companyId) {
+      setActivePublication(null);
+      setApiError(
+        "No se pudo abrir el chat porque esta publicacion no trae una empresa asociada desde la API.",
+      );
+      return;
+    }
+
     const params = new URLSearchParams({
       source: "marketplace",
       seller: sellerName,
       company: sellerName,
+      companyId: listing.post.companyId,
+      productId: listing.post.id,
       product: productTitle,
       message,
     });
@@ -293,10 +427,10 @@ export default function ClienteMarketplacePage() {
                 <select
                   id="marketplace-category"
                   value={selectedCategory}
-                  onChange={(event) => setSelectedCategory(event.target.value as MarketplaceCategory)}
+                  onChange={(event) => setSelectedCategory(event.target.value)}
                   className="auth-select"
                 >
-                  {marketplaceCategoryOptions.map((option) => (
+                  {categoryOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
                     </option>
@@ -352,6 +486,14 @@ export default function ClienteMarketplacePage() {
             <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/85">
               Estilo marketplace: cards visuales, multiples publicaciones por vendedor, filtros rapidos y resultados ordenados para decidir mas rapido.
             </p>
+            {isLoadingApi ? (
+              <p className="mt-3 text-xs text-cyan-200/75">Cargando productos desde la API...</p>
+            ) : null}
+            {apiError ? (
+              <p className="mt-3 text-xs text-amber-200/85">
+                No se pudo conectar con la API: {apiError}
+              </p>
+            ) : null}
 
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-cyan-100/15 bg-slate-950/35 p-3">
@@ -372,7 +514,7 @@ export default function ClienteMarketplacePage() {
           {filteredListings.length === 0 ? (
             <section className="tech-card">
               <p className="text-sm text-cyan-100/80">
-                No encontramos anuncios para esos filtros. Prueba con otra categoria o ciudad.
+                No hay productos para mostrar desde la API.
               </p>
             </section>
           ) : (
@@ -451,10 +593,10 @@ export default function ClienteMarketplacePage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => redirectToSellerChat(listing.post.author, listing.post.title)}
+                          onClick={() => redirectToSellerChat(listing)}
                           className="rounded-xl border border-cyan-100/15 bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-100/90 transition hover:bg-white/10"
                         >
-                          Contactar
+                          {chatByProductId[listing.post.id] ? "Ver mensaje" : "Contactar"}
                         </button>
                       </div>
                     </div>
@@ -469,13 +611,17 @@ export default function ClienteMarketplacePage() {
       <PublicationViewerModal
         publication={activePublication}
         onClose={() => setActivePublication(null)}
-        secondaryActionLabel="Contactar vendedor"
+        secondaryActionLabel={
+          activePublicationListing && chatByProductId[activePublicationListing.post.id]
+            ? "Ver mensaje"
+            : "Contactar vendedor"
+        }
         onSecondaryAction={() => {
-          if (!activePublication) {
+          if (!activePublicationListing) {
             return;
           }
 
-          redirectToSellerChat(activePublication.author, activePublication.title);
+          redirectToSellerChat(activePublicationListing);
         }}
       />
     </div>

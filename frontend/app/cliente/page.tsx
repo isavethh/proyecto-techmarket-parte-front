@@ -7,10 +7,24 @@ import { AnimatePresence, motion } from "motion/react";
 import { requireAuth } from "@/lib/auth/authGuard";
 import {
   createSearchHistory,
+  createClientChatMessage,
+  getClientChatMessages,
+  listClientCommunities,
+  listClientCommunityPosts,
+  listClientChats,
+  listClientNotifications,
+  listFavoriteCompanies,
+  listFavoriteProducts,
+  listMarketplaceCompanies,
   searchGlobal,
   searchSuggestions as fetchSearchSuggestions,
   searchTrending,
   type GlobalSearchItem,
+  type ClientNotification,
+  type ClientChatMessage,
+  type ClientChatSummary,
+  type MarketplaceCompanySummary,
+  type MarketplaceProductSummary,
   type SearchSuggestion,
   type SearchTrending,
 } from "@/lib/api/iaApi";
@@ -19,9 +33,10 @@ import {
   CommunityFeedPost,
   mergeCommunityFeedPosts,
   readCommunityFeedPosts,
+  upsertCommunityFeedPosts,
 } from "../lib/communityFeed";
-import { clientCompanyProfiles } from "../lib/clientCompanyProfiles";
 import { ClientPageHeader } from "../components/ClientPageSections";
+import { useClientExperience } from "../components/ClientExperienceShell";
 import {
   PublicationActionButton,
   PublicationAvatar,
@@ -31,10 +46,22 @@ import {
   PublicationViewerData,
   PublicationViewerModal,
 } from "../components/PublicationViewerModal";
-import { buildClientProfileHref } from "../lib/clientUserProfiles";
 
 type SearchMode = "normal" | "ia";
 type TopView = "feed" | "seguimiento";
+
+const buildClientProfileHref = (name: string): string => {
+  const slug =
+    name
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "perfil";
+
+  return `/cliente/perfil/${slug}`;
+};
 
 type MiniCard = {
   name: string;
@@ -96,98 +123,13 @@ type FollowingPost = {
   }>;
 };
 
-const favorites: MiniCard[] = [
-  {
-    name: "Laptop Zen 13",
-    imageClass: "from-cyan-300/40 via-blue-500/30 to-slate-900/60",
-  },
-  {
-    name: "Monitor UltraWide 34",
-    imageClass: "from-emerald-300/35 via-cyan-400/30 to-slate-900/60",
-  },
-  {
-    name: "Servicio tecnico premium",
-    imageClass: "from-violet-300/35 via-sky-500/30 to-slate-900/60",
-  },
-];
+const favorites: MiniCard[] = [];
 
-const savedItems: MiniCard[] = [
-  {
-    name: "Kit limpieza PC",
-    imageClass: "from-cyan-200/35 via-slate-500/30 to-slate-900/60",
-  },
-  {
-    name: "Cargador USB-C 100W",
-    imageClass: "from-emerald-200/35 via-teal-500/30 to-slate-900/60",
-  },
-  {
-    name: "Mouse ergonomico",
-    imageClass: "from-sky-200/35 via-blue-500/30 to-slate-900/60",
-  },
-];
+const savedItems: MiniCard[] = [];
 
-const baseFeedItems: CommunityFeedPost[] = [
-  {
-    id: "post-1",
-    author: "TechFix Lab",
-    role: "Servicio tecnico",
-    time: "Hace 2 horas",
-    title: "Diagnostico express para laptops lentas",
-    body: "Servicio a domicilio con limpieza interna y optimizacion de rendimiento.",
-    tag: "Nuevo servicio",
-    location: "La Paz",
-    image: "/productos/laptop-pro-14.jpg",
-    createdAt: "2026-04-17T10:00:00.000Z",
-  },
-  {
-    id: "post-2",
-    author: "Zona Gamer Store",
-    role: "Tienda",
-    time: "Hace 6 horas",
-    title: "Mouse ergonomico con 20% de descuento",
-    body: "Stock limitado. Ideal para jornadas largas y setup profesional.",
-    tag: "Promocion",
-    location: "Santa Cruz",
-    image: "/productos/teclado-tkl.jpg",
-    createdAt: "2026-04-17T07:30:00.000Z",
-  },
-  {
-    id: "post-3",
-    author: "ElectroCare",
-    role: "Servicio tecnico",
-    time: "Hace 1 dia",
-    title: "Cambio de pasta termica y limpieza",
-    body: "Mejora la temperatura y evita apagados inesperados.",
-    tag: "Recomendado",
-    location: "Cochabamba",
-    image: "/productos/kit-limpieza-pc.jpg",
-    createdAt: "2026-04-16T17:30:00.000Z",
-  },
-];
+const baseFeedItems: CommunityFeedPost[] = [];
 
-const aiSuggestions = [
-  {
-    title: "Servicio tecnico laptop a domicilio",
-    match: "Detecta fallas de rendimiento y limpieza interna",
-    rating: "4.9",
-    slug: "servicio-tecnico-laptop-domicilio",
-    imageClass: "from-cyan-300/40 via-blue-500/30 to-slate-900/60",
-  },
-  {
-    title: "Diagnostico y mantenimiento preventivo",
-    match: "Ideal si la laptop se recalienta o va lenta",
-    rating: "4.8",
-    slug: "diagnostico-mantenimiento-preventivo",
-    imageClass: "from-emerald-300/35 via-cyan-400/30 to-slate-900/60",
-  },
-  {
-    title: "Cambio de pasta termica + limpieza",
-    match: "Recomendado cuando hay apagados inesperados",
-    rating: "4.7",
-    slug: "cambio-pasta-termica-limpieza",
-    imageClass: "from-violet-300/35 via-sky-500/30 to-slate-900/60",
-  },
-];
+const aiSuggestions: Array<{ title: string; match: string; rating: string; slug: string; imageClass: string }> = [];
 
 const aiThinkingMessages = [
   "Interpretando tu necesidad tecnica...",
@@ -198,38 +140,7 @@ const aiThinkingMessages = [
 
 const aiThinkingSignals = ["NLP", "SCORE", "MATCH", "RANK"];
 
-const suggestedAccounts: SuggestedAccount[] = [
-  {
-    id: "acc-1",
-    slug: "tecnocentro-andino",
-    name: "TecnoCentro Andino",
-    role: "Tienda de equipos",
-    city: "La Paz",
-    followers: "8.2k",
-    rating: "4.8",
-    avatar: "TA",
-  },
-  {
-    id: "acc-2",
-    slug: "fixcloud-soporte",
-    name: "FixCloud Soporte",
-    role: "Servicio tecnico",
-    city: "Santa Cruz",
-    followers: "3.6k",
-    rating: "4.7",
-    avatar: "FC",
-  },
-  {
-    id: "acc-3",
-    slug: "redlink-pro",
-    name: "RedLink Pro",
-    role: "Instalaciones y redes",
-    city: "Cochabamba",
-    followers: "1.9k",
-    rating: "4.6",
-    avatar: "RL",
-  },
-];
+const suggestedAccounts: SuggestedAccount[] = [];
 
 const quickActions = [
   { label: "Explorar marketplace", href: "/cliente/marketplace" },
@@ -241,91 +152,85 @@ const quickActions = [
   { label: "Actividad reciente", href: "#feed" },
 ];
 
-const stories = ["TecnoCentro", "FixCloud", "RedLink", "Zona Gamer", "ElectroCare", "BuildStation"];
+const stories: string[] = [];
 
-const activityFallback = [
-  "Nuevas publicaciones de empresas cada dia.",
-  "Mayor interaccion en soporte remoto y diagnostico.",
-  "Embajadores activos recomendando negocios locales.",
-];
+const activityFallback: string[] = [];
 
-const feedCommentsByPostId: Record<string, PostComment[]> = {
-  "post-1": [
-    {
-      id: "post-1-comment-1",
-      author: "Marco T.",
-      text: "Me sirvio este servicio, dejaron mi laptop mucho mas rapida.",
-      time: "Hace 21 min",
-    },
-    {
-      id: "post-1-comment-2",
-      author: "Paola R.",
-      text: "Atienden fines de semana? necesito mantenimiento urgente.",
-      time: "Hace 9 min",
-    },
-  ],
-  "post-2": [
-    {
-      id: "post-2-comment-1",
-      author: "Diego V.",
-      text: "El descuento sigue activo? quiero dos unidades para oficina.",
-      time: "Hace 17 min",
-    },
-  ],
-  "seed-company-post-1": [
-    {
-      id: "seed-company-post-1-comment-1",
-      author: "Lina C.",
-      text: "Buena info, gracias por publicar detalles de rendimiento.",
-      time: "Hace 34 min",
-    },
-  ],
-};
+const feedCommentsByPostId: Record<string, PostComment[]> = {};
 
-const feedBaseLikesByPostId: Record<string, number> = {
-  "post-1": 24,
-  "post-2": 17,
-  "post-3": 12,
-  "seed-company-post-1": 9,
-};
+const feedBaseLikesByPostId: Record<string, number> = {};
 
-const activeClientName = "Camila Mendoza";
-
-const clientChatThreads: ChatThread[] = [
-  {
-    id: "chat-1",
-    name: "Sergio Ramirez",
-    company: "TechFix Lab",
-    trigger: "Buscaste servicio tecnico",
-    lastMessage: "Vi tu busqueda y puedo ayudarte hoy mismo.",
-    time: "Ahora",
-    unread: 1,
-    avatar: "TR",
-    messages: [
-      { id: "m1", author: "empresa", text: "Hola, vi que buscaste servicio tecnico.", time: "10:20" },
-      { id: "m2", author: "empresa", text: "Puedo atenderte hoy mismo en tu zona.", time: "10:21" },
-      { id: "m3", author: "cliente", text: "Perfecto, necesito diagnostico para mi laptop.", time: "10:22" },
-    ],
-  },
-  {
-    id: "chat-2",
-    name: "Laura V.",
-    company: "Zona Gamer Store",
-    trigger: "Buscaste laptop",
-    lastMessage: "Tengo modelos disponibles con entrega inmediata.",
-    time: "Hace 8 min",
-    unread: 2,
-    avatar: "ZG",
-    messages: [
-      { id: "m1", author: "empresa", text: "Hola, vimos que buscaste una laptop.", time: "09:55" },
-      { id: "m2", author: "empresa", text: "Tenemos opciones para estudio y gaming.", time: "09:56" },
-      { id: "m3", author: "cliente", text: "Me interesa una laptop ligera para trabajo.", time: "09:58" },
-      { id: "m4", author: "empresa", text: "Te comparto 2 opciones con entrega inmediata.", time: "10:00" },
-    ],
-  },
-];
+const activeClientName = "Cliente";
 
 const emptyFeedSnapshot: CommunityFeedPost[] = [];
+
+const createAvatarInitials = (value: string): string => {
+  const initials = value
+    .split(" ")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
+  return initials || "CH";
+};
+
+const formatChatTime = (isoDate?: string | null): string => {
+  if (!isoDate) {
+    return "Ahora";
+  }
+
+  const parsed = Date.parse(isoDate);
+  if (Number.isNaN(parsed)) {
+    return "Ahora";
+  }
+
+  const date = new Date(parsed);
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
+
+const buildChatMessage = (message: ClientChatMessage): ChatMessage => ({
+  id: message.id,
+  author: message.remitente === "cliente" ? "cliente" : "empresa",
+  text: message.contenido,
+  time: formatChatTime(message.fecha),
+});
+
+const buildChatThread = (
+  chat: ClientChatSummary,
+  messages: ClientChatMessage[],
+): ChatThread => {
+  const company = chat.empresa.nombre ?? "Empresa";
+  const mappedMessages = messages.map(buildChatMessage);
+  const lastMessage = mappedMessages[mappedMessages.length - 1];
+
+  return {
+    id: chat.id,
+    name: "Chat activo",
+    company,
+    trigger: "Conversacion cliente",
+    lastMessage: lastMessage?.text ?? chat.ultimoMensaje ?? "Conversacion iniciada",
+    time: lastMessage?.time ?? "Ahora",
+    unread: chat.mensajesSinLeer ?? 0,
+    avatar: createAvatarInitials(company),
+    messages:
+      mappedMessages.length > 0
+        ? mappedMessages
+        : chat.ultimoMensaje
+          ? [
+              {
+                id: `${chat.id}-last`,
+                author: "empresa",
+                text: chat.ultimoMensaje,
+                time: "Ahora",
+              },
+            ]
+          : [],
+  };
+};
 
 const subscribeCommunityFeed = (onStoreChange: () => void) => {
   if (typeof window === "undefined") {
@@ -351,88 +256,7 @@ const subscribeCommunityFeed = (onStoreChange: () => void) => {
   };
 };
 
-const followingPosts: FollowingPost[] = [
-  {
-    id: "follow-1",
-    author: "TechFix Lab",
-    kind: "empresa",
-    followedSince: "Sigues esta cuenta desde hace 3 meses",
-    title: "Promo especial para mantenimiento preventivo",
-    body: "Esta semana tenemos descuento por combo de limpieza + pasta termica.",
-    tag: "Promocion",
-    image: "/productos/kit-limpieza-pc.jpg",
-    createdAt: "2026-04-17T09:00:00.000Z",
-    comments: [
-      {
-        id: "follow-1-comment-1",
-        author: "Nadia P.",
-        text: "Aproveche esta promo la semana pasada y el servicio fue rapido.",
-        time: "Hace 28 min",
-      },
-      {
-        id: "follow-1-comment-2",
-        author: "Rafael G.",
-        text: "Confirman si la oferta tambien aplica para equipos de escritorio?",
-        time: "Hace 12 min",
-      },
-    ],
-  },
-  {
-    id: "follow-2",
-    author: "Zona Gamer Store",
-    kind: "empresa",
-    followedSince: "Sigues esta cuenta desde hace 1 mes",
-    title: "Nuevo stock de laptops para trabajo y gaming",
-    body: "Llegaron modelos con SSD 1TB y 16GB RAM. Entrega inmediata.",
-    tag: "Producto",
-    image: "/productos/laptop-pro-14.jpg",
-    createdAt: "2026-04-17T07:10:00.000Z",
-    comments: [
-      {
-        id: "follow-2-comment-1",
-        author: "Diana K.",
-        text: "Me interesa la de 16 GB RAM, tienen envio para Cochabamba?",
-        time: "Hace 35 min",
-      },
-      {
-        id: "follow-2-comment-2",
-        author: "Jorge M.",
-        text: "El modelo con 1TB esta muy bueno para trabajo pesado.",
-        time: "Hace 7 min",
-      },
-    ],
-  },
-  {
-    id: "follow-user-1",
-    author: "Andres Cliente",
-    kind: "usuario",
-    followedSince: "Sigues este perfil desde hace 2 semanas",
-    title: "alguien sabe que deberia comprarme, una laptop ultraligera o un setup de escritorio?",
-    body: "Estoy entre una laptop ultraligera y un setup de escritorio. Que recomiendan para trabajar y jugar?",
-    tag: "Consulta",
-    createdAt: "2026-04-17T11:30:00.000Z",
-    comments: [
-      {
-        id: "comment-1",
-        author: "Carla M.",
-        text: "Si te mueves mucho, laptop ultraligera. Si trabajas siempre en casa, setup de escritorio.",
-        time: "Hace 19 min",
-      },
-      {
-        id: "comment-2",
-        author: "Luis Tech",
-        text: "Para trabajar y jugar, te conviene setup de escritorio por rendimiento/precio.",
-        time: "Hace 11 min",
-      },
-      {
-        id: "comment-3",
-        author: "Mariana R.",
-        text: "Yo iria por laptop si priorizas portabilidad; agrega monitor externo y quedas bien para ambos casos.",
-        time: "Hace 4 min",
-      },
-    ],
-  },
-];
+const followingPosts: FollowingPost[] = [];
 
 const formatPublishedAt = (isoDate: string): string => {
   const parsed = Date.parse(isoDate);
@@ -496,6 +320,7 @@ const getFeedSaleMeta = (
 
 export default function ClientePage() {
   const router = useRouter();
+  const { openPostModal } = useClientExperience();
 
   useEffect(() => {
     requireAuth(router);
@@ -525,7 +350,7 @@ export default function ClientePage() {
     readCommunityFeedPosts,
     () => emptyFeedSnapshot,
   );
-  const [activeChatId, setActiveChatId] = useState(clientChatThreads[0].id);
+  const [activeChatId, setActiveChatId] = useState("");
   const [draftMessage, setDraftMessage] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [likedFeedPostIds, setLikedFeedPostIds] = useState<string[]>([]);
@@ -534,9 +359,172 @@ export default function ClientePage() {
   const [customFeedCommentsByPostId, setCustomFeedCommentsByPostId] = useState<Record<string, PostComment[]>>({});
   const [auraLikePostId, setAuraLikePostId] = useState<string | null>(null);
   const [activePublication, setActivePublication] = useState<PublicationViewerData | null>(null);
+  const [favoriteProducts, setFavoriteProducts] = useState<MarketplaceProductSummary[]>([]);
+  const [favoriteCompanies, setFavoriteCompanies] = useState<MarketplaceCompanySummary[]>([]);
+  const [notifications, setNotifications] = useState<ClientNotification[]>([]);
+  const [recommendedCompanies, setRecommendedCompanies] = useState<MarketplaceCompanySummary[]>([]);
+  const [clientApiError, setClientApiError] = useState<string | null>(null);
+  const [chatThreads, setChatThreads] = useState<ChatThread[]>([]);
+  const [isChatLoading, setIsChatLoading] = useState(true);
+  const [chatError, setChatError] = useState<string | null>(null);
 
-  const activeChat =
-    clientChatThreads.find((chat) => chat.id === activeChatId) ?? clientChatThreads[0];
+  const activeChat = chatThreads.find((chat) => chat.id === activeChatId) ?? null;
+
+  useEffect(() => {
+    let active = true;
+
+    Promise.all([
+      listFavoriteProducts(),
+      listFavoriteCompanies(),
+      listClientNotifications(),
+      listMarketplaceCompanies(),
+    ])
+      .then(([products, companies, notificationItems, allCompanies]) => {
+        if (!active) {
+          return;
+        }
+        setFavoriteProducts(products);
+        setFavoriteCompanies(companies);
+        setNotifications(notificationItems);
+        setRecommendedCompanies(allCompanies.slice(0, 3));
+        setClientApiError(null);
+      })
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
+        setFavoriteProducts([]);
+        setFavoriteCompanies([]);
+        setNotifications([]);
+        setRecommendedCompanies([]);
+        setClientApiError(error instanceof Error ? error.message : "No se pudo cargar datos cliente");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadChats = async () => {
+      setIsChatLoading(true);
+      setChatError(null);
+
+      try {
+        const chats = await listClientChats();
+        const threads = await Promise.all(
+          chats.map(async (chat) => {
+            const messages = await getClientChatMessages(chat.id).catch(() => []);
+            return buildChatThread(chat, messages);
+          }),
+        );
+
+        if (!active) {
+          return;
+        }
+
+        setChatThreads(threads);
+        setActiveChatId((current) => {
+          if (current && threads.some((thread) => thread.id === current)) {
+            return current;
+          }
+
+          return threads[0]?.id ?? "";
+        });
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+
+        setChatThreads([]);
+        setActiveChatId("");
+        setChatError(error instanceof Error ? error.message : "No se pudieron cargar chats");
+      } finally {
+        if (active) {
+          setIsChatLoading(false);
+        }
+      }
+    };
+
+    loadChats();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const visibleFavorites = useMemo<MiniCard[]>(
+    () =>
+      favoriteProducts.map((product) => ({
+        name: product.nombre,
+        imageClass: "from-cyan-300/40 via-blue-500/30 to-slate-900/60",
+      })),
+    [favoriteProducts],
+  );
+
+  const visibleCompanies = useMemo(
+    () =>
+      favoriteCompanies.map((company) => ({
+        slug: company.id,
+        name: company.nombre,
+        logo:
+          company.logo ??
+          (company.nombre
+            .split(" ")
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((token) => token[0]?.toUpperCase() ?? "")
+            .join("") ||
+            "TM"),
+        city: "Bolivia",
+        category: "Empresa seguida",
+        tagline: "Empresa seguida desde tu cuenta cliente.",
+        rating: company.calificacion ?? 0,
+        reviewCount: 0,
+      })),
+    [favoriteCompanies],
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    listClientCommunities()
+      .then((communities) => {
+        if (!active) return;
+        return Promise.all(
+          communities.map((community) =>
+            listClientCommunityPosts(community.id)
+              .then((posts) =>
+                posts.map<CommunityFeedPost>((post) => ({
+                  id: post.id,
+                  author: post.autor,
+                  role: "Comunidad",
+                  time: "",
+                  title: post.titulo ?? post.contenido.slice(0, 72).replace(/[.,]$/, ""),
+                  body: post.contenido,
+                  tag: community.nombre,
+                  location: "TechMarket",
+                  createdAt: post.creadoEn ?? new Date().toISOString(),
+                })),
+              )
+              .catch(() => [] as CommunityFeedPost[]),
+          ),
+        ).then((grouped) => {
+          if (!active) return;
+          const allPosts = grouped.flat();
+          if (allPosts.length > 0) {
+            upsertCommunityFeedPosts(allPosts);
+          }
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -610,10 +598,7 @@ export default function ClientePage() {
     };
   }, []);
 
-  const fullFeed = useMemo(
-    () => mergeCommunityFeedPosts([...baseFeedItems, ...companyFeedPosts]),
-    [companyFeedPosts],
-  );
+  const fullFeed = useMemo(() => mergeCommunityFeedPosts(companyFeedPosts), [companyFeedPosts]);
 
   const filteredFeed = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
@@ -628,17 +613,10 @@ export default function ClientePage() {
     });
   }, [fullFeed, query]);
 
-  const filteredFollowingPosts = useMemo(() => {
+  const filteredFollowingPosts = useMemo<FollowingPost[]>(() => {
     const cleanQuery = query.trim().toLowerCase();
 
-    if (!cleanQuery) {
-      return followingPosts;
-    }
-
-    return followingPosts.filter((item) => {
-      const bucket = `${item.author} ${item.title} ${item.body} ${item.tag}`.toLowerCase();
-      return bucket.includes(cleanQuery);
-    });
+    return [];
   }, [query]);
 
   const clearPendingAiSearch = () => {
@@ -708,7 +686,7 @@ export default function ClientePage() {
     setAiResults([]);
 
     aiSearchTimerRef.current = window.setTimeout(() => {
-      setAiResults(aiSuggestions);
+      setAiResults([]);
       setIsThinking(false);
       aiSearchTimerRef.current = null;
     }, 1850);
@@ -791,6 +769,40 @@ export default function ClientePage() {
     }));
   };
 
+  const handleSendFloatingChatMessage = async () => {
+    if (!activeChat) {
+      return;
+    }
+
+    const normalizedMessage = draftMessage.trim();
+    if (normalizedMessage.length < 2) {
+      return;
+    }
+
+    try {
+      const sentMessage = await createClientChatMessage(activeChat.id, normalizedMessage);
+      const nextMessage = buildChatMessage(sentMessage);
+
+      setChatThreads((current) =>
+        current.map((chat) =>
+          chat.id === activeChat.id
+            ? {
+                ...chat,
+                lastMessage: nextMessage.text,
+                time: nextMessage.time,
+                unread: 0,
+                messages: [...chat.messages, nextMessage],
+              }
+            : chat,
+        ),
+      );
+      setDraftMessage("");
+      setChatError(null);
+    } catch (error) {
+      setChatError(error instanceof Error ? error.message : "No se pudo enviar el mensaje");
+    }
+  };
+
   const handleOpenFeedPublication = (item: CommunityFeedPost) => {
     const mergedComments = getMergedFeedComments(item.id);
 
@@ -858,10 +870,10 @@ export default function ClientePage() {
             <p className="text-sm font-semibold text-cyan-50">Perfil destacado</p>
             <div className="mt-3 rounded-2xl border border-cyan-100/15 bg-slate-950/30 p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Recomendado para ti</p>
-              <h3 className="mt-2 text-lg font-semibold text-cyan-50">{clientCompanyProfiles[0].name}</h3>
-              <p className="mt-1 text-sm text-cyan-100/75">{clientCompanyProfiles[0].tagline}</p>
+              <h3 className="mt-2 text-lg font-semibold text-cyan-50">Perfil desde API</h3>
+              <p className="mt-1 text-sm text-cyan-100/75">Carga empresas desde la API para ver recomendaciones.</p>
               <Link
-                href={`/cliente/empresa/${clientCompanyProfiles[0].slug}`}
+                href="/cliente/empresas"
                 className="mt-4 inline-flex rounded-xl border border-cyan-100/10 bg-cyan-300/10 px-3 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/15"
               >
                 Ver perfil
@@ -871,83 +883,122 @@ export default function ClientePage() {
 
           <section id="favoritos" className="tech-card">
             <p className="text-sm font-semibold text-cyan-50">Favoritos</p>
+            {clientApiError ? (
+              <p className="mt-2 text-xs text-amber-200/85">
+                No se pudo conectar con la API: {clientApiError}
+              </p>
+            ) : null}
             <div className="mt-3 grid gap-3">
-              {favorites.map((item) => (
-                <div key={item.name} className="rounded-2xl border border-cyan-100/15 p-3">
-                  <div
-                    className={`h-16 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${item.imageClass}`}
-                  />
-                  <p className="mt-2 text-xs text-cyan-100/85">{item.name}</p>
+              {visibleFavorites.length ? (
+                visibleFavorites.map((item) => (
+                  <div key={item.name} className="rounded-2xl border border-cyan-100/15 p-3">
+                    <div
+                      className={`h-16 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${item.imageClass}`}
+                    />
+                    <p className="mt-2 text-xs text-cyan-100/85">{item.name}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-cyan-100/15 p-3 text-xs text-cyan-100/75">
+                  No hay favoritos desde la API.
                 </div>
-              ))}
+              )}
             </div>
           </section>
 
           <section id="empresas" className="tech-card">
-            <p className="text-sm font-semibold text-cyan-50">Empresas destacadas</p>
+            <p className="text-sm font-semibold text-cyan-50">
+              {favoriteCompanies.length ? "Empresas seguidas" : "Empresas destacadas"}
+            </p>
             <div className="mt-3 space-y-3">
-              {clientCompanyProfiles.map((profile) => (
-                <Link
-                  key={profile.slug}
-                  href={`/cliente/empresa/${profile.slug}`}
-                  className="block rounded-2xl border border-cyan-100/15 bg-slate-950/35 p-3 transition hover:bg-slate-950/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
-                      {profile.logo}
+              {visibleCompanies.length ? (
+                visibleCompanies.map((profile) => (
+                  <Link
+                    key={profile.slug}
+                    href={`/cliente/empresa/${profile.slug}`}
+                    className="block rounded-2xl border border-cyan-100/15 bg-slate-950/35 p-3 transition hover:bg-slate-950/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                        {profile.logo}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-cyan-50">{profile.name}</p>
+                        <p className="truncate text-xs text-cyan-200/70">{profile.city} · {profile.category}</p>
+                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-cyan-100/75">{profile.tagline}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-cyan-50">{profile.name}</p>
-                      <p className="truncate text-xs text-cyan-200/70">{profile.city} · {profile.category}</p>
-                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-cyan-100/75">{profile.tagline}</p>
+                    <div className="mt-3 flex items-center justify-between text-xs text-cyan-200/70">
+                      <span>Valoracion {profile.rating.toFixed(1)}</span>
+                      <span>{profile.reviewCount} opiniones</span>
                     </div>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-xs text-cyan-200/70">
-                    <span>Valoracion {profile.rating.toFixed(1)}</span>
-                    <span>{profile.reviewCount} opiniones</span>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-cyan-100/15 p-3 text-xs text-cyan-100/75">
+                  No hay empresas seguidas desde la API.
+                </div>
+              )}
             </div>
           </section>
 
           <section id="guardados" className="tech-card">
-            <p className="text-sm font-semibold text-cyan-50">Guardados</p>
+            <p className="text-sm font-semibold text-cyan-50">
+              {notifications.length ? "Notificaciones" : "Guardados"}
+            </p>
             <div className="mt-3 grid gap-3">
-              {savedItems.map((item) => (
-                <div key={item.name} className="rounded-2xl border border-cyan-100/15 p-3">
-                  <div
-                    className={`h-16 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${item.imageClass}`}
-                  />
-                  <p className="mt-2 text-xs text-cyan-100/85">{item.name}</p>
-                </div>
-              ))}
+              {notifications.length
+                ? notifications.slice(0, 4).map((notification) => (
+                    <Link
+                      key={notification.id}
+                      href={notification.enlace ?? "#"}
+                      className="rounded-2xl border border-cyan-100/15 p-3 text-xs text-cyan-100/85"
+                    >
+                      <span className={notification.leido ? "text-cyan-100/70" : "font-semibold text-cyan-50"}>
+                        {notification.titulo}
+                      </span>
+                    </Link>
+                  ))
+                : (
+                    <div className="rounded-2xl border border-dashed border-cyan-100/15 p-3 text-xs text-cyan-100/75">
+                      No hay notificaciones desde la API.
+                    </div>
+                  )}
             </div>
           </section>
         </aside>
 
         <section className="space-y-4">
           <section id="feed" className="tech-card">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD CLIENTE</p>
                 <h1 className="mt-2 text-xl font-semibold text-cyan-50 md:text-2xl">Feed principal</h1>
               </div>
-              <div className="auth-switch">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  className={topView === "feed" ? "active" : ""}
-                  onClick={() => setTopView("feed")}
+                  onClick={openPostModal}
+                  className="rounded-xl border border-cyan-200/25 bg-cyan-400/20 px-4 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/25"
                 >
-                  Feed
+                  Nueva publicacion
                 </button>
-                <button
-                  type="button"
-                  className={topView === "seguimiento" ? "active" : ""}
-                  onClick={() => setTopView("seguimiento")}
-                >
-                  Seguimiento
-                </button>
+                <div className="auth-switch">
+                  <button
+                    type="button"
+                    className={topView === "feed" ? "active" : ""}
+                    onClick={() => setTopView("feed")}
+                  >
+                    Feed
+                  </button>
+                  <button
+                    type="button"
+                    className={topView === "seguimiento" ? "active" : ""}
+                    onClick={() => setTopView("seguimiento")}
+                  >
+                    Seguimiento
+                  </button>
+                </div>
               </div>
             </div>
             <p className="mt-3 text-sm text-cyan-100/75">
@@ -955,22 +1006,28 @@ export default function ClientePage() {
             </p>
           </section>
 
+          {topView === "feed" ? (
+            <button
+              type="button"
+              onClick={openPostModal}
+              className="w-full rounded-3xl border border-cyan-100/15 bg-[linear-gradient(155deg,rgba(17,45,80,0.9),rgba(7,24,44,0.96))] p-4 text-left shadow-xl shadow-slate-950/20 transition hover:border-cyan-200/35"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                  US
+                </span>
+                <span className="flex-1 rounded-full border border-cyan-100/15 bg-slate-950/35 px-4 py-3 text-sm text-cyan-100/70">
+                  Que quieres publicar en TechMarket?
+                </span>
+              </div>
+            </button>
+          ) : null}
+
           {topView === "feed" && (
             <>
           <section className="tech-card overflow-hidden">
             <div className="flex gap-3 overflow-x-auto pb-1">
-              {stories.map((story) => (
-                <button
-                  key={story}
-                  type="button"
-                  className="flex min-w-[95px] shrink-0 flex-col items-center gap-2 rounded-2xl border border-cyan-100/15 bg-slate-950/30 px-3 py-3 text-center text-xs text-cyan-100/85"
-                >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full border border-cyan-200/40 bg-gradient-to-br from-cyan-300 to-blue-600 font-bold text-slate-950">
-                    {story.slice(0, 2).toUpperCase()}
-                  </span>
-                  <span>{story}</span>
-                </button>
-              ))}
+              []
             </div>
           </section>
 
@@ -1415,33 +1472,36 @@ export default function ClientePage() {
             <p className="text-sm font-semibold text-cyan-50">Cuentas recomendadas</p>
             <p className="mt-2 text-xs text-cyan-100/75">Empresas y especialistas con buena reputacion en la comunidad.</p>
             <div className="mt-4 space-y-3">
-              {suggestedAccounts.map((account) => (
-                <article key={account.id} className="rounded-2xl border border-cyan-100/15 bg-slate-950/35 p-3">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
-                      {account.avatar}
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-cyan-50">{account.name}</p>
-                      <p className="text-xs text-cyan-200/75">{account.role}</p>
-                    </div>
-                  </div>
-                  <p className="mt-2 text-xs text-cyan-100/70">
-                    {account.city} · {account.followers} seguidores · {account.rating}
-                  </p>
-                  <div className="mt-3 flex gap-2">
+              {recommendedCompanies.length > 0 ? (
+                recommendedCompanies.map((company) => {
+                  const initials =
+                    company.nombre
+                      .split(" ")
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((token) => token[0]?.toUpperCase() ?? "")
+                      .join("") || "TM";
+                  return (
                     <Link
-                      href={`/cliente/empresa/${account.slug}`}
-                      className="flex-1 rounded-xl border border-cyan-200/20 bg-cyan-400/15 px-3 py-2 text-center text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                      key={company.id}
+                      href={`/cliente/empresa/${company.id}`}
+                      className="flex items-center gap-3 rounded-2xl border border-cyan-100/15 bg-slate-950/30 p-3 transition hover:bg-slate-950/50"
                     >
-                      Ver perfil
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300 to-blue-600 text-xs font-bold text-slate-950">
+                        {initials}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-cyan-50">{company.nombre}</p>
+                        {company.calificacion != null && company.calificacion > 0 && (
+                          <p className="text-xs text-cyan-200/70">Valoracion {company.calificacion.toFixed(1)}</p>
+                        )}
+                      </div>
                     </Link>
-                    <button type="button" className="rounded-xl border border-cyan-200/20 bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-100/90">
-                      Seguir
-                    </button>
-                  </div>
-                </article>
-              ))}
+                  );
+                })
+              ) : (
+                <p className="text-xs text-cyan-100/60">No hay cuentas recomendadas desde la API.</p>
+              )}
             </div>
           </section>
 
@@ -1454,7 +1514,7 @@ export default function ClientePage() {
                       {trend.texto} · {trend.busquedas} busquedas
                     </li>
                   ))
-                : activityFallback.map((item) => <li key={item}>{item}</li>)}
+                : <li>No hay actividad desde la API.</li>}
             </ul>
           </section>
         </aside>
@@ -1562,7 +1622,7 @@ export default function ClientePage() {
 
       <div className="fixed bottom-5 right-4 z-50 w-[340px] max-w-[calc(100vw-1rem)] md:bottom-6 md:right-6">
         <AnimatePresence mode="wait" initial={false}>
-          {isChatOpen ? (
+          {isChatOpen && activeChat ? (
             <motion.div
               key="chat-open"
               initial={{ opacity: 0, y: 20, scale: 0.96 }}
@@ -1609,7 +1669,7 @@ export default function ClientePage() {
 
               <div className="border-b border-cyan-100/10 bg-slate-950/45 px-3 py-2.5">
                 <div className="chat-scrollbar chat-scrollbar-x flex gap-2 overflow-x-auto">
-                  {clientChatThreads.map((chat) => {
+                  {chatThreads.map((chat) => {
                     const isActive = chat.id === activeChatId;
 
                     return (
@@ -1661,18 +1721,29 @@ export default function ClientePage() {
                   <input
                     value={draftMessage}
                     onChange={(event) => setDraftMessage(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleSendFloatingChatMessage();
+                      }
+                    }}
                     placeholder="Escribe un mensaje..."
                     className="w-full rounded-2xl border border-cyan-100/15 bg-slate-950/45 px-3 py-2 text-xs text-cyan-50 placeholder:text-cyan-100/42 focus:outline-none focus:ring-2 focus:ring-cyan-300/35"
                   />
                   <motion.button
                     type="button"
+                    onClick={handleSendFloatingChatMessage}
+                    disabled={draftMessage.trim().length < 2}
                     whileHover={{ y: -1, boxShadow: "0 10px 20px rgba(6,182,212,0.22)" }}
                     whileTap={{ scale: 0.96 }}
-                    className="rounded-2xl border border-cyan-200/25 bg-cyan-400/20 px-3 py-2 text-xs font-semibold text-cyan-50"
+                    className="rounded-2xl border border-cyan-200/25 bg-cyan-400/20 px-3 py-2 text-xs font-semibold text-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Enviar
                   </motion.button>
                 </div>
+                {chatError ? (
+                  <p className="mt-2 text-[11px] text-rose-200/85">{chatError}</p>
+                ) : null}
               </div>
             </motion.div>
           ) : (
@@ -1692,10 +1763,10 @@ export default function ClientePage() {
               <span className="relative flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.8)]" />
-                  Chat activo · {activeChat.company}
+                  Chat cliente
                 </span>
                 <span className="rounded-full border border-cyan-100/25 bg-white/10 px-2 py-0.5 text-[10px]">
-                  {clientChatThreads.length} chats
+                  {isChatLoading ? "Cargando" : `${chatThreads.length} chats`}
                 </span>
               </span>
             </motion.button>
