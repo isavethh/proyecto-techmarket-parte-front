@@ -3,11 +3,7 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-<<<<<<< HEAD
-import { Suspense, useMemo, useState, useSyncExternalStore } from "react";
-=======
 import { Suspense, useMemo, useState } from "react";
->>>>>>> Nobre
 import {
   ClientInfoCard,
   ClientPageHeader,

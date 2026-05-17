@@ -1,10 +1,6 @@
 "use client";
 
 import Link from "next/link";
-<<<<<<< HEAD
-import { useParams, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from "react";
-=======
 import { useParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
@@ -16,7 +12,6 @@ import {
   updateClientProfile,
   type ClientAddress,
 } from "@/lib/api/iaApi";
->>>>>>> Nobre
 import {
   ClientInfoCard,
   ClientPageHeader,
@@ -107,11 +102,6 @@ const getInitials = (name: string): string =>
     .map((token) => token[0]?.toUpperCase() ?? "")
     .join("") || "US";
 
-<<<<<<< HEAD
-function ClienteUsuarioPerfilContent() {
-  const params = useParams<{ slug: string | string[] }>();
-  const searchParams = useSearchParams();
-=======
 const toClientProfileSlug = (value: string): string =>
   value
     .trim()
@@ -120,7 +110,6 @@ const toClientProfileSlug = (value: string): string =>
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "perfil";
->>>>>>> Nobre
 
 function ClienteUsuarioPerfilContent() {
   const params = useParams<{ slug: string | string[] }>();

@@ -19,22 +19,6 @@ import {
   PublicationViewerData,
   PublicationViewerModal,
 } from "../../components/PublicationViewerModal";
-<<<<<<< HEAD
-import {
-  COMMUNITY_FEED_UPDATED_EVENT,
-  CommunityFeedPost,
-  readCommunityFeedPosts,
-} from "../../lib/communityFeed";
-import {
-  buildMarketplaceListings,
-  createMarketplaceSellerKey,
-  MarketplaceCategory,
-  marketplaceCategoryOptions,
-  marketplaceSeedPosts,
-} from "../../lib/marketplaceFeed";
-
-const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
-=======
 type MarketplaceListing = {
   post: {
     id: string;
@@ -53,7 +37,6 @@ type MarketplaceListing = {
   condition: string;
   priceLabel: string;
 };
->>>>>>> Nobre
 
 const clientMenuItems = [
   { label: "Explorar marketplace", href: "/cliente/marketplace" },

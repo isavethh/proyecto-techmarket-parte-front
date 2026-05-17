@@ -5,12 +5,8 @@ type ApiErrorBody = {
   description?: string;
 };
 
-<<<<<<< HEAD
-const IA_BASE_URL = process.env.NEXT_PUBLIC_IA_URL ?? "http://localhost:8092";
-=======
 const IA_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_IA_URL ?? "http://localhost:8092";
->>>>>>> Nobre
 
 export type GlobalSearchItem = {
   id: string;
@@ -76,8 +72,6 @@ export type MessageResponse = {
   mensaje: string;
 };
 
-<<<<<<< HEAD
-=======
 export type ClientProfile = {
   id: string;
   email: string;
@@ -233,7 +227,6 @@ export type ClientNotification = {
   enlace: string | null;
 };
 
->>>>>>> Nobre
 function buildUrl(path: string): string {
   return new URL(path, IA_BASE_URL).toString();
 }
@@ -310,8 +303,6 @@ function buildHeaders(existing: HeadersInit | undefined, hasBody: boolean): Head
     headers.set("X-User-Id", userId);
   }
 
-<<<<<<< HEAD
-=======
   if (typeof window !== "undefined" && !headers.has("Authorization")) {
     const token = window.localStorage.getItem("accessToken");
     if (token) {
@@ -319,7 +310,6 @@ function buildHeaders(existing: HeadersInit | undefined, hasBody: boolean): Head
     }
   }
 
->>>>>>> Nobre
   return headers;
 }
 
@@ -372,16 +362,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const responseBody = await readResponseBody(response);
 
   if (!response.ok) {
-<<<<<<< HEAD
-    throw new Error(resolveErrorMessage(responseBody, "Error de solicitud"));
-=======
     const fallbackMessage =
       response.status === 401 || response.status === 403
         ? "No autorizado. Inicia sesion nuevamente para usar esta seccion."
         : `Error de solicitud (${response.status})`;
 
     throw new Error(resolveErrorMessage(responseBody, fallbackMessage));
->>>>>>> Nobre
   }
 
   return responseBody as T;
@@ -475,8 +461,6 @@ export async function deleteConversationMessage(messageId: string): Promise<Mess
     method: "DELETE",
   });
 }
-<<<<<<< HEAD
-=======
 
 export async function getClientProfile(): Promise<ClientProfile> {
   return request<ClientProfile>("/api/clients/profile", { method: "GET" });
@@ -761,4 +745,3 @@ export async function deleteClientNotification(notificationId: string): Promise<
     method: "DELETE",
   });
 }
->>>>>>> Nobre

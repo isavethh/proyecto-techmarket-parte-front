@@ -6,15 +6,6 @@ import { motion } from "motion/react";
 import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ClientPageHeader } from "../../components/ClientPageSections";
 import {
-<<<<<<< HEAD
-  createConversationMessage,
-  getConversationMessages,
-  listConversations,
-  markConversationRead,
-  readCurrentUserId,
-  type ConversationMessage,
-  type ConversationSummary,
-=======
   createClientChat,
   createClientChatMessage,
   getClientChatMessages,
@@ -23,7 +14,6 @@ import {
   readCurrentUserId,
   type ClientChatMessage,
   type ClientChatSummary,
->>>>>>> Nobre
 } from "@/lib/api/iaApi";
 
 
@@ -178,76 +168,6 @@ const normalizeRemoteUserId = (value: string): string => {
   const trimmed = value.trim();
   if (trimmed.toUpperCase().startsWith("USR-")) {
     return trimmed.slice(4);
-<<<<<<< HEAD
-  }
-  return trimmed;
-};
-
-const buildThreadFromConversation = (conversation: ConversationSummary): ChatThread => {
-  const nowIso = new Date().toISOString();
-  const seedMessage = conversation.ultimoMensaje
-    ? [
-        {
-          id: `${conversation.id}-last`,
-          author: "empresa" as const,
-          text: conversation.ultimoMensaje,
-          createdAt: nowIso,
-        },
-      ]
-    : [];
-
-  return {
-    id: conversation.id,
-    sellerId: conversation.id,
-    sellerName: conversation.titulo,
-    company: conversation.titulo,
-    product: "Conversacion",
-    avatar: createAvatar(conversation.titulo),
-    unread: conversation.mensajesSinLeer ?? 0,
-    online: true,
-    messages: seedMessage,
-    updatedAt: nowIso,
-  };
-};
-
-const buildMessageFromConversation = (
-  message: ConversationMessage,
-  currentUserId: string | null,
-): ChatMessage => {
-  const senderId = normalizeRemoteUserId(message.remitenteId);
-  const isFromCurrentUser = Boolean(currentUserId && senderId === currentUserId);
-
-  return {
-    id: message.id,
-    author: isFromCurrentUser ? "cliente" : "empresa",
-    text: message.contenido,
-    createdAt: message.fecha,
-  };
-};
-
-const readStoredThreads = (): ChatThread[] => {
-  if (typeof window === "undefined") {
-    return sortThreadsByRecent(seedThreads);
-  }
-
-  const storedValue = window.localStorage.getItem(CHAT_STORAGE_KEY);
-
-  if (!storedValue) {
-    return sortThreadsByRecent(seedThreads);
-  }
-
-  try {
-    const parsedValue = JSON.parse(storedValue);
-
-    if (!Array.isArray(parsedValue)) {
-      return sortThreadsByRecent(seedThreads);
-    }
-
-    return sortThreadsByRecent(parsedValue as ChatThread[]);
-  } catch {
-    return sortThreadsByRecent(seedThreads);
-=======
->>>>>>> Nobre
   }
   return trimmed;
 };
@@ -542,76 +462,6 @@ function ClienteChatContent() {
     };
   }, [marketplaceIntent, requestedChatId, router]);
 
-  useEffect(() => {
-    setCurrentUserId(readCurrentUserId());
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    const loadConversations = async () => {
-      setIsLoading(true);
-      setLoadError(null);
-
-      try {
-        const conversations = await listConversations();
-        const mappedThreads = conversations.map(buildThreadFromConversation);
-        let nextThreads = mappedThreads.length ? mappedThreads : readStoredThreads();
-
-        if (marketplaceIntent) {
-          nextThreads = upsertThreadFromMarketplace(nextThreads, marketplaceIntent).threads;
-        }
-
-        if (!active) {
-          return;
-        }
-
-        setThreads(nextThreads);
-        setActiveThreadId((current) => {
-          if (current && nextThreads.some((thread) => thread.id === current)) {
-            return current;
-          }
-
-          return nextThreads[0]?.id ?? null;
-        });
-      } catch (error) {
-        if (!active) {
-          return;
-        }
-
-        const fallbackThreads = marketplaceIntent
-          ? upsertThreadFromMarketplace(readStoredThreads(), marketplaceIntent).threads
-          : readStoredThreads();
-
-        setThreads(fallbackThreads);
-        setActiveThreadId((current) => {
-          if (current && fallbackThreads.some((thread) => thread.id === current)) {
-            return current;
-          }
-
-          return fallbackThreads[0]?.id ?? null;
-        });
-        setLoadError(
-          error instanceof Error ? error.message : "No se pudo cargar conversaciones",
-        );
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadConversations();
-
-    return () => {
-      active = false;
-    };
-  }, [marketplaceIntent]);
-
-  useEffect(() => {
-    writeStoredThreads(threads);
-  }, [threads]);
-
   const activeThread = useMemo(() => {
     if (!threads.length) {
       return null;
@@ -639,21 +489,13 @@ function ClienteChatContent() {
   }, [searchQuery, threads]);
 
   useEffect(() => {
-<<<<<<< HEAD
-    if (!activeThread || !activeThread.id.startsWith("CONV-")) {
-=======
     if (!activeThread || !activeThread.id.startsWith("CHT-")) {
->>>>>>> Nobre
       return;
     }
 
     let active = true;
 
-<<<<<<< HEAD
-    getConversationMessages(activeThread.id)
-=======
     getClientChatMessages(activeThread.id)
->>>>>>> Nobre
       .then((messages) => {
         if (!active) {
           return;
@@ -711,13 +553,8 @@ function ClienteChatContent() {
       ),
     );
 
-<<<<<<< HEAD
-    if (threadId.startsWith("CONV-")) {
-      markConversationRead(threadId).catch(() => {
-=======
     if (threadId.startsWith("CHT-")) {
       markClientChatRead(threadId).catch(() => {
->>>>>>> Nobre
         // ignore read marker errors
       });
     }
@@ -736,17 +573,10 @@ function ClienteChatContent() {
       return;
     }
 
-<<<<<<< HEAD
-    if (activeThread.id.startsWith("CONV-")) {
-      try {
-        const response = await createConversationMessage(activeThread.id, normalizedMessage);
-        const nowIso = new Date().toISOString();
-=======
     if (activeThread.id.startsWith("CHT-")) {
       try {
         const response = await createClientChatMessage(activeThread.id, normalizedMessage);
         const nowIso = response.fecha ?? new Date().toISOString();
->>>>>>> Nobre
 
         setThreads((current) => {
           const nextThreads = current.map((thread) => {
