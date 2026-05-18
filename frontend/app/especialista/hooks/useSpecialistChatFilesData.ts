@@ -366,8 +366,13 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
       loadChatFilesData();
     }
 
+    const pollInterval = setInterval(() => {
+      if (isMounted) void refreshChatFilesData();
+    }, 8_000);
+
     return () => {
       isMounted = false;
+      clearInterval(pollInterval);
     };
   }, [refreshChatFilesData]);
 

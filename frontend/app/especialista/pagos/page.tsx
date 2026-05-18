@@ -30,7 +30,6 @@ export default function EspecialistaPagosPage() {
   const [isWithdrawalFormOpen, setIsWithdrawalFormOpen] = useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
-  const [withdrawalSuccessMessage, setWithdrawalSuccessMessage] = useState<string | null>(null);
   const availableBalance = parseMoneyAmount(wallet.availableBalance);
 
   function closeWithdrawalModal() {
@@ -70,12 +69,9 @@ export default function EspecialistaPagosPage() {
     }
 
     setFormError(null);
-    setWithdrawalSuccessMessage(null);
 
     try {
-      const response = await requestWithdrawal({ monto });
-      const estimatedDate = response?.fechaEstimada ? ` Fecha estimada: ${response.fechaEstimada}.` : "";
-      setWithdrawalSuccessMessage(`Solicitud de retiro enviada.${estimatedDate}`);
+      await requestWithdrawal({ monto });
       setWithdrawalAmount("");
       setIsWithdrawalFormOpen(false);
     } catch (err) {
@@ -101,7 +97,6 @@ export default function EspecialistaPagosPage() {
             onClick={() => {
               setIsWithdrawalFormOpen(true);
               setFormError(null);
-              setWithdrawalSuccessMessage(null);
             }}
             className="self-start rounded-full border border-cyan-300/35 bg-cyan-300/10 px-5 py-2.5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -110,9 +105,9 @@ export default function EspecialistaPagosPage() {
         </div>
       </section>
 
-      {withdrawalSuccessMessage || actionSuccess ? (
+      {actionSuccess ? (
         <p className="rounded-2xl border border-emerald-300/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
-          {withdrawalSuccessMessage ?? actionSuccess}
+          {actionSuccess}
         </p>
       ) : null}
 

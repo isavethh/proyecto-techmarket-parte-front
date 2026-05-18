@@ -184,6 +184,17 @@ export type ReviewResponse = {
   fecha: string | null;
 };
 
+export type CompanyPublicationItem = {
+  id: string;
+  title: string;
+  body: string;
+  type: string;
+  createdAt: string;
+  image?: string;
+  companyId: string;
+  companyName: string;
+};
+
 export type ClientChatSummary = {
   id: string;
   empresa: {
@@ -594,6 +605,27 @@ export async function listMarketplaceServices(params?: {
   return request<MarketplaceProductPage>(path, { method: "GET" });
 }
 
+export async function listMarketplaceSpecialistServices(params?: {
+  search?: string;
+  pagina?: number;
+}): Promise<MarketplaceProductPage> {
+  const query = new URLSearchParams();
+  if (params?.search?.trim()) {
+    query.set("search", params.search.trim());
+  }
+  if (params?.pagina) {
+    query.set("pagina", String(params.pagina));
+  }
+  const path = query.toString()
+    ? `/api/marketplace/specialist-services?${query}`
+    : "/api/marketplace/specialist-services";
+  try {
+    return await request<MarketplaceProductPage>(path, { method: "GET" });
+  } catch {
+    return { total: 0, pagina: 1, productos: [] };
+  }
+}
+
 export async function getMarketplaceProduct(
   productId: string,
 ): Promise<MarketplaceProductDetail> {
@@ -747,6 +779,17 @@ export async function unfollowCompany(companyId: string): Promise<MessageRespons
   return request<MessageResponse>(`/api/clients/favorites/companies/${companyId}`, {
     method: "DELETE",
   });
+}
+
+export async function listCompanyPublications(companyId: string): Promise<CompanyPublicationItem[]> {
+  try {
+    return await request<CompanyPublicationItem[]>(
+      `/api/marketplace/companies/${companyId}/publications`,
+      { method: "GET" },
+    );
+  } catch {
+    return [];
+  }
 }
 
 export async function listClientCommunities(): Promise<ClientCommunity[]> {

@@ -8,7 +8,19 @@
       "Bash(npx tsc *)",
       "Bash(grep -E \"\\(carrito|checkout|servicios\\\\\\\\[slug\\\\\\\\]|resenas|marketplace/page|ClientPageSections|ClientExperienceShell|app/page\\)\")",
       "Bash(Get-ChildItem -Recurse \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\" -Filter \"page.tsx\")",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\TechMarket-Back\\\\TechMarket-IA\\\\src\\\\main\" -Recurse | Where-Object { $_.Extension -eq \".java\" } | Select-Object -First 50 FullName)",
+      "PowerShell(head -50)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\TechMarket-Back\\\\TechMarket-IA\\\\src\\\\main\\\\java\" -Recurse -File | Select-Object -First 50 | ForEach-Object { $_.FullName })",
+      "Bash(mvn compile *)",
+      "Bash(./mvnw compile *)",
+      "Bash(./mvnw spotless:apply -q)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\\\\especialista\\\\\" -Recurse -Include \"*.tsx\", \"*.ts\", \"*.jsx\", \"*.js\" | Select-Object -ExpandProperty FullName | Sort-Object)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\\\\especialista\\\\archivos\\\\page.tsx\" -Force)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\\\\especialista\\\\certificaciones\\\\page.tsx\" -Force)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\\\\especialista\\\\disponibilidad\\\\page.tsx\" -Force)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\\\\especialista\\\\portafolio\\\\page.tsx\" -Force)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\\\\especialista\\\\components\\\\SpecialistAiAssistant.tsx\" -Force)"
     ]
   }
 }

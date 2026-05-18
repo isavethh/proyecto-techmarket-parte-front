@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createSpecialistCertification,
   deleteSpecialistCertification,
@@ -12,6 +12,7 @@ import {
   type SpecialistCertification,
   type SpecialistReview,
 } from "@/lib/api/specialists";
+import { getTechmarketToken, getTechmarketUserId } from "@/lib/auth/tokenStore";
 import { apiRequest } from "@/lib/api/client";
 import {
   specialistCertifications,
@@ -114,10 +115,10 @@ export function mapBackendCertificationToUiCertification(
 }
 
 export function useSpecialistReviewsCertificationsData() {
+  const authRef = useRef<{ token: string; userId: string } | null>(null);
   const [reviews, setReviews] = useState<UiReview[]>([]);
   const [certifications, setCertifications] = useState<SpecialistCertificationItem[]>([]);
   const [kpis, setKpis] = useState<ReputationKpis>(emptyKpis);
-  const [auth, setAuth] = useState<{ token: string; userId: string } | null>(null);
   const [reviewsSource, setReviewsSource] = useState<DatasetSource>("empty");
   const [certificationsSource, setCertificationsSource] = useState<DatasetSource>("empty");
   const [loading, setLoading] = useState(true);
@@ -131,7 +132,19 @@ export function useSpecialistReviewsCertificationsData() {
       setLoading(true);
       setError(null);
 
-      const currentAuth = auth ?? (await loginTechMarket().then((login) => ({ token: login.accessToken, userId: login.userId })));
+      const storedToken = getTechmarketToken();
+      const storedUserId = getTechmarketUserId();
+      let currentAuth: { token: string; userId: string };
+      if (authRef.current) {
+        currentAuth = authRef.current;
+      } else if (storedToken && storedUserId) {
+        currentAuth = { token: storedToken, userId: storedUserId };
+      } else {
+        const login = await loginTechMarket();
+        currentAuth = { token: login.accessToken, userId: login.userId };
+      }
+      authRef.current = currentAuth;
+
       const [reviewsResult, certificationsResult, statsResult] = await Promise.allSettled([
         getSpecialistReviews(currentAuth.token, currentAuth.userId),
         getSpecialistCertifications(currentAuth.token, currentAuth.userId),
@@ -144,8 +157,6 @@ export function useSpecialistReviewsCertificationsData() {
       debugSpecialistResult("[specialist reviews]", reviewsResult);
       debugSpecialistResult("[specialist certifications]", certificationsResult);
       debugSpecialistResult("[specialist profile stats]", statsResult);
-
-      setAuth(currentAuth);
 
       if (reviewsResult.status === "fulfilled") {
         const backendReviews = normalizeBackendList<BackendReview>(reviewsResult.value);
@@ -181,7 +192,7 @@ export function useSpecialistReviewsCertificationsData() {
     } finally {
       setLoading(false);
     }
-  }, [auth]);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -201,7 +212,7 @@ export function useSpecialistReviewsCertificationsData() {
 
   const respondReview = useCallback(
     async (reviewId: string, responseText: string) => {
-      const currentAuth = auth;
+      const currentAuth = authRef.current;
 
       if (!currentAuth?.token || !currentAuth.userId) {
         setActionError("No hay sesion activa para responder la resena.");
@@ -230,12 +241,12 @@ export function useSpecialistReviewsCertificationsData() {
         setActionLoading(false);
       }
     },
-    [auth, refreshReviewsCertificationsData],
+    [refreshReviewsCertificationsData],
   );
 
   const createCertification = useCallback(
     async (input: CreateSpecialistCertificationInput) => {
-      const currentAuth = auth;
+      const currentAuth = authRef.current;
 
       if (!currentAuth?.token || !currentAuth.userId) {
         setActionError("No hay sesion activa para registrar la certificacion.");
@@ -257,12 +268,12 @@ export function useSpecialistReviewsCertificationsData() {
         setActionLoading(false);
       }
     },
-    [auth, refreshReviewsCertificationsData],
+    [refreshReviewsCertificationsData],
   );
 
   const deleteCertification = useCallback(
     async (certificationId: string) => {
-      const currentAuth = auth;
+      const currentAuth = authRef.current;
 
       if (!currentAuth?.token || !currentAuth.userId) {
         setActionError("No hay sesion activa para eliminar la certificacion.");
@@ -282,12 +293,12 @@ export function useSpecialistReviewsCertificationsData() {
         setActionLoading(false);
       }
     },
-    [auth, refreshReviewsCertificationsData],
+    [refreshReviewsCertificationsData],
   );
 
   const requestCertificationVerification = useCallback(
     async (certificationId: string) => {
-      const currentAuth = auth;
+      const currentAuth = authRef.current;
 
       if (!currentAuth?.token || !currentAuth.userId) {
         setActionError("No hay sesion activa para solicitar la verificacion.");
@@ -313,7 +324,7 @@ export function useSpecialistReviewsCertificationsData() {
         setActionLoading(false);
       }
     },
-    [auth, refreshReviewsCertificationsData],
+    [refreshReviewsCertificationsData],
   );
 
   return useMemo(

@@ -13,6 +13,7 @@ import {
   listClientCommunityPosts,
   listClientChats,
   listClientNotifications,
+  listCompanyPublications,
   listFavoriteCompanies,
   listFavoriteProducts,
   listMarketplaceCompanies,
@@ -478,6 +479,52 @@ export default function ClientePage() {
     return () => {
       active = false;
       clearInterval(pollInterval);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchAndSeedCompanyPublications = async () => {
+      try {
+        const followedCompanies = readFollowing().filter((a) => a.type === "empresa");
+        if (!active || followedCompanies.length === 0) return;
+
+        const allPublications = (
+          await Promise.all(followedCompanies.map((c) => listCompanyPublications(c.id)))
+        ).flat();
+
+        if (!active || allPublications.length === 0) return;
+
+        const feedPosts = allPublications.map((pub) => ({
+          id: pub.id,
+          author: pub.companyName,
+          authorId: pub.companyId,
+          role: "Empresa verificada",
+          time: "Reciente",
+          title: pub.title,
+          body: pub.body,
+          tag: pub.type === "TEXT" ? "Publicacion de texto" : "Publicacion",
+          location: "TechMarket",
+          image: pub.image,
+          createdAt: pub.createdAt,
+        }));
+
+        upsertCommunityFeedPosts(feedPosts);
+      } catch {
+        // silently ignore — feed will stay with whatever it has
+      }
+    };
+
+    void fetchAndSeedCompanyPublications();
+
+    const feedPollInterval = setInterval(() => {
+      if (active) void fetchAndSeedCompanyPublications();
+    }, 60_000);
+
+    return () => {
+      active = false;
+      clearInterval(feedPollInterval);
     };
   }, []);
 

@@ -238,6 +238,7 @@ export function useSpecialistRequestsProjectsData() {
         await refreshRequestsProjectsData();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error desconocido al actualizar el proyecto");
+        throw err;
       } finally {
         setLoading(false);
       }

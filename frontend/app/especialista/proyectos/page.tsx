@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { loginTechMarket, updateSpecialistProjectStatus, type SpecialistProjectStatus } from "@/lib/api/specialists";
+import { type SpecialistProjectStatus } from "@/lib/api/specialists";
 import { SpecialistShell } from "../components/SpecialistShell";
 import { useSpecialistRequestsProjectsData } from "../hooks/useSpecialistRequestsProjectsData";
 
@@ -92,7 +92,7 @@ function getStatusClass(status: string) {
 }
 
 export default function EspecialistaProyectosPage() {
-  const { projects, history, loading, error, refreshRequestsProjectsData } = useSpecialistRequestsProjectsData();
+  const { projects, history, loading, error, updateProjectStatus, refreshRequestsProjectsData } = useSpecialistRequestsProjectsData();
   const [processingProjectId, setProcessingProjectId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [statusErrorMessage, setStatusErrorMessage] = useState<string | null>(null);
@@ -124,11 +124,7 @@ export default function EspecialistaProyectosPage() {
     setHasStatusUpdateAttempted(true);
 
     try {
-      const login = await loginTechMarket();
-      await updateSpecialistProjectStatus(login.accessToken, login.userId, projectId, {
-        estado: status as SpecialistProjectStatus,
-      });
-      await refreshRequestsProjectsData();
+      await updateProjectStatus(projectId, status as SpecialistProjectStatus);
 
       setProjectStatusOverrides((current) => ({ ...current, [projectId]: nextStatusLabel }));
       setStatusErrorMessage(null);

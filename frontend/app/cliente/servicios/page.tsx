@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { listMarketplaceServices, type MarketplaceProductSummary } from "@/lib/api/iaApi";
+import { listMarketplaceServices, listMarketplaceSpecialistServices, type MarketplaceProductSummary } from "@/lib/api/iaApi";
 import {
   ClientPageHeader,
   ClientQuickLinksCard,
@@ -20,16 +20,25 @@ export default function ServiciosIndexPage() {
     let active = true;
 
     setIsLoading(true);
-    listMarketplaceServices(appliedSearch ? { search: appliedSearch } : undefined)
-      .then((response) => {
+    setError(null);
+
+    const searchParams = appliedSearch ? { search: appliedSearch } : undefined;
+
+    Promise.allSettled([
+      listMarketplaceServices(searchParams),
+      listMarketplaceSpecialistServices(searchParams),
+    ])
+      .then(([marketplaceResult, specialistResult]) => {
         if (!active) return;
-        setServices(response.productos);
-        setError(null);
-      })
-      .catch((err) => {
-        if (!active) return;
-        setServices([]);
-        setError(err instanceof Error ? err.message : "No se pudo cargar servicios");
+        const marketplaceServices =
+          marketplaceResult.status === "fulfilled" ? marketplaceResult.value.productos : [];
+        const specialistServices =
+          specialistResult.status === "fulfilled" ? specialistResult.value.productos : [];
+        setServices([...marketplaceServices, ...specialistServices]);
+
+        if (marketplaceResult.status === "rejected" && specialistResult.status === "rejected") {
+          setError("No se pudo cargar servicios");
+        }
       })
       .finally(() => {
         if (active) setIsLoading(false);
@@ -97,40 +106,45 @@ export default function ServiciosIndexPage() {
           </section>
 
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
-            {services.map((service) => (
-              <article
-                key={service.id}
-                className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(155deg,rgba(17,45,80,0.95),rgba(7,24,44,0.96))] p-4 shadow-xl shadow-slate-950/25"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-base font-semibold text-white">{service.nombre}</h3>
-                  <span className="shrink-0 rounded-full border border-cyan-100/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">
-                    Servicio
-                  </span>
-                </div>
+            {services.map((service) => {
+              const isSpecialistService = service.id.startsWith("SERV-");
+              return (
+                <article
+                  key={service.id}
+                  className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(155deg,rgba(17,45,80,0.95),rgba(7,24,44,0.96))] p-4 shadow-xl shadow-slate-950/25"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="text-base font-semibold text-white">{service.nombre}</h3>
+                    <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${isSpecialistService ? "border-violet-300/25 bg-violet-300/10 text-violet-200" : "border-cyan-100/20 bg-cyan-300/10 text-cyan-200"}`}>
+                      {isSpecialistService ? "Especialista" : "Servicio"}
+                    </span>
+                  </div>
 
-                {service.precio != null && (
-                  <p className="mt-3 text-lg font-semibold text-cyan-300">
-                    Bs {service.precio.toLocaleString("es-BO", { minimumFractionDigits: 2 })}
-                  </p>
-                )}
+                  {service.precio != null && (
+                    <p className="mt-3 text-lg font-semibold text-cyan-300">
+                      Bs {service.precio.toLocaleString("es-BO", { minimumFractionDigits: 2 })}
+                    </p>
+                  )}
 
-                {(service.calificacion ?? 0) > 0 && (
-                  <p className="mt-1 text-xs text-cyan-100/70">
-                    Calificacion: {service.calificacion?.toFixed(1)}
-                  </p>
-                )}
+                  {(service.calificacion ?? 0) > 0 && (
+                    <p className="mt-1 text-xs text-cyan-100/70">
+                      Calificacion: {service.calificacion?.toFixed(1)}
+                    </p>
+                  )}
 
-                <div className="mt-4">
-                  <Link
-                    href={`/cliente/marketplace/${service.id}`}
-                    className="inline-flex rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-4 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
-                  >
-                    Ver detalles
-                  </Link>
-                </div>
-              </article>
-            ))}
+                  {!isSpecialistService && (
+                    <div className="mt-4">
+                      <Link
+                        href={`/cliente/marketplace/${service.id}`}
+                        className="inline-flex rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-4 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                      >
+                        Ver detalles
+                      </Link>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
           </section>
 
           {!isLoading && services.length === 0 && !error && (

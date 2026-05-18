@@ -63,7 +63,7 @@ export function mapBackendProfileToUiProfile(profile: BackendSpecialistProfile):
     avatar: getInitials(name),
     specialization: profile.especialidad?.trim() || neutralSpecialistProfile.specialization,
     location: profile.ubicacion?.trim() || neutralSpecialistProfile.location,
-    bio: "No especificado",
+    bio: profile.bio?.trim() || neutralSpecialistProfile.bio,
   };
 }
 

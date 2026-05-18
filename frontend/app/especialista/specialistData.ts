@@ -528,16 +528,12 @@ export const specialistCertifications: SpecialistCertificationItem[] = [
 
 export const specialistNavLinks = [
   { title: "Resumen", href: "/especialista" },
-  { title: "Portafolio", href: "/especialista/portafolio" },
   { title: "Servicios", href: "/especialista/servicios" },
   { title: "Solicitudes", href: "/especialista/solicitudes" },
   { title: "Proyectos", href: "/especialista/proyectos" },
   { title: "Chat", href: "/especialista/chat" },
-  { title: "Archivos", href: "/especialista/archivos" },
   { title: "Pagos e ingresos", href: "/especialista/pagos" },
-  { title: "Certificaciones", href: "/especialista/certificaciones" },
   { title: "Reputacion", href: "/especialista/reputacion" },
-  { title: "Disponibilidad", href: "/especialista/disponibilidad" },
 ];
 
 export function starsLabel(value: number) {

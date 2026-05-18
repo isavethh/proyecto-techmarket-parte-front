@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getSpecialistEarningsSummary,
   getSpecialistTransactions,
@@ -12,6 +12,7 @@ import {
   type SpecialistTransaction,
   type SpecialistWallet,
 } from "@/lib/api/specialists";
+import { getTechmarketToken, getTechmarketUserId } from "@/lib/auth/tokenStore";
 import {
   specialistEarningsSummary,
   specialistTransactions,
@@ -127,10 +128,10 @@ export function mapBackendTransactionToUiTransaction(
 }
 
 export function useSpecialistPaymentsData() {
+  const authRef = useRef<{ token: string; userId: string } | null>(null);
   const [wallet, setWallet] = useState<SpecialistWalletItem>(emptyWallet);
   const [earnings, setEarnings] = useState<UiEarningsSummary>({ ...emptyEarnings, averagePerService: "No disponible" });
   const [transactions, setTransactions] = useState<SpecialistTransactionItem[]>([]);
-  const [auth, setAuth] = useState<{ token: string; userId: string } | null>(null);
   const [walletSource, setWalletSource] = useState<DatasetSource>("empty");
   const [earningsSource, setEarningsSource] = useState<DatasetSource>("empty");
   const [transactionsSource, setTransactionsSource] = useState<DatasetSource>("empty");
@@ -145,7 +146,19 @@ export function useSpecialistPaymentsData() {
       setLoading(true);
       setError(null);
 
-      const currentAuth = auth ?? (await loginTechMarket().then((login) => ({ token: login.accessToken, userId: login.userId })));
+      const storedToken = getTechmarketToken();
+      const storedUserId = getTechmarketUserId();
+      let currentAuth: { token: string; userId: string };
+      if (authRef.current) {
+        currentAuth = authRef.current;
+      } else if (storedToken && storedUserId) {
+        currentAuth = { token: storedToken, userId: storedUserId };
+      } else {
+        const login = await loginTechMarket();
+        currentAuth = { token: login.accessToken, userId: login.userId };
+      }
+      authRef.current = currentAuth;
+
       const [walletResult, earningsResult, transactionsResult] = await Promise.allSettled([
         getSpecialistWallet(currentAuth.token, currentAuth.userId),
         getSpecialistEarningsSummary(currentAuth.token, currentAuth.userId),
@@ -155,8 +168,6 @@ export function useSpecialistPaymentsData() {
       debugSpecialistResult("[specialist wallet]", walletResult);
       debugSpecialistResult("[specialist earnings]", earningsResult);
       debugSpecialistResult("[specialist transactions]", transactionsResult);
-
-      setAuth(currentAuth);
 
       if (walletResult.status === "fulfilled") {
         const hasWallet = hasObjectData(walletResult.value);
@@ -196,7 +207,7 @@ export function useSpecialistPaymentsData() {
     } finally {
       setLoading(false);
     }
-  }, [auth]);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -216,7 +227,7 @@ export function useSpecialistPaymentsData() {
 
   const requestWithdrawal = useCallback(
     async (input: CreateSpecialistWithdrawalInput) => {
-      const currentAuth = auth;
+      const currentAuth = authRef.current;
 
       if (!currentAuth?.token || !currentAuth.userId) {
         setActionError("No hay sesion activa para solicitar el retiro.");
@@ -236,7 +247,7 @@ export function useSpecialistPaymentsData() {
         setActionLoading(false);
       }
     },
-    [auth, refreshPaymentsData],
+    [refreshPaymentsData],
   );
 
   return useMemo(

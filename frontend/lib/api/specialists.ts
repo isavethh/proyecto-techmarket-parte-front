@@ -16,6 +16,7 @@ export type SpecialistProfile = {
   nombre: string;
   especialidad: string;
   ubicacion: string;
+  bio?: string;
   calificacion: number;
 };
 

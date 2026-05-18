@@ -33,22 +33,11 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
     eyebrow: "PERFIL DESTACADO",
     title: "Especialista recomendado",
     description:
-      "Perfil tecnico orientado a confianza, soporte claro y evidencia visible para que el cliente decida con mas seguridad.",
+      "Perfil tecnico orientado a confianza, soporte claro y respuesta rapida para que el cliente decida con mas seguridad.",
     points: [
       "Atencion clara y profesional",
-      "Portafolio con evidencia visible",
+      "Servicios listos para contratar",
       "Respuesta rapida por chat",
-    ],
-  },
-  Portafolio: {
-    eyebrow: "PORTAFOLIO ACTIVO",
-    title: "Resultados que generan confianza",
-    description:
-      "Esta seccion ayuda al cliente a revisar trabajos realizados, resultados obtenidos y evidencia tecnica antes de contratar.",
-    points: [
-      "Trabajos documentados",
-      "Resultados visibles",
-      "Mayor credibilidad comercial",
     ],
   },
   Servicios: {
@@ -95,17 +84,6 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
       "Canal de cierre comercial",
     ],
   },
-  Archivos: {
-    eyebrow: "ARCHIVOS TECNICOS",
-    title: "Evidencia y documentos",
-    description:
-      "Esta vista agrupa documentos, evidencias y archivos asociados a clientes o proyectos tecnicos del especialista.",
-    points: [
-      "Evidencia centralizada",
-      "Relacion con clientes",
-      "Documentos consultables",
-    ],
-  },
   "Pagos e ingresos": {
     eyebrow: "BILLETERA ACTIVA",
     title: "Ingresos del especialista",
@@ -117,17 +95,6 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
       "Historial de pagos",
     ],
   },
-  Certificaciones: {
-    eyebrow: "CREDENCIALES TECNICAS",
-    title: "Certificaciones verificables",
-    description:
-      "Esta vista muestra certificaciones, entidades emisoras y estados de validacion asociados al especialista.",
-    points: [
-      "Credenciales visibles",
-      "Estado de verificacion",
-      "Mayor confianza tecnica",
-    ],
-  },
   Reputacion: {
     eyebrow: "CONFIANZA VISIBLE",
     title: "Opiniones y calificaciones",
@@ -137,17 +104,6 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
       "Calificacion general",
       "Comentarios recientes",
       "Senales de confianza",
-    ],
-  },
-  Disponibilidad: {
-    eyebrow: "AGENDA ACTIVA",
-    title: "Estado operativo",
-    description:
-      "Esta vista muestra horario, modalidad de atencion y capacidad operativa para saber cuando contactar o programar servicio.",
-    points: [
-      "Horario visible",
-      "Modalidad de atencion",
-      "Estado actual del tecnico",
     ],
   },
 };
@@ -197,13 +153,6 @@ function SpecialistTopbarControls({ sectionLabel, profile }: SpecialistTopbarCon
 
   return (
     <div className="relative flex items-center gap-2">
-      <Link
-        href="/especialista/portafolio"
-        className="hidden rounded-xl border border-cyan-100/15 bg-cyan-300/12 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:border-cyan-300/45 hover:bg-cyan-300/18 sm:inline-flex"
-      >
-        Gestionar portafolio
-      </Link>
-
       <button
         ref={profileTriggerRef}
         type="button"
