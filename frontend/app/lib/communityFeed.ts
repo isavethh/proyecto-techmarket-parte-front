@@ -1,6 +1,7 @@
 export type CommunityFeedPost = {
   id: string;
   author: string;
+  authorId?: string;
   role: string;
   time: string;
   title: string;
@@ -13,7 +14,18 @@ export type CommunityFeedPost = {
 
 const COMMUNITY_FEED_STORAGE_KEY = "techmarket.community.feed";
 export const COMMUNITY_FEED_UPDATED_EVENT = "techmarket.community.feed.updated";
+const COMMUNITY_FEED_BROADCAST_CHANNEL = "techmarket.community.feed.bc";
 const EMPTY_COMMUNITY_FEED: CommunityFeedPost[] = [];
+
+let _broadcastChannel: BroadcastChannel | null = null;
+
+function getCommunityBroadcastChannel(): BroadcastChannel | null {
+  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return null;
+  if (!_broadcastChannel) {
+    _broadcastChannel = new BroadcastChannel(COMMUNITY_FEED_BROADCAST_CHANNEL);
+  }
+  return _broadcastChannel;
+}
 
 let cachedRawFeed: string | null | undefined;
 let cachedFeedPosts: CommunityFeedPost[] = EMPTY_COMMUNITY_FEED;
@@ -86,6 +98,8 @@ export const writeCommunityFeedPosts = (posts: CommunityFeedPost[]): void => {
   cachedRawFeed = serialized;
   cachedFeedPosts = posts.length ? posts : EMPTY_COMMUNITY_FEED;
   window.dispatchEvent(new Event(COMMUNITY_FEED_UPDATED_EVENT));
+  // Notify other tabs via BroadcastChannel (more reliable than storage events)
+  getCommunityBroadcastChannel()?.postMessage({ type: "feed-updated" });
 };
 
 export const mergeCommunityFeedPosts = (posts: CommunityFeedPost[]): CommunityFeedPost[] => {
@@ -114,4 +128,45 @@ export const upsertCommunityFeedPosts = (incomingPosts: CommunityFeedPost[]): Co
   writeCommunityFeedPosts(mergedPosts);
 
   return mergedPosts;
+};
+
+/**
+ * Subscribe to community feed changes across tabs.
+ * Uses BroadcastChannel (cross-tab), custom events (same-tab), storage events (fallback),
+ * and a 30-second polling interval as a final safety net.
+ */
+export const subscribeCommunityFeedExternal = (onStoreChange: () => void): (() => void) => {
+  if (typeof window === "undefined") return () => {};
+
+  const handleStorageEvent = (event: StorageEvent) => {
+    if (event.key === COMMUNITY_FEED_STORAGE_KEY) {
+      cachedRawFeed = undefined;
+      onStoreChange();
+    }
+  };
+
+  const handleCustomEvent = () => onStoreChange();
+
+  const handleBroadcast = () => {
+    cachedRawFeed = undefined;
+    onStoreChange();
+  };
+
+  const bc = getCommunityBroadcastChannel();
+  bc?.addEventListener("message", handleBroadcast);
+
+  const pollInterval = setInterval(() => {
+    cachedRawFeed = undefined;
+    onStoreChange();
+  }, 30_000);
+
+  window.addEventListener("storage", handleStorageEvent);
+  window.addEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleCustomEvent);
+
+  return () => {
+    window.removeEventListener("storage", handleStorageEvent);
+    window.removeEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleCustomEvent);
+    bc?.removeEventListener("message", handleBroadcast);
+    clearInterval(pollInterval);
+  };
 };

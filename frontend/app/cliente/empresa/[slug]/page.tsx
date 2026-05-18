@@ -37,6 +37,8 @@ const subscribeFollowing = (onStoreChange: () => void) => {
   };
 };
 
+const EMPTY_FOLLOWING_SNAPSHOT: FollowedAccount[] = [];
+
 export default function ClienteEmpresaPerfilPage() {
   const params = useParams<{ slug: string }>();
   const companyId = useMemo(
@@ -51,7 +53,7 @@ export default function ClienteEmpresaPerfilPage() {
   const followingAccounts = useSyncExternalStore(
     subscribeFollowing,
     readFollowing,
-    () => [] as FollowedAccount[],
+    () => EMPTY_FOLLOWING_SNAPSHOT,
   );
   const isFollowed = followingAccounts.some((a) => a.id === companyId);
 

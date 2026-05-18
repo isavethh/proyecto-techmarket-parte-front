@@ -31,6 +31,7 @@ import {
 } from "../../../lib/followStore";
 
 const EMPTY_FEED_SNAPSHOT: CommunityFeedPost[] = [];
+const EMPTY_FOLLOWING_SNAPSHOT: FollowedAccount[] = [];
 type EditableClientProfile = {
   name: string;
   email: string;
@@ -167,7 +168,7 @@ function ClienteUsuarioPerfilContent() {
   const followingAccounts = useSyncExternalStore(
     subscribeFollowing,
     readFollowing,
-    () => [] as FollowedAccount[],
+    () => EMPTY_FOLLOWING_SNAPSHOT,
   );
   const isFollowed = followingAccounts.some((a) => a.id === normalizedSlug);
 

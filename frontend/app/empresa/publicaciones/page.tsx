@@ -4,11 +4,13 @@ import Link from "next/link";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
-import { CommunityFeedPost, upsertCommunityFeedPosts } from "../../lib/communityFeed";
+import { CommunityFeedPost, readCommunityFeedPosts, upsertCommunityFeedPosts, writeCommunityFeedPosts } from "../../lib/communityFeed";
+import { getUser } from "@/lib/auth/tokenStore";
 import {
   createCompanyPublication,
   createCompanyPublicationComment,
   createCompanySurvey,
+  fetchCompanyProfile,
   fetchCompanyPublications,
   toggleCompanyPublicationLike,
   updateCompanyOffer,
@@ -63,6 +65,7 @@ const interactionFilterLabels: Record<InteractionFilter, string> = {
 };
 
 const company = {
+  id: "",
   name: "",
   logo: "",
 };
@@ -77,6 +80,7 @@ const buildCommunityFeedPost = (
 ): CommunityFeedPost => ({
   id,
   author: company.name,
+  authorId: company.id || undefined,
   role: "Empresa verificada",
   time: "Reciente",
   title,
@@ -432,7 +436,34 @@ export default function PublicacionesPage() {
   });
 
   useEffect(() => {
-    void fetchCompanyPublications().then((payload) => {
+    // Populate company identity so feed posts carry the correct author name for seguimiento matching
+    const storedUser = getUser() as Record<string, unknown> | null;
+    if (storedUser) {
+      company.id = typeof storedUser.id === "string" ? storedUser.id : String(storedUser.id ?? "");
+      company.name = typeof storedUser.nombre === "string" ? storedUser.nombre : "";
+    }
+
+    // Fetch profile and publications in parallel; set company name before seeding posts
+    void Promise.all([fetchCompanyProfile(), fetchCompanyPublications()]).then(([profile, payload]) => {
+      if (profile.businessData.name) company.name = profile.businessData.name;
+
+      // Patch stale feed posts that were written when author was empty
+      if (company.id && company.name) {
+        const existing = readCommunityFeedPosts();
+        const needsPatch = existing.some(
+          (post) => (post.authorId === company.id || post.author === "") && post.author !== company.name,
+        );
+        if (needsPatch) {
+          writeCommunityFeedPosts(
+            existing.map((post) =>
+              post.authorId === company.id || post.author === ""
+                ? { ...post, author: company.name, authorId: company.id }
+                : post,
+            ),
+          );
+        }
+      }
+
       setProductItems(payload.products as ProductCard[]);
       setServiceItems(payload.services as ServiceCard[]);
       setOfferItems(payload.offers as OfferCard[]);
@@ -772,6 +803,36 @@ export default function PublicacionesPage() {
 
     upsertCommunityFeedPosts(seededPosts);
   }, [postItems]);
+
+  useEffect(() => {
+    if (!textPostItems.length) return;
+    const seeded = textPostItems.map((post, index) =>
+      buildCommunityFeedPost(
+        `seed-textpost-${post.id ?? index}`,
+        post.title || "Publicación de texto",
+        post.message,
+        post.image || undefined,
+        "Publicacion de texto",
+        post.date || new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString(),
+      ),
+    );
+    upsertCommunityFeedPosts(seeded);
+  }, [textPostItems]);
+
+  useEffect(() => {
+    if (!surveyItems.length) return;
+    const seeded = surveyItems.map((survey, index) =>
+      buildCommunityFeedPost(
+        `seed-survey-${survey.id ?? index}`,
+        "Encuesta activa",
+        survey.question,
+        undefined,
+        "Encuesta",
+        new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString(),
+      ),
+    );
+    upsertCommunityFeedPosts(seeded);
+  }, [surveyItems]);
 
   const handleMainFilterChange = (filter: MainFilter) => {
     setActiveFilter(filter);

@@ -29,10 +29,10 @@ import {
   type SearchTrending,
 } from "@/lib/api/iaApi";
 import {
-  COMMUNITY_FEED_UPDATED_EVENT,
   CommunityFeedPost,
   mergeCommunityFeedPosts,
   readCommunityFeedPosts,
+  subscribeCommunityFeedExternal,
   upsertCommunityFeedPosts,
 } from "../lib/communityFeed";
 import {
@@ -169,6 +169,7 @@ const feedBaseLikesByPostId: Record<string, number> = {};
 const activeClientName = "Cliente";
 
 const emptyFeedSnapshot: CommunityFeedPost[] = [];
+const emptyFollowingSnapshot: FollowedAccount[] = [];
 
 const createAvatarInitials = (value: string): string => {
   const initials = value
@@ -238,29 +239,7 @@ const buildChatThread = (
   };
 };
 
-const subscribeCommunityFeed = (onStoreChange: () => void) => {
-  if (typeof window === "undefined") {
-    return () => {};
-  }
-
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key === "techmarket.community.feed") {
-      onStoreChange();
-    }
-  };
-
-  const handleFeedUpdate = () => {
-    onStoreChange();
-  };
-
-  window.addEventListener("storage", handleStorage);
-  window.addEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
-
-  return () => {
-    window.removeEventListener("storage", handleStorage);
-    window.removeEventListener(COMMUNITY_FEED_UPDATED_EVENT, handleFeedUpdate);
-  };
-};
+const subscribeCommunityFeed = subscribeCommunityFeedExternal;
 
 const subscribeFollowing = (onStoreChange: () => void) => {
   if (typeof window === "undefined") return () => {};
@@ -376,7 +355,7 @@ export default function ClientePage() {
   const followingAccounts = useSyncExternalStore(
     subscribeFollowing,
     readFollowing,
-    () => [] as FollowedAccount[],
+    () => emptyFollowingSnapshot,
   );
   const [activeChatId, setActiveChatId] = useState("");
   const [draftMessage, setDraftMessage] = useState("");
@@ -478,8 +457,27 @@ export default function ClientePage() {
 
     loadChats();
 
+    // Poll for new chat messages every 8 seconds
+    const pollInterval = setInterval(() => {
+      if (!active) return;
+      listClientChats()
+        .then((chats) =>
+          Promise.all(
+            chats.map(async (chat) => {
+              const messages = await getClientChatMessages(chat.id).catch(() => []);
+              return buildChatThread(chat, messages);
+            }),
+          ),
+        )
+        .then((threads) => {
+          if (active) setChatThreads(threads);
+        })
+        .catch(() => {});
+    }, 8_000);
+
     return () => {
       active = false;
+      clearInterval(pollInterval);
     };
   }, []);
 
@@ -644,8 +642,39 @@ export default function ClientePage() {
   const filteredFollowingPosts = useMemo<FollowingPost[]>(() => {
     const cleanQuery = query.trim().toLowerCase();
 
-    return [];
-  }, [query]);
+    if (followingAccounts.length === 0) return [];
+
+    const followedIdSet = new Set(followingAccounts.map((a) => a.id));
+    const followedNameSet = new Set(followingAccounts.map((a) => a.name.toLowerCase()));
+
+    return fullFeed
+      .filter((post) => {
+        // Match by authorId (preferred) or by author name as fallback
+        if (post.authorId && followedIdSet.has(post.authorId)) return true;
+        return post.author && followedNameSet.has(post.author.toLowerCase());
+      })
+      .map((post) => {
+        const matchedAccount =
+          followingAccounts.find((a) => post.authorId && a.id === post.authorId) ??
+          followingAccounts.find((a) => a.name.toLowerCase() === post.author.toLowerCase());
+        return {
+          id: post.id,
+          author: post.author || matchedAccount?.name || "Empresa",
+          kind: (matchedAccount?.type ?? "empresa") as "empresa" | "usuario",
+          followedSince: "Seguido",
+          title: post.title,
+          body: post.body,
+          tag: post.tag,
+          image: post.image,
+          createdAt: post.createdAt,
+        };
+      })
+      .filter((post) => {
+        if (!cleanQuery) return true;
+        const bucket = `${post.author} ${post.title} ${post.body} ${post.tag}`.toLowerCase();
+        return bucket.includes(cleanQuery);
+      });
+  }, [fullFeed, followingAccounts, query]);
 
   const clearPendingAiSearch = () => {
     if (aiSearchTimerRef.current === null) {

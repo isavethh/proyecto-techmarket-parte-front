@@ -3,19 +3,16 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
+  discoverClientCommunities,
   joinClientCommunity,
+  leaveClientCommunity,
   listClientCommunities,
   type ClientCommunity,
 } from "@/lib/api/iaApi";
 import { ClientPageHeader, ClientQuickLinksCard } from "../../components/ClientPageSections";
 import ClientSidebar from "../ClientSidebar";
 
-type CommunityVisual = {
-  tag: string;
-  description: string;
-  cover: string;
-  status: "Miembro" | "Visitante";
-};
+type FilterMode = "todas" | "unidas" | "disponibles";
 
 const coverImages = [
   "https://images.unsplash.com/photo-1593640408182-31c70c8268f5?auto=format&fit=crop&w=1200&q=80",
@@ -24,107 +21,141 @@ const coverImages = [
   "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80",
 ];
 
-const communityVisualFor = (community: ClientCommunity, index: number): CommunityVisual => {
-  const normalizedName = community.nombre.toLowerCase();
-
-  if (normalizedName.includes("pc") || normalizedName.includes("armadores")) {
-    return {
-      tag: "PC Building",
-      description:
-        "Comunidad para quienes arman PCs desde cero, comparten configuraciones y comparan componentes por rendimiento.",
-      cover: coverImages[0],
-      status: "Miembro",
-    };
-  }
-
-  if (normalizedName.includes("soporte") || normalizedName.includes("tecnico")) {
-    return {
-      tag: "Soporte",
-      description:
-        "Espacio para diagnósticos, mantenimiento, reparación y buenas prácticas para equipos de trabajo.",
-      cover: coverImages[1],
-      status: index % 2 === 0 ? "Miembro" : "Visitante",
-    };
-  }
-
-  if (normalizedName.includes("red")) {
-    return {
-      tag: "Redes",
-      description:
-        "Charlas sobre Wi-Fi, cableado, routers, seguridad y monitoreo para oficinas y pymes.",
-      cover: coverImages[2],
-      status: index % 2 === 0 ? "Miembro" : "Visitante",
-    };
-  }
-
-  return {
-    tag: "TechMarket",
-    description:
-      "Comunidad activa para compartir dudas, comparaciones, experiencias y recomendaciones tecnológicas.",
-    cover: coverImages[index % coverImages.length],
-    status: index % 2 === 0 ? "Miembro" : "Visitante",
-  };
+const tagForCommunity = (name: string): string => {
+  const normalized = name.toLowerCase();
+  if (normalized.includes("pc") || normalized.includes("armadores")) return "PC Building";
+  if (normalized.includes("soporte") || normalized.includes("tecnico")) return "Soporte";
+  if (normalized.includes("red")) return "Redes";
+  if (normalized.includes("gam")) return "Gaming";
+  return "TechMarket";
 };
 
-const formatCommunityDate = (index: number) => {
-  const day = String(10 - Math.min(index, 8)).padStart(2, "0");
-  const hour = String(4 + index).padStart(2, "0");
-  return `${day}/04 ${hour}:10`;
+const coverForIndex = (index: number) => coverImages[index % coverImages.length];
+
+const formatDate = (iso: string | null): string => {
+  if (!iso) return "—";
+  try {
+    return new Intl.DateTimeFormat("es-BO", { day: "2-digit", month: "short", year: "numeric" }).format(
+      new Date(iso),
+    );
+  } catch {
+    return "—";
+  }
 };
 
 export default function ComunidadesPage() {
   const [communities, setCommunities] = useState<ClientCommunity[]>([]);
   const [remoteError, setRemoteError] = useState<string | null>(null);
-  const [joinMessageById, setJoinMessageById] = useState<Record<string, string>>({});
-  const [joinedById, setJoinedById] = useState<Record<string, boolean>>({});
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionTone, setActionTone] = useState<"success" | "error">("success");
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [filter, setFilter] = useState<FilterMode>("todas");
+  const [search, setSearch] = useState("");
+
+  const loadCommunities = async () => {
+    setIsLoading(true);
+    setRemoteError(null);
+    try {
+      const response = await discoverClientCommunities();
+      setCommunities(response);
+    } catch (discoverError) {
+      // Fallback: si /discover no existe aún en el backend, intentar con /communities
+      // que solo devuelve las comunidades del usuario unidas.
+      console.warn("Discover falló, usando fallback a /communities", discoverError);
+      try {
+        const fallback = await listClientCommunities();
+        setCommunities(fallback.map((c) => ({ ...c, unido: true })));
+        setRemoteError(null);
+      } catch (fallbackError) {
+        setRemoteError(
+          fallbackError instanceof Error
+            ? fallbackError.message
+            : "No se pudo cargar comunidades",
+        );
+        setCommunities([]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let active = true;
-
-    setIsLoading(true);
-    listClientCommunities()
-      .then((response) => {
-        if (active) {
-          setCommunities(response);
-          setRemoteError(null);
-        }
-      })
-      .catch((error) => {
-        if (active) {
-          setCommunities([]);
-          setRemoteError(error instanceof Error ? error.message : "No se pudo cargar comunidades");
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
+    void loadCommunities();
   }, []);
 
-  const orderedCommunities = useMemo(
-    () => [...communities].sort((a, b) => a.nombre.localeCompare(b.nombre)),
+  useEffect(() => {
+    if (!actionMessage) return;
+    const timer = window.setTimeout(() => setActionMessage(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [actionMessage]);
+
+  const filteredCommunities = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+    const list = [...communities]
+      .filter((community) => {
+        if (filter === "unidas") return community.unido;
+        if (filter === "disponibles") return !community.unido;
+        return true;
+      })
+      .filter((community) => {
+        if (!normalizedSearch) return true;
+        return (
+          community.nombre.toLowerCase().includes(normalizedSearch) ||
+          (community.descripcion ?? "").toLowerCase().includes(normalizedSearch)
+        );
+      })
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+    return list;
+  }, [communities, filter, search]);
+
+  const totalJoined = useMemo(() => communities.filter((c) => c.unido).length, [communities]);
+  const totalAvailable = communities.length;
+
+  const featuredCommunity = useMemo(
+    () => communities.find((c) => c.unido) ?? communities[0] ?? null,
     [communities],
   );
 
-  const featuredCommunity = orderedCommunities[0] ?? null;
-  const featuredVisual = featuredCommunity ? communityVisualFor(featuredCommunity, 0) : null;
-
-  const handleJoinCommunity = async (communityId: string) => {
+  const handleJoinCommunity = async (community: ClientCommunity) => {
+    if (busyId) return;
+    setBusyId(community.id);
     try {
-      const response = await joinClientCommunity(communityId);
-      setJoinedById((current) => ({ ...current, [communityId]: true }));
-      setJoinMessageById((current) => ({ ...current, [communityId]: response.mensaje }));
+      const response = await joinClientCommunity(community.id);
+      setCommunities((current) =>
+        current.map((c) =>
+          c.id === community.id ? { ...c, unido: true, miembros: c.miembros + (c.unido ? 0 : 1) } : c,
+        ),
+      );
+      setActionMessage(response.mensaje ?? `Te uniste a ${community.nombre}`);
+      setActionTone("success");
     } catch (error) {
-      setJoinMessageById((current) => ({
-        ...current,
-        [communityId]: error instanceof Error ? error.message : "No se pudo unir a la comunidad",
-      }));
+      setActionMessage(error instanceof Error ? error.message : "No se pudo unir a la comunidad");
+      setActionTone("error");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleLeaveCommunity = async (community: ClientCommunity) => {
+    if (busyId) return;
+    setBusyId(community.id);
+    try {
+      await leaveClientCommunity(community.id);
+      setCommunities((current) =>
+        current.map((c) =>
+          c.id === community.id
+            ? { ...c, unido: false, miembros: Math.max(0, c.miembros - 1) }
+            : c,
+        ),
+      );
+      setActionMessage(`Saliste de ${community.nombre}`);
+      setActionTone("success");
+    } catch (error) {
+      setActionMessage(error instanceof Error ? error.message : "No se pudo salir de la comunidad");
+      setActionTone("error");
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -136,29 +167,49 @@ export default function ComunidadesPage() {
         <aside className="chat-scrollbar min-w-0 space-y-4 lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] lg:overflow-y-auto lg:overflow-x-hidden lg:pr-2">
           <ClientSidebar contextCard={false} />
 
-          <section className="tech-card mt-4">
-            <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD DESTACADA</p>
-            <h3 className="mt-2 text-xl font-semibold text-cyan-50">
-              {featuredCommunity?.nombre ?? "Comunidades activas"}
-            </h3>
-            <p className="mt-3 text-sm leading-7 text-cyan-100/80">
-              {featuredVisual?.description ??
-                "Entra como visitante para explorar contenido. Al unirte desbloqueas participación completa."}
-            </p>
-            {featuredCommunity && featuredVisual ? (
+          <section className="tech-card">
+            <p className="tech-mono text-xs text-cyan-200/75">RESUMEN</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-xl border border-cyan-100/12 bg-slate-950/35 p-3">
+                <p className="text-cyan-200/70">Disponibles</p>
+                <p className="mt-1 text-lg font-bold text-cyan-50">{totalAvailable}</p>
+              </div>
+              <div className="rounded-xl border border-cyan-100/12 bg-slate-950/35 p-3">
+                <p className="text-cyan-200/70">Unido</p>
+                <p className="mt-1 text-lg font-bold text-cyan-300">{totalJoined}</p>
+              </div>
+            </div>
+          </section>
+
+          {featuredCommunity ? (
+            <section className="tech-card">
+              <p className="tech-mono text-xs text-cyan-200/75">COMUNIDAD DESTACADA</p>
+              <h3 className="mt-2 text-xl font-semibold text-cyan-50">{featuredCommunity.nombre}</h3>
+              <p className="mt-3 text-sm leading-7 text-cyan-100/80">
+                {featuredCommunity.descripcion ??
+                  "Entra como visitante para explorar contenido. Al unirte desbloqueas participación completa."}
+              </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="rounded-full border border-cyan-100/20 bg-cyan-300/12 px-3 py-1 text-xs font-semibold text-cyan-100">
-                  {featuredVisual.tag}
+                  {tagForCommunity(featuredCommunity.nombre)}
                 </span>
                 <span className="rounded-full border border-cyan-100/20 bg-white/5 px-3 py-1 text-xs font-semibold text-cyan-100">
                   {featuredCommunity.miembros} miembros
                 </span>
-                <span className="rounded-full border border-cyan-100/20 bg-cyan-300/12 px-3 py-1 text-xs font-semibold text-cyan-100">
-                  Miembro activo
-                </span>
+                {featuredCommunity.unido ? (
+                  <span className="rounded-full border border-emerald-300/35 bg-emerald-400/15 px-3 py-1 text-xs font-semibold text-emerald-100">
+                    Miembro activo
+                  </span>
+                ) : null}
               </div>
-            ) : null}
-          </section>
+              <Link
+                href={`/cliente/comunidades/${featuredCommunity.id}`}
+                className="mt-4 inline-flex w-full justify-center rounded-xl border border-cyan-100/15 bg-cyan-300/15 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/25"
+              >
+                Abrir comunidad →
+              </Link>
+            </section>
+          ) : null}
 
           <ClientQuickLinksCard
             links={[
@@ -176,91 +227,157 @@ export default function ComunidadesPage() {
             <p className="mt-2 text-sm text-cyan-100/80">
               {remoteError
                 ? `No se pudo conectar con la API: ${remoteError}`
-                : "Entra como visitante para explorar contenido. Al unirte desbloqueas publicaciones y participación completa."}
+                : "Explora todas las comunidades disponibles. Únete para publicar y conectar con otros miembros."}
             </p>
+
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Buscar por nombre o descripción..."
+                className="flex-1 rounded-xl border border-cyan-100/15 bg-slate-950/45 px-3 py-2 text-sm text-cyan-50 placeholder:text-cyan-100/45 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+              />
+              <div className="flex gap-2">
+                {(["todas", "unidas", "disponibles"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setFilter(mode)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                      filter === mode
+                        ? "border-cyan-300/45 bg-cyan-300/20 text-cyan-50"
+                        : "border-cyan-100/15 bg-white/5 text-cyan-100/80 hover:bg-cyan-100/10"
+                    }`}
+                  >
+                    {mode === "todas" ? "Todas" : mode === "unidas" ? "Mías" : "Por unirse"}
+                  </button>
+                ))}
+              </div>
+            </div>
           </section>
 
-          <section className="grid gap-4 md:grid-cols-2">
-            {orderedCommunities.map((community, index) => {
-              const visual = communityVisualFor(community, index);
-              const isJoined = joinedById[community.id] || visual.status === "Miembro";
+          {actionMessage ? (
+            <div
+              className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
+                actionTone === "success"
+                  ? "border-emerald-300/35 bg-emerald-500/12 text-emerald-100"
+                  : "border-rose-400/35 bg-rose-500/12 text-rose-100"
+              }`}
+            >
+              {actionMessage}
+            </div>
+          ) : null}
 
-              return (
-                <article
-                  key={community.id}
-                  className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(180deg,rgba(12,42,72,0.94),rgba(7,24,44,0.96))] shadow-xl shadow-slate-950/25"
-                >
-                  <div className="h-44 overflow-hidden bg-slate-950 md:h-48">
-                    <img
-                      src={visual.cover}
-                      alt={community.nombre}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-
-                  <div className="p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="rounded-full border border-cyan-100/20 bg-cyan-300/12 px-3 py-1 text-xs font-semibold text-cyan-100">
-                        {visual.tag}
-                      </span>
-                      <span className="rounded-full border border-cyan-100/20 bg-white/5 px-3 py-1 text-xs font-semibold text-cyan-50">
-                        {isJoined ? "Miembro" : "Visitante"}
-                      </span>
-                    </div>
-
-                    <h2 className="mt-4 text-xl font-semibold text-cyan-50">{community.nombre}</h2>
-                    <p className="mt-3 min-h-12 text-sm leading-6 text-cyan-100/80">
-                      {visual.description}
-                    </p>
-
-                    <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-                      <div className="rounded-xl border border-cyan-100/12 bg-slate-950/35 p-3">
-                        <p className="tech-mono text-[10px] text-cyan-200/60">MIEMBROS</p>
-                        <p className="mt-1 font-semibold text-cyan-50">{community.miembros}</p>
-                      </div>
-                      <div className="rounded-xl border border-cyan-100/12 bg-slate-950/35 p-3">
-                        <p className="tech-mono text-[10px] text-cyan-200/60">POSTS</p>
-                        <p className="mt-1 font-semibold text-cyan-50">{Math.max(1, index + 2)}</p>
-                      </div>
-                      <div className="rounded-xl border border-cyan-100/12 bg-slate-950/35 p-3">
-                        <p className="tech-mono text-[10px] text-cyan-200/60">CREADA</p>
-                        <p className="mt-1 font-semibold text-cyan-50">{formatCommunityDate(index)}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
-                      <Link
-                        href={`/cliente/comunidades/${community.id}`}
-                        className="rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-3 py-2 text-center text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
-                      >
-                        Abrir comunidad
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => handleJoinCommunity(community.id)}
-                        className="rounded-xl border border-cyan-100/20 bg-white/5 px-3 py-2 text-xs font-semibold text-cyan-100/90 transition hover:bg-white/10"
-                      >
-                        {isJoined ? "Acceso completo" : "Unirme"}
-                      </button>
-                    </div>
-
-                    {joinMessageById[community.id] ? (
-                      <p className="mt-3 text-sm text-cyan-100/80">{joinMessageById[community.id]}</p>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
-          </section>
-
-          {!orderedCommunities.length ? (
+          {isLoading ? (
             <section className="tech-card">
-              <p className="text-sm text-cyan-100/80">
-                {isLoading ? "Cargando comunidades..." : "No hay comunidades para mostrar desde la API."}
+              <p className="text-sm text-cyan-100/80">Cargando comunidades...</p>
+            </section>
+          ) : filteredCommunities.length === 0 ? (
+            <section className="tech-card flex flex-col items-center gap-3 py-10 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-cyan-100/10 bg-cyan-400/10 text-2xl">
+                👥
+              </div>
+              <p className="text-base font-semibold text-cyan-50">
+                {search.trim()
+                  ? "No encontramos comunidades para esa búsqueda"
+                  : filter === "unidas"
+                    ? "Aún no te uniste a ninguna comunidad"
+                    : "No hay comunidades disponibles"}
+              </p>
+              <p className="max-w-md text-sm text-cyan-100/70">
+                {filter === "unidas"
+                  ? "Explora la pestaña 'Por unirse' para descubrir comunidades activas."
+                  : "Las nuevas comunidades aparecerán aquí cuando estén disponibles."}
               </p>
             </section>
-          ) : null}
+          ) : (
+            <section className="grid gap-4 md:grid-cols-2">
+              {filteredCommunities.map((community, index) => {
+                const isJoined = community.unido;
+                const tag = tagForCommunity(community.nombre);
+                const isBusy = busyId === community.id;
+
+                return (
+                  <article
+                    key={community.id}
+                    className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(180deg,rgba(12,42,72,0.94),rgba(7,24,44,0.96))] shadow-xl shadow-slate-950/25"
+                  >
+                    <div className="relative h-44 overflow-hidden bg-slate-950 md:h-48">
+                      <img
+                        src={coverForIndex(index)}
+                        alt={community.nombre}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                      {isJoined ? (
+                        <span className="absolute right-3 top-3 rounded-full border border-emerald-300/40 bg-emerald-500/30 px-2.5 py-1 text-[11px] font-semibold text-emerald-50 backdrop-blur-sm">
+                          ✓ Miembro
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="rounded-full border border-cyan-100/20 bg-cyan-300/12 px-3 py-1 text-xs font-semibold text-cyan-100">
+                          {tag}
+                        </span>
+                        <span className="rounded-full border border-cyan-100/20 bg-white/5 px-3 py-1 text-xs font-semibold text-cyan-50">
+                          {isJoined ? "Miembro" : "Visitante"}
+                        </span>
+                      </div>
+
+                      <h2 className="mt-4 text-xl font-semibold text-cyan-50">{community.nombre}</h2>
+                      <p className="mt-3 min-h-12 text-sm leading-6 text-cyan-100/80 line-clamp-3">
+                        {community.descripcion ??
+                          "Comunidad activa para compartir dudas, comparaciones, experiencias y recomendaciones tecnológicas."}
+                      </p>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2 text-center text-xs">
+                        <div className="rounded-xl border border-cyan-100/12 bg-slate-950/35 p-3">
+                          <p className="tech-mono text-[10px] text-cyan-200/60">MIEMBROS</p>
+                          <p className="mt-1 font-semibold text-cyan-50">{community.miembros}</p>
+                        </div>
+                        <div className="rounded-xl border border-cyan-100/12 bg-slate-950/35 p-3">
+                          <p className="tech-mono text-[10px] text-cyan-200/60">CREADA</p>
+                          <p className="mt-1 font-semibold text-cyan-50">
+                            {formatDate(community.creadoEn)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+                        <Link
+                          href={`/cliente/comunidades/${community.id}`}
+                          className="rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-3 py-2 text-center text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                        >
+                          Abrir comunidad
+                        </Link>
+                        {isJoined ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleLeaveCommunity(community)}
+                            disabled={isBusy}
+                            className="rounded-xl border border-rose-400/25 bg-rose-500/12 px-3 py-2 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/20 disabled:opacity-60"
+                          >
+                            {isBusy ? "..." : "Salir"}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void handleJoinCommunity(community)}
+                            disabled={isBusy}
+                            className="rounded-xl border border-cyan-200/35 bg-cyan-300/20 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/30 disabled:opacity-60"
+                          >
+                            {isBusy ? "Uniéndose..." : "Unirme"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </section>
+          )}
         </section>
       </main>
     </div>

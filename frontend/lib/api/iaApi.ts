@@ -213,7 +213,10 @@ export type ClientChatMessage = {
 export type ClientCommunity = {
   id: string;
   nombre: string;
+  descripcion: string | null;
   miembros: number;
+  unido: boolean;
+  creadoEn: string | null;
 };
 
 export type ClientCommunityPost = {
@@ -222,6 +225,35 @@ export type ClientCommunityPost = {
   titulo?: string;
   contenido: string;
   creadoEn?: string;
+  likes?: number;
+  comentarios?: number;
+  meGusta?: boolean;
+};
+
+export type CommunityRole = "ADMIN" | "MODERATOR" | "MEMBER";
+
+export type ClientCommunityMember = {
+  id: string;
+  nombre: string;
+  rol: CommunityRole | string;
+  unidoEn: string | null;
+  esMiUsuario?: boolean;
+};
+
+export type ClientCommunityPostComment = {
+  id: string;
+  autor: string;
+  contenido: string;
+  creadoEn: string | null;
+};
+
+export type CreateCommunityPostPayload = {
+  titulo?: string;
+  contenido: string;
+};
+
+export type CreatePostCommentPayload = {
+  contenido: string;
 };
 
 export type ClientNotification = {
@@ -721,6 +753,16 @@ export async function listClientCommunities(): Promise<ClientCommunity[]> {
   return request<ClientCommunity[]>("/api/clients/communities", { method: "GET" });
 }
 
+export async function discoverClientCommunities(): Promise<ClientCommunity[]> {
+  return request<ClientCommunity[]>("/api/clients/communities/discover", { method: "GET" });
+}
+
+export async function getClientCommunityDetail(
+  communityId: string,
+): Promise<ClientCommunity> {
+  return request<ClientCommunity>(`/api/clients/communities/${communityId}`, { method: "GET" });
+}
+
 export async function joinClientCommunity(communityId: string): Promise<MessageResponse> {
   return request<MessageResponse>(`/api/clients/communities/${communityId}/join`, {
     method: "POST",
@@ -739,6 +781,98 @@ export async function listClientCommunityPosts(
   return request<ClientCommunityPost[]>(`/api/clients/communities/${communityId}/posts`, {
     method: "GET",
   });
+}
+
+export async function createClientCommunityPost(
+  communityId: string,
+  payload: CreateCommunityPostPayload,
+): Promise<ClientCommunityPost> {
+  return request<ClientCommunityPost>(`/api/clients/communities/${communityId}/posts`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function listClientCommunityMembers(
+  communityId: string,
+): Promise<ClientCommunityMember[]> {
+  return request<ClientCommunityMember[]>(`/api/clients/communities/${communityId}/members`, {
+    method: "GET",
+  });
+}
+
+export async function promoteCommunityMember(
+  communityId: string,
+  memberUserId: string,
+): Promise<MessageResponse> {
+  return request<MessageResponse>(
+    `/api/clients/communities/${communityId}/members/${memberUserId}/promote`,
+    { method: "POST" },
+  );
+}
+
+export async function demoteCommunityMember(
+  communityId: string,
+  memberUserId: string,
+): Promise<MessageResponse> {
+  return request<MessageResponse>(
+    `/api/clients/communities/${communityId}/members/${memberUserId}/demote`,
+    { method: "POST" },
+  );
+}
+
+export async function kickCommunityMember(
+  communityId: string,
+  memberUserId: string,
+): Promise<MessageResponse> {
+  return request<MessageResponse>(
+    `/api/clients/communities/${communityId}/members/${memberUserId}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function likeCommunityPost(
+  communityId: string,
+  postId: string,
+): Promise<ClientCommunityPost> {
+  return request<ClientCommunityPost>(
+    `/api/clients/communities/${communityId}/posts/${postId}/like`,
+    { method: "POST" },
+  );
+}
+
+export async function unlikeCommunityPost(
+  communityId: string,
+  postId: string,
+): Promise<ClientCommunityPost> {
+  return request<ClientCommunityPost>(
+    `/api/clients/communities/${communityId}/posts/${postId}/like`,
+    { method: "DELETE" },
+  );
+}
+
+export async function listCommunityPostComments(
+  communityId: string,
+  postId: string,
+): Promise<ClientCommunityPostComment[]> {
+  return request<ClientCommunityPostComment[]>(
+    `/api/clients/communities/${communityId}/posts/${postId}/comments`,
+    { method: "GET" },
+  );
+}
+
+export async function createCommunityPostComment(
+  communityId: string,
+  postId: string,
+  payload: CreatePostCommentPayload,
+): Promise<ClientCommunityPostComment> {
+  return request<ClientCommunityPostComment>(
+    `/api/clients/communities/${communityId}/posts/${postId}/comments`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export async function listClientNotifications(): Promise<ClientNotification[]> {
