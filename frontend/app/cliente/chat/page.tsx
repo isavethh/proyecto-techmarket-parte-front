@@ -9,6 +9,7 @@ import ClientSidebar from "../ClientSidebar";
 import {
   createClientChat,
   createClientChatMessage,
+  createSpecialistChat,
   getClientChatMessages,
   listClientChats,
   markClientChatRead,
@@ -42,6 +43,7 @@ type ChatThread = {
 };
 
 type MarketplaceChatIntent = {
+  source: string;
   seller: string;
   company: string;
   companyId: string;
@@ -273,14 +275,17 @@ function ClienteChatContent() {
     const source = searchParams.get("source");
     const seller = searchParams.get("seller")?.trim() ?? "";
     const company = searchParams.get("company")?.trim() ?? seller;
-    const companyId = searchParams.get("companyId")?.trim() ?? "";
+    const companyId =
+      searchParams.get("companyId")?.trim() ??
+      searchParams.get("specialistId")?.trim() ??
+      "";
     const productId = searchParams.get("productId")?.trim() ?? "";
     const product = searchParams.get("product")?.trim() ?? "Publicacion en marketplace";
     const message =
       searchParams.get("message")?.trim() ??
       `Hola, vi tu anuncio \"${product}\". Sigue disponible?`;
 
-    if (source !== "marketplace") {
+    if (source !== "marketplace" && source !== "servicios") {
       return null;
     }
 
@@ -289,6 +294,7 @@ function ClienteChatContent() {
     }
 
     return {
+      source: source ?? "",
       seller: seller || company,
       company: company || seller,
       companyId,
@@ -360,50 +366,60 @@ function ClienteChatContent() {
               preferredThreadId = existingChatId;
               router.replace(`/cliente/chat?chatId=${encodeURIComponent(existingChatId)}`);
             } else {
-              const createdChat = await createClientChat({
-                empresaId: marketplaceIntent.companyId,
-                asunto: marketplaceIntent.product,
-              });
+              try {
+                const createdChat = marketplaceIntent.source === "servicios"
+                  ? await createSpecialistChat(marketplaceIntent.companyId, marketplaceIntent.product)
+                  : await createClientChat({
+                      empresaId: marketplaceIntent.companyId,
+                      asunto: marketplaceIntent.product,
+                    });
 
-              let createdMessages: ChatMessage[] = [];
-              if (marketplaceIntent.message.trim().length >= 2) {
-                const createdMessage = await createClientChatMessage(
-                  createdChat.chatId,
-                  marketplaceIntent.message,
-                );
-                createdMessages = [
-                  {
-                    id: createdMessage.id,
-                    author: "cliente",
-                    text: createdMessage.contenido,
-                    createdAt: createdMessage.fecha,
-                  },
-                ];
+                let createdMessages: ChatMessage[] = [];
+                if (marketplaceIntent.message.trim().length >= 2) {
+                  const createdMessage = await createClientChatMessage(
+                    createdChat.chatId,
+                    marketplaceIntent.message,
+                  );
+                  createdMessages = [
+                    {
+                      id: createdMessage.id,
+                      author: "cliente",
+                      text: createdMessage.contenido,
+                      createdAt: createdMessage.fecha,
+                    },
+                  ];
+                }
+
+                const nowIso = createdMessages[0]?.createdAt ?? new Date().toISOString();
+                const createdThread: ChatThread = {
+                  id: createdChat.chatId,
+                  sellerId: createSellerId(
+                    `${marketplaceIntent.companyId}-${marketplaceIntent.productId || marketplaceIntent.product}`,
+                  ),
+                  sellerName: marketplaceIntent.seller || marketplaceIntent.company,
+                  company: marketplaceIntent.company || marketplaceIntent.seller,
+                  product: marketplaceIntent.product,
+                  avatar: createAvatar(marketplaceIntent.company || marketplaceIntent.seller),
+                  unread: 0,
+                  online: true,
+                  messages: createdMessages,
+                  updatedAt: nowIso,
+                };
+
+                if (marketplaceIntent.productId) {
+                  saveMarketplaceChat(marketplaceIntent.productId, createdChat.chatId);
+                }
+
+                preferredThreadId = createdChat.chatId;
+                nextThreads = sortThreadsByRecent([createdThread, ...mappedThreads]);
+                router.replace(`/cliente/chat?chatId=${encodeURIComponent(createdChat.chatId)}`);
+              } catch {
+                // Backend rejected the ID (e.g. specialist userId not valid as empresaId)
+                // Fall back to a local thread so the user still has a conversation open
+                const upserted = upsertThreadFromMarketplace(nextThreads, marketplaceIntent);
+                nextThreads = upserted.threads;
+                preferredThreadId = upserted.threadId;
               }
-
-              const nowIso = createdMessages[0]?.createdAt ?? new Date().toISOString();
-              const createdThread: ChatThread = {
-                id: createdChat.chatId,
-                sellerId: createSellerId(
-                  `${marketplaceIntent.companyId}-${marketplaceIntent.productId || marketplaceIntent.product}`,
-                ),
-                sellerName: marketplaceIntent.seller || marketplaceIntent.company,
-                company: marketplaceIntent.company || marketplaceIntent.seller,
-                product: marketplaceIntent.product,
-                avatar: createAvatar(marketplaceIntent.company || marketplaceIntent.seller),
-                unread: 0,
-                online: true,
-                messages: createdMessages,
-                updatedAt: nowIso,
-              };
-
-              if (marketplaceIntent.productId) {
-                saveMarketplaceChat(marketplaceIntent.productId, createdChat.chatId);
-              }
-
-              preferredThreadId = createdChat.chatId;
-              nextThreads = sortThreadsByRecent([createdThread, ...mappedThreads]);
-              router.replace(`/cliente/chat?chatId=${encodeURIComponent(createdChat.chatId)}`);
             }
           }
         } else if (marketplaceIntent) {

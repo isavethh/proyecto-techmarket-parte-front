@@ -14,6 +14,7 @@ import {
   type SpecialistRequest,
   type SpecialistRequestAction,
 } from "@/lib/api/specialists";
+import { getTechmarketToken, getTechmarketUserId } from "@/lib/auth/tokenStore";
 import {
   specialistProjectHistory,
   specialistProjects,
@@ -141,8 +142,13 @@ export function useSpecialistRequestsProjectsData() {
       setLoading(true);
       setError(null);
 
+      const storedToken = getTechmarketToken();
+      const storedUserId = getTechmarketUserId();
       const currentAuth =
-        authRef.current ?? (await loginTechMarket().then((login) => ({ token: login.accessToken, userId: login.userId })));
+        authRef.current ??
+        (storedToken && storedUserId
+          ? { token: storedToken, userId: storedUserId }
+          : await loginTechMarket().then((login) => ({ token: login.accessToken, userId: login.userId })));
       authRef.current = currentAuth;
 
       const [requestsResult, projectsResult, historyResult] = await Promise.allSettled([

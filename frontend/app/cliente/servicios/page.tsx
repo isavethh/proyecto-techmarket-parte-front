@@ -132,16 +132,14 @@ export default function ServiciosIndexPage() {
                     </p>
                   )}
 
-                  {!isSpecialistService && (
-                    <div className="mt-4">
-                      <Link
-                        href={`/cliente/marketplace/${service.id}`}
-                        className="inline-flex rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-4 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
-                      >
-                        Ver detalles
-                      </Link>
-                    </div>
-                  )}
+                  <div className="mt-4">
+                    <Link
+                      href={isSpecialistService ? `/cliente/servicios/${service.id}` : `/cliente/marketplace/${service.id}`}
+                      className="inline-flex rounded-xl border border-cyan-100/20 bg-cyan-300/15 px-4 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+                    >
+                      Ver detalles
+                    </Link>
+                  </div>
                 </article>
               );
             })}

@@ -20,7 +20,8 @@
       "Bash(Remove-Item \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\\\\especialista\\\\certificaciones\\\\page.tsx\" -Force)",
       "Bash(Remove-Item \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\\\\especialista\\\\disponibilidad\\\\page.tsx\" -Force)",
       "Bash(Remove-Item \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\\\\especialista\\\\portafolio\\\\page.tsx\" -Force)",
-      "Bash(Remove-Item \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\\\\especialista\\\\components\\\\SpecialistAiAssistant.tsx\" -Force)"
+      "Bash(Remove-Item \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\proyecto-techmarket-parte-front\\\\frontend\\\\app\\\\especialista\\\\components\\\\SpecialistAiAssistant.tsx\" -Force)",
+      "Bash(dir \"c:\\\\Users\\\\bruno\\\\Documentos\\\\Proyectos\\\\TechMarket-Back\\\\TechMarket-IA\\\\target\\\\classes\\\\com\\\\techmarket\\\\techmarket\\\\users\\\\api\\\\admin\\\\client\" /b)"
     ]
   }
 }

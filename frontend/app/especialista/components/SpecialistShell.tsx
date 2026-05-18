@@ -109,7 +109,6 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
 };
 
 function SpecialistTopbarControls({ sectionLabel, profile }: SpecialistTopbarControlsProps) {
-  const pathname = usePathname();
   const router = useRouter();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -191,21 +190,6 @@ function SpecialistTopbarControls({ sectionLabel, profile }: SpecialistTopbarCon
           </div>
 
           <div className="mt-3 grid gap-2">
-            {specialistNavLinks.map((link) => {
-              const isActive = pathname === link.href;
-
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsProfileMenuOpen(false)}
-                  className={`auth-action block w-full ${isActive ? "active" : ""}`}
-                >
-                  {link.title}
-                </Link>
-              );
-            })}
-
             <button
               type="button"
               onClick={handleLogout}

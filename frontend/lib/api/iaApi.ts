@@ -605,6 +605,26 @@ export async function listMarketplaceServices(params?: {
   return request<MarketplaceProductPage>(path, { method: "GET" });
 }
 
+export type SpecialistServiceDetail = {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  precio?: number;
+  moneda?: string;
+  tipo?: string;
+  destacado?: boolean;
+  especialistaId: string;
+  especialistaNombre: string;
+  especialistaEspecialidad?: string;
+  especialistaUbicacion?: string;
+};
+
+export async function getMarketplaceSpecialistService(serviceId: string): Promise<SpecialistServiceDetail> {
+  return request<SpecialistServiceDetail>(`/api/marketplace/specialist-services/${serviceId}`, {
+    method: "GET",
+  });
+}
+
 export async function listMarketplaceSpecialistServices(params?: {
   search?: string;
   pagina?: number;
@@ -728,6 +748,16 @@ export async function createClientChat(
 export async function getClientChatMessages(chatId: string): Promise<ClientChatMessage[]> {
   return request<ClientChatMessage[]>(`/api/clients/chats/${chatId}/messages`, {
     method: "GET",
+  });
+}
+
+export async function createSpecialistChat(
+  especialistaId: string,
+  asunto: string,
+): Promise<CreateClientChatResponse> {
+  return request<CreateClientChatResponse>("/api/clients/chats/specialist", {
+    method: "POST",
+    body: JSON.stringify({ especialistaId, asunto }),
   });
 }
 
