@@ -171,7 +171,13 @@ async function requestEmpresa<T>(path: string, options?: RequestInit): Promise<T
     throw new Error(`Error ${options?.method ?? "GET"} ${path}: ${response.status}`);
   }
 
-  return response.json() as Promise<T>;
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    return undefined as T;
+  }
+
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 function normalizeProfile(payload: unknown): CompanyProfileData {

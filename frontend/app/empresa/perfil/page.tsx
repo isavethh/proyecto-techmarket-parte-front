@@ -580,8 +580,8 @@ export default function Perfil() {
                 <h2 className="mt-3 text-2xl font-bold text-white">Puntos de atencion</h2>
                 <div className="mt-6 grid gap-4 grid-cols-1 lg:grid-cols-2">
                   {branchItems.length ? (
-                    branchItems.map((branch) => (
-                      <div key={branch.name} className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-5">
+                    branchItems.map((branch, branchIndex) => (
+                      <div key={branch.name || branchIndex} className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-5">
                         <p className="text-lg font-semibold text-white">{branch.name}</p>
                         <div className="mt-4 space-y-3 text-sm text-cyan-100/80">
                           <div>
