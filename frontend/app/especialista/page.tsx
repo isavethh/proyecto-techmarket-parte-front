@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { SpecialistAiAssistant } from "./components/SpecialistAiAssistant";
 import { SpecialistShell } from "./components/SpecialistShell";
 import { useSpecialistBackendData } from "./hooks/useSpecialistBackendData";
 import { useSpecialistReviewsCertificationsData } from "./hooks/useSpecialistReviewsCertificationsData";
@@ -106,6 +107,8 @@ export default function EspecialistaCorePage() {
           <p className="mt-2 text-sm leading-6 text-cyan-100/75">Analiza calificaciones, comentarios y confianza.</p>
         </Link>
       </section>
+
+      <SpecialistAiAssistant services={services} />
 
       <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

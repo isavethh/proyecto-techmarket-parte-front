@@ -1,0 +1,18 @@
+[33mcommit 6d89c2794194c6d1a828d56fccfc456d1fefc8d5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mNobre[m[33m, [m[1;31morigin/Nobre[m[33m)[m
+Author: Nogbre <hedernobre6@gmail.com>
+Date:   Sun May 10 18:55:44 2026 -0400
+
+    Integracion CLIENTE
+
+ frontend/app/cliente/chat/page.tsx           |  690 [32m++++[m[31m-------[m
+ frontend/app/cliente/comunidades/page.tsx    |  582 [32m++++[m[31m------[m
+ frontend/app/cliente/empresa/[slug]/page.tsx |  317 [32m+++[m[31m--[m
+ frontend/app/cliente/empresas/page.tsx       |  114 [32m+[m[31m-[m
+ frontend/app/cliente/marketplace/page.tsx    |  622 [32m+++++[m[31m-----[m
+ frontend/app/cliente/page.tsx                | 1613 [32m+++++++++++++[m[31m-------------[m
+ frontend/app/cliente/perfil/[slug]/page.tsx  |  501 [32m++++[m[31m----[m
+ frontend/app/lib/api/clientApi.ts            |  306 [32m+++++[m
+ frontend/app/lib/api/index.ts                |   31 [32m+[m
+ frontend/app/lib/api/marketplace.ts          |   69 [32m++[m
+ frontend/app/lib/api/types.ts                |  145 [32m+++[m
+ 11 files changed, 2604 insertions(+), 2386 deletions(-)

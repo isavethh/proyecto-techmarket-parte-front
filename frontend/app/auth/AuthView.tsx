@@ -268,7 +268,7 @@ export default function AuthView({
                     name="phone"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+57 300 000 0000"
+                    placeholder="+591 12345678"
                     required
                   />
                 </div>
