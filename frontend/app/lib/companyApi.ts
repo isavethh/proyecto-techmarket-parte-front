@@ -371,42 +371,43 @@ function normalizeCompanyProfile(payload: unknown): CompanyProfileData {
   const findContact = (label: string) =>
     contactItems.find((item) => asString(item.label).toLowerCase() === label.toLowerCase())?.value;
 
+  // Sin mocks: lo que no venga del backend queda vacío (la empresa lo completa en su perfil).
   return {
     businessData: {
-      name: asString(source.name, businessData.name),
-      logo: asString(source.logoText, asString(source.logoUrl, businessData.logo)),
-      slogan: asString(source.slogan, businessData.slogan),
-      specialization: asString(source.specialization, businessData.specialization),
-      rating: asNumber(source.rating, businessData.rating),
-      reviewCount: asNumber(source.reviewCount, businessData.reviewCount),
-      category: asString(source.category, businessData.category),
-      experienceYears: asNumber(source.experienceYears, businessData.experienceYears),
-      businessType: asString(source.businessType, businessData.businessType),
+      name: asString(source.name),
+      logo: asString(source.logoText, asString(source.logoUrl)),
+      slogan: asString(source.slogan, asString(source.description)),
+      specialization: asString(source.specialization),
+      rating: asNumber(source.rating, 0),
+      reviewCount: asNumber(source.reviewCount, 0),
+      category: asString(source.category, asString(source.businessType)),
+      experienceYears: asNumber(source.experienceYears, 0),
+      businessType: asString(source.businessType),
     },
-    specialties: Array.isArray(source.specialties) ? (source.specialties as string[]) : specialties,
-    coverageAreas: Array.isArray(source.coverageAreas) ? (source.coverageAreas as string[]) : coverageAreas,
+    specialties: Array.isArray(source.specialties) ? (source.specialties as string[]) : [],
+    coverageAreas: Array.isArray(source.coverageAreas) ? (source.coverageAreas as string[]) : [],
     contactChannels: contactItems.length
       ? contactItems.map((item) => ({
           label: asString(item.label),
           value: asString(item.value),
         }))
       : [
-          { label: "Telefono", value: asString(findContact("Telefono"), contactChannels[0].value) },
-          { label: "WhatsApp", value: asString(findContact("WhatsApp"), contactChannels[1].value) },
-          { label: "Correo", value: asString(findContact("Correo"), contactChannels[2].value) },
+          { label: "Telefono", value: asString(findContact("Telefono")) },
+          { label: "WhatsApp", value: asString(findContact("WhatsApp")) },
+          { label: "Correo", value: asString(findContact("Correo")) },
         ],
-    socialLinks: Array.isArray(source.socialLinks) ? source.socialLinks as CompanyProfileData["socialLinks"] : socialLinks,
-    schedules: Array.isArray(source.schedules) ? source.schedules as CompanyProfileData["schedules"] : schedules,
-    branches: Array.isArray(source.branches) ? source.branches as CompanyProfileData["branches"] : branches,
+    socialLinks: Array.isArray(source.socialLinks) ? source.socialLinks as CompanyProfileData["socialLinks"] : [],
+    schedules: Array.isArray(source.schedules) ? source.schedules as CompanyProfileData["schedules"] : [],
+    branches: Array.isArray(source.branches) ? source.branches as CompanyProfileData["branches"] : [],
     locationOverview: source.locationOverview
       ? source.locationOverview as CompanyProfileData["locationOverview"]
       : {
-          mainAddressShort: asString(primaryAddress.short, locationOverview.mainAddressShort),
-          mainAddressLong: asString(primaryAddress.full, locationOverview.mainAddressLong),
-          city: asString(primaryAddress.city, locationOverview.city),
-          zone: asString(primaryAddress.zone, locationOverview.zone),
-          reference: asString(primaryAddress.reference, locationOverview.reference),
-          mapAreas: Array.isArray(source.mapAreas) ? source.mapAreas as string[] : locationOverview.mapAreas,
+          mainAddressShort: asString(primaryAddress.short),
+          mainAddressLong: asString(primaryAddress.full),
+          city: asString(primaryAddress.city),
+          zone: asString(primaryAddress.zone),
+          reference: asString(primaryAddress.reference),
+          mapAreas: Array.isArray(source.mapAreas) ? source.mapAreas as string[] : [],
         },
   };
 }
@@ -512,7 +513,8 @@ export const companyProfileData: CompanyProfileData = {
 };
 
 export async function fetchCompanyProfile() {
-  const payload = await requestCompanyApiWithFallback<unknown>("/api/empresa/perfil", companyProfileData);
+  // Fallback neutro (sin datos de ejemplo) si el backend no responde.
+  const payload = await requestCompanyApiWithFallback<unknown>("/api/empresa/perfil", {});
   return normalizeCompanyProfile(payload);
 }
 
@@ -578,83 +580,14 @@ export type ChatThread = {
   messages: ChatMessage[];
 };
 
-export const chatThreadsData: ChatThread[] = [
-  {
-    id: "chat-5",
-    name: "Alejandro",
-    product: "Laptop Pro 14",
-    lastMessage: "Busque la Laptop Pro 14 y quiero mas informacion.",
-    time: "Ahora",
-    unread: 1,
-    avatar: "AL",
-    messages: [
-      { id: "m1", author: "cliente", text: "Hola, busque la Laptop Pro 14 en sus publicaciones.", time: "11:02" },
-      { id: "m2", author: "empresa", text: "Hola Alejandro, claro. Te comparto caracteristicas y disponibilidad.", time: "11:04" },
-      { id: "m3", author: "cliente", text: "Busque la Laptop Pro 14 y quiero mas informacion.", time: "11:05" },
-    ],
-  },
-  {
-    id: "chat-1",
-    name: "Carlos M.",
-    product: "Laptop Pro 14",
-    lastMessage: "Quisiera saber si sigue disponible.",
-    time: "Hace 5 min",
-    unread: 2,
-    avatar: "CM",
-    messages: [
-      { id: "m1", author: "cliente", text: "Hola, vi la Laptop Pro 14 en publicaciones.", time: "10:05" },
-      { id: "m2", author: "empresa", text: "Hola Carlos, si, sigue disponible. Te comparto la informacion.", time: "10:07" },
-      { id: "m3", author: "cliente", text: "Quisiera saber si sigue disponible.", time: "10:09" },
-      { id: "m4", author: "empresa", text: "Si, esta disponible y te podemos asesorar por aqui mismo.", time: "10:10" },
-    ],
-  },
-  {
-    id: "chat-2",
-    name: "Laura P.",
-    product: "Mantenimiento preventivo",
-    lastMessage: "Me interesa agendar para esta semana.",
-    time: "Hace 20 min",
-    unread: 1,
-    avatar: "LP",
-    messages: [
-      { id: "m1", author: "cliente", text: "Buenos dias, vi el mantenimiento preventivo.", time: "09:30" },
-      { id: "m2", author: "empresa", text: "Hola Laura, claro. Te explico el alcance del servicio.", time: "09:33" },
-      { id: "m3", author: "cliente", text: "Me interesa agendar para esta semana.", time: "09:40" },
-    ],
-  },
-  {
-    id: "chat-3",
-    name: "Sofia R.",
-    product: "Combo empresarial",
-    lastMessage: "Necesito informacion para mi oficina.",
-    time: "Hace 1 h",
-    avatar: "SR",
-    messages: [
-      { id: "m1", author: "cliente", text: "Hola, estoy revisando el combo empresarial.", time: "08:20" },
-      { id: "m2", author: "empresa", text: "Hola Sofia, el combo incluye soporte y red interna.", time: "08:24" },
-      { id: "m3", author: "cliente", text: "Necesito informacion para mi oficina.", time: "08:31" },
-    ],
-  },
-  {
-    id: "chat-4",
-    name: "Andres T.",
-    product: "Monitor UltraWide 34",
-    lastMessage: "Quiero confirmar el precio.",
-    time: "Ayer",
-    avatar: "AT",
-    messages: [
-      { id: "m1", author: "cliente", text: "Vi el monitor en la publicacion.", time: "17:10" },
-      { id: "m2", author: "empresa", text: "Hola Andres, si lo tenemos disponible.", time: "17:12" },
-      { id: "m3", author: "cliente", text: "Quiero confirmar el precio.", time: "17:18" },
-    ],
-  },
-];
-
 const stripProductIdFromSubject = (subject: string): string =>
   subject.replace(/\s*\([A-Za-z]+-[0-9a-f-]{36}\)\s*$/i, "").trim() || subject;
 
 export async function fetchCompanyChats() {
-  const payload = await requestCompanyApiWithFallback<unknown>("/api/empresa/chat/conversaciones", chatThreadsData);
+  // Nunca usar datos de ejemplo como fallback: mostrarían conversaciones que no son de esta empresa.
+  const payload = await requestCompanyApiWithFallback<unknown>("/api/empresa/chat/conversaciones", {
+    conversations: [],
+  });
   const source = asRecord(payload);
   const threads = (Array.isArray(source.conversations) ? source.conversations : payload) as ChatThread[];
   return threads.map((thread) => ({

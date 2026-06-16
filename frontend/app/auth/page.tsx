@@ -1,5 +1,4 @@
 import AuthView from "./AuthView";
-import type { AccountType } from "./AuthView";
 
 type Mode = "login" | "register";
 type AccountType = "cliente" | "empresa" | "especialista";

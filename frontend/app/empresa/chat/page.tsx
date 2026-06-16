@@ -4,7 +4,7 @@ import Link from "next/link";
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
-import { chatThreadsData, fetchCompanyChats, markCompanyChatAsRead, sendCompanyChatMessage } from "../../lib/companyApi";
+import { fetchCompanyChats, markCompanyChatAsRead, sendCompanyChatMessage } from "../../lib/companyApi";
 
 type ChatMessage = {
   id: string;
@@ -26,8 +26,8 @@ type ChatThread = {
 };
 
 export default function ChatPage() {
-  const [chatThreadsState, setChatThreadsState] = useState(chatThreadsData);
-  const [activeChatId, setActiveChatId] = useState(chatThreadsData[0].id);
+  const [chatThreadsState, setChatThreadsState] = useState<ChatThread[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string>("");
   const [draftMessage, setDraftMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

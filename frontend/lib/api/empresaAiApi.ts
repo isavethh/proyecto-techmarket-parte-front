@@ -123,10 +123,13 @@ export async function consultarEmpresaIa(consulta: string): Promise<EmpresaIaRes
     response = await fetch("/api/empresa/ia/consulta", {
       method: "POST",
       headers: buildHeaders(),
+      // El backend (TechMarket-AI) lee el campo `question`; `context` es un objeto estructurado.
       body: JSON.stringify({
-        consulta: trimmed,
-        contexto: "empresa",
-        tipo: "consulta",
+        question: trimmed,
+        context: {
+          rol: "empresa",
+          canal: "consultor-ia",
+        },
       }),
     });
   } catch {

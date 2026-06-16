@@ -46,8 +46,10 @@ export default function EmbajadorPage() {
   const { data: performanceReport } = useAmbassadorPerformanceReport();
   const { data: conversionFunnel } = useAmbassadorConversionFunnel();
 
+  const referralOrigin =
+    typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
   const referralLinkString = primaryReferralLink?.url ?? (referralCodes?.[0]
-    ? `https://techmarket.bo/auth?mode=register&type=empresa&ref=${referralCodes[0].codigo}`
+    ? `${referralOrigin}/auth?mode=register&type=empresa&ref=${referralCodes[0].codigo}`
     : "");
   const referralCodeString = primaryReferralLink?.codigo ?? referralCodes?.[0]?.codigo ?? "Sin código";
   const referralClicks = referralLinkStats?.clicks ?? performanceReport?.clics ?? 0;
@@ -344,7 +346,7 @@ export default function EmbajadorPage() {
                 <div className="mx-auto mt-3 w-full max-w-[220px] rounded-2xl border border-cyan-100/12 bg-white p-3 shadow-lg shadow-slate-950/30">
                   {referralLinkQr?.qrUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={referralLinkQr.qrUrl} alt={`QR ${referralCodeString}`} className="aspect-square w-full rounded-xl object-cover" />
+                    <img src={referralLinkQr.qrUrl} alt={`QR ${referralCodeString}`} className="aspect-square w-full rounded-xl bg-white object-contain p-2" />
                   ) : (
                     <div className="flex aspect-square items-center justify-center rounded-xl bg-slate-950 text-center text-xs font-semibold text-cyan-50">
                       QR no disponible

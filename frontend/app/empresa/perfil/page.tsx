@@ -43,8 +43,6 @@ type ProfileEditForm = {
   logo: string;
   slogan: string;
   specialization: string;
-  rating: string;
-  reviewCount: string;
   category: string;
   experienceYears: string;
   businessType: string;
@@ -116,14 +114,13 @@ export default function Perfil() {
   const [branchItems, setBranchItems] = useState(branches);
   const [locationCard, setLocationCard] = useState(locationOverview);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [activeProfileTab, setActiveProfileTab] = useState("general");
   const [editMessage, setEditMessage] = useState("");
   const [editForm, setEditForm] = useState<ProfileEditForm>({
     name: businessData.name,
     logo: businessData.logo,
     slogan: businessData.slogan,
     specialization: businessData.specialization,
-    rating: String(businessData.rating),
-    reviewCount: String(businessData.reviewCount),
     category: businessData.category,
     experienceYears: String(businessData.experienceYears),
     businessType: businessData.businessType,
@@ -174,8 +171,6 @@ export default function Perfil() {
       logo: businessProfile.logo,
       slogan: businessProfile.slogan,
       specialization: businessProfile.specialization,
-      rating: String(businessProfile.rating),
-      reviewCount: String(businessProfile.reviewCount),
       category: businessProfile.category,
       experienceYears: String(businessProfile.experienceYears),
       businessType: businessProfile.businessType,
@@ -203,6 +198,7 @@ export default function Perfil() {
       mapAreas: locationCard.mapAreas.join(", "),
     });
     setEditMessage("");
+    setActiveProfileTab("general");
     setShowEditModal(true);
   };
 
@@ -211,6 +207,25 @@ export default function Perfil() {
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean);
+
+  const profileTabs: Array<{ id: string; label: string }> = [
+    { id: "general", label: "General" },
+    { id: "contacto", label: "Contacto" },
+    { id: "servicios", label: "Servicios" },
+    { id: "ubicacion", label: "Ubicacion" },
+    { id: "sucursales", label: "Sucursales" },
+  ];
+
+  const renderField = (label: string, key: keyof ProfileEditForm, fullWidth = false) => (
+    <label className={`space-y-2 text-sm text-cyan-100/85 ${fullWidth ? "md:col-span-2" : ""}`}>
+      <span>{label}</span>
+      <input
+        value={editForm[key]}
+        onChange={(event) => setEditForm((current) => ({ ...current, [key]: event.target.value }))}
+        className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 placeholder:text-cyan-100/35 transition focus:border-cyan-300/30 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+      />
+    </label>
+  );
 
   const handleSaveProfile = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -223,8 +238,6 @@ export default function Perfil() {
       specialization: editForm.specialization.trim() || current.specialization,
       category: editForm.category.trim() || current.category,
       businessType: editForm.businessType.trim() || current.businessType,
-      rating: Number(editForm.rating) > 0 ? Number(editForm.rating) : current.rating,
-      reviewCount: Number(editForm.reviewCount) >= 0 ? Number(editForm.reviewCount) : current.reviewCount,
       experienceYears: Number(editForm.experienceYears) >= 0 ? Number(editForm.experienceYears) : current.experienceYears,
     }));
 
@@ -269,8 +282,8 @@ export default function Perfil() {
         logo: editForm.logo.trim() || businessProfile.logo,
         slogan: editForm.slogan.trim() || businessProfile.slogan,
         specialization: editForm.specialization.trim() || businessProfile.specialization,
-        rating: Number(editForm.rating) > 0 ? Number(editForm.rating) : businessProfile.rating,
-        reviewCount: Number(editForm.reviewCount) >= 0 ? Number(editForm.reviewCount) : businessProfile.reviewCount,
+        rating: businessProfile.rating,
+        reviewCount: businessProfile.reviewCount,
         category: editForm.category.trim() || businessProfile.category,
         experienceYears: Number(editForm.experienceYears) >= 0 ? Number(editForm.experienceYears) : businessProfile.experienceYears,
         businessType: editForm.businessType.trim() || businessProfile.businessType,
@@ -651,43 +664,98 @@ export default function Perfil() {
               </button>
             </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Nombre</span><input value={editForm.name} onChange={(event) => setEditForm((current) => ({ ...current, name: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Logo (siglas)</span><input value={editForm.logo} onChange={(event) => setEditForm((current) => ({ ...current, logo: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Slogan</span><input value={editForm.slogan} onChange={(event) => setEditForm((current) => ({ ...current, slogan: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Especializacion</span><input value={editForm.specialization} onChange={(event) => setEditForm((current) => ({ ...current, specialization: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Categoria</span><input value={editForm.category} onChange={(event) => setEditForm((current) => ({ ...current, category: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Tipo de negocio</span><input value={editForm.businessType} onChange={(event) => setEditForm((current) => ({ ...current, businessType: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Calificacion</span><input value={editForm.rating} onChange={(event) => setEditForm((current) => ({ ...current, rating: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Reseñas</span><input value={editForm.reviewCount} onChange={(event) => setEditForm((current) => ({ ...current, reviewCount: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Años de experiencia</span><input value={editForm.experienceYears} onChange={(event) => setEditForm((current) => ({ ...current, experienceYears: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Areas de especializacion (separadas por coma)</span><input value={editForm.specialties} onChange={(event) => setEditForm((current) => ({ ...current, specialties: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Cobertura (separada por coma)</span><input value={editForm.coverageAreas} onChange={(event) => setEditForm((current) => ({ ...current, coverageAreas: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
+            <div className="mt-6 flex flex-wrap gap-1 border-b border-cyan-100/10">
+              {profileTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveProfileTab(tab.id)}
+                  className={`relative rounded-t-xl px-4 py-2.5 text-sm font-semibold transition ${
+                    activeProfileTab === tab.id
+                      ? "text-cyan-50"
+                      : "text-cyan-100/50 hover:text-cyan-100/85"
+                  }`}
+                >
+                  {tab.label}
+                  {activeProfileTab === tab.id ? (
+                    <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.7)]" />
+                  ) : null}
+                </button>
+              ))}
+            </div>
 
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Telefono</span><input value={editForm.phone} onChange={(event) => setEditForm((current) => ({ ...current, phone: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>WhatsApp</span><input value={editForm.whatsapp} onChange={(event) => setEditForm((current) => ({ ...current, whatsapp: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Correo</span><input value={editForm.email} onChange={(event) => setEditForm((current) => ({ ...current, email: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
+            <div className="mt-5 min-h-[300px]">
+              {activeProfileTab === "general" ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {renderField("Nombre comercial", "name")}
+                  {renderField("Logo (siglas)", "logo")}
+                  {renderField("Slogan", "slogan", true)}
+                  {renderField("Especializacion", "specialization")}
+                  {renderField("Categoria", "category")}
+                  {renderField("Tipo de negocio", "businessType")}
+                  {renderField("Años de experiencia", "experienceYears")}
+                  <p className="md:col-span-2 rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-4 py-3 text-xs leading-5 text-cyan-100/60">
+                    La calificacion y el numero de resenas se calculan automaticamente a partir de las
+                    resenas de tus clientes; no se editan aqui.
+                  </p>
+                </div>
+              ) : null}
 
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Direccion corta (mapa)</span><input value={editForm.mainAddressShort} onChange={(event) => setEditForm((current) => ({ ...current, mainAddressShort: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Direccion completa</span><input value={editForm.mainAddressLong} onChange={(event) => setEditForm((current) => ({ ...current, mainAddressLong: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Ciudad</span><input value={editForm.city} onChange={(event) => setEditForm((current) => ({ ...current, city: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Zona</span><input value={editForm.zone} onChange={(event) => setEditForm((current) => ({ ...current, zone: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Referencia</span><input value={editForm.reference} onChange={(event) => setEditForm((current) => ({ ...current, reference: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Zonas del mapa (separadas por coma)</span><input value={editForm.mapAreas} onChange={(event) => setEditForm((current) => ({ ...current, mapAreas: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
+              {activeProfileTab === "contacto" ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {renderField("Telefono", "phone")}
+                  {renderField("WhatsApp", "whatsapp")}
+                  {renderField("Correo", "email", true)}
+                </div>
+              ) : null}
 
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Horario lunes a viernes</span><input value={editForm.scheduleWeek} onChange={(event) => setEditForm((current) => ({ ...current, scheduleWeek: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Horario sabado</span><input value={editForm.scheduleSaturday} onChange={(event) => setEditForm((current) => ({ ...current, scheduleSaturday: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Horario domingo y festivos</span><input value={editForm.scheduleSunday} onChange={(event) => setEditForm((current) => ({ ...current, scheduleSunday: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
+              {activeProfileTab === "servicios" ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {renderField("Areas de especializacion (separadas por coma)", "specialties", true)}
+                  {renderField("Cobertura (separada por coma)", "coverageAreas", true)}
+                </div>
+              ) : null}
 
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Sede principal - nombre</span><input value={editForm.branchMainName} onChange={(event) => setEditForm((current) => ({ ...current, branchMainName: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Sede principal - telefono</span><input value={editForm.branchMainPhone} onChange={(event) => setEditForm((current) => ({ ...current, branchMainPhone: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Sede principal - direccion</span><input value={editForm.branchMainAddress} onChange={(event) => setEditForm((current) => ({ ...current, branchMainAddress: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Sede principal - horario</span><input value={editForm.branchMainHours} onChange={(event) => setEditForm((current) => ({ ...current, branchMainHours: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
+              {activeProfileTab === "ubicacion" ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {renderField("Direccion corta (mapa)", "mainAddressShort")}
+                  {renderField("Direccion completa", "mainAddressLong")}
+                  {renderField("Ciudad", "city")}
+                  {renderField("Zona", "zone")}
+                  {renderField("Referencia", "reference", true)}
+                  {renderField("Zonas del mapa (separadas por coma)", "mapAreas", true)}
+                  {renderField("Horario lunes a viernes", "scheduleWeek")}
+                  {renderField("Horario sabado", "scheduleSaturday")}
+                  {renderField("Horario domingo y festivos", "scheduleSunday", true)}
+                </div>
+              ) : null}
 
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Sucursal norte - nombre</span><input value={editForm.branchNorthName} onChange={(event) => setEditForm((current) => ({ ...current, branchNorthName: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85"><span>Sucursal norte - telefono</span><input value={editForm.branchNorthPhone} onChange={(event) => setEditForm((current) => ({ ...current, branchNorthPhone: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Sucursal norte - direccion</span><input value={editForm.branchNorthAddress} onChange={(event) => setEditForm((current) => ({ ...current, branchNorthAddress: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
-              <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2"><span>Sucursal norte - horario</span><input value={editForm.branchNorthHours} onChange={(event) => setEditForm((current) => ({ ...current, branchNorthHours: event.target.value }))} className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30" /></label>
+              {activeProfileTab === "sucursales" ? (
+                <div className="space-y-5">
+                  <div>
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200/65">
+                      Sede principal
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {renderField("Nombre", "branchMainName")}
+                      {renderField("Telefono", "branchMainPhone")}
+                      {renderField("Direccion", "branchMainAddress", true)}
+                      {renderField("Horario", "branchMainHours", true)}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200/65">
+                      Sucursal norte
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {renderField("Nombre", "branchNorthName")}
+                      {renderField("Telefono", "branchNorthPhone")}
+                      {renderField("Direccion", "branchNorthAddress", true)}
+                      {renderField("Horario", "branchNorthHours", true)}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">

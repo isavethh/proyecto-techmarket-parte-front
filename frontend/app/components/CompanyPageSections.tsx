@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/auth/authGuard";
+import { getUser } from "@/lib/auth/tokenStore";
 
 type CompanyPageHeaderProps = {
   sectionLabel: string;
@@ -34,19 +35,58 @@ type CompanyPanelCardProps = {
 const combineClassNames = (...classNames: Array<string | undefined | false>) =>
   classNames.filter(Boolean).join(" ");
 
-const COMPANY_PROFILE = {
-  name: "TechMarket Company",
-  email: "empresa@techmarket.bo",
-  city: "La Paz",
-  account: "Empresa verificada",
-  initials: "TC",
+type CompanyProfileSummary = {
+  name: string;
+  email: string;
+  city: string;
+  account: string;
+  initials: string;
 };
+
+const DEFAULT_COMPANY_PROFILE: CompanyProfileSummary = {
+  name: "Mi empresa",
+  email: "",
+  city: "—",
+  account: "Empresa",
+  initials: "E",
+};
+
+function deriveInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "E";
+  return parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "E";
+}
+
+/** Perfil de empresa derivado de la sesión iniciada (no hardcodeado). */
+function useCompanyProfile(): CompanyProfileSummary {
+  const [profile, setProfile] = useState<CompanyProfileSummary>(DEFAULT_COMPANY_PROFILE);
+
+  useEffect(() => {
+    const user = getUser() as
+      | { nombre?: string; email?: string; ciudad?: string; tipo?: string }
+      | null;
+    if (!user) return;
+
+    const name = (user.nombre || DEFAULT_COMPANY_PROFILE.name).trim();
+    setProfile({
+      name,
+      email: (user.email || "").trim(),
+      city: (user.ciudad || "").trim() || "—",
+      account:
+        user.tipo === "empresa" || user.tipo === "empresa_tienda" ? "Empresa" : "Cuenta",
+      initials: deriveInitials(name),
+    });
+  }, []);
+
+  return profile;
+}
 
 function CompanyTopbarControls({ sectionLabel }: CompanyTopbarControlsProps) {
   const router = useRouter();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
+  const companyProfile = useCompanyProfile();
 
   const handleLogout = () => {
     logout(router);
@@ -103,7 +143,7 @@ function CompanyTopbarControls({ sectionLabel }: CompanyTopbarControlsProps) {
         aria-label="Abrir perfil de empresa"
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-300 to-blue-600 text-[11px] font-bold text-slate-950">
-          {COMPANY_PROFILE.initials}
+          {companyProfile.initials}
         </span>
         <span className="hidden text-xs font-semibold text-cyan-100 md:block">{sectionLabel}</span>
       </button>
@@ -116,17 +156,17 @@ function CompanyTopbarControls({ sectionLabel }: CompanyTopbarControlsProps) {
           aria-label="Menu de empresa"
         >
           <p className="tech-mono text-xs text-cyan-200/70">PERFIL EMPRESA</p>
-          <p className="mt-2 text-base font-semibold text-cyan-50">{COMPANY_PROFILE.name}</p>
-          <p className="mt-1 text-sm text-cyan-100/80">{COMPANY_PROFILE.email}</p>
+          <p className="mt-2 text-base font-semibold text-cyan-50">{companyProfile.name}</p>
+          <p className="mt-1 text-sm text-cyan-100/80">{companyProfile.email}</p>
 
           <div className="mt-3 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-3 text-xs text-cyan-100/80">
             <div className="flex items-center justify-between gap-3">
               <span>Ciudad</span>
-              <strong className="text-cyan-50">{COMPANY_PROFILE.city}</strong>
+              <strong className="text-cyan-50">{companyProfile.city}</strong>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span>Estado</span>
-              <strong className="text-cyan-50">{COMPANY_PROFILE.account}</strong>
+              <strong className="text-cyan-50">{companyProfile.account}</strong>
             </div>
           </div>
 

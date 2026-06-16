@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
 import { consultarEmpresaIa, type EmpresaIaResponse } from "@/lib/api/empresaAiApi";
@@ -246,7 +246,6 @@ export default function ConsultorIAPage() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [thinkingMessageIndex, setThinkingMessageIndex] = useState(0);
   const [recentQuestions, setRecentQuestions] = useState<string[]>([]);
-  const aiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!isAiThinking) return;
@@ -258,22 +257,9 @@ export default function ConsultorIAPage() {
     return () => clearInterval(interval);
   }, [isAiThinking]);
 
-  useEffect(() => {
-    return () => {
-      if (aiTimeoutRef.current) {
-        clearTimeout(aiTimeoutRef.current);
-      }
-    };
-  }, []);
-
   const runAiQuestion = (rawQuestion: string) => {
     const trimmedQuestion = rawQuestion.trim();
     if (!trimmedQuestion || isAiThinking) return;
-
-    if (aiTimeoutRef.current) {
-      clearTimeout(aiTimeoutRef.current);
-      aiTimeoutRef.current = null;
-    }
 
     setAiQuestion(trimmedQuestion);
     setLastAiQuestion(trimmedQuestion);
@@ -282,26 +268,28 @@ export default function ConsultorIAPage() {
     setIsAiThinking(true);
     setThinkingMessageIndex(0);
 
-    aiTimeoutRef.current = setTimeout(() => {
-      void consultarEmpresaIa(trimmedQuestion)
-        .then((response) => {
-          setAiInsight(normalizeEmpresaIaResponse(response));
-        })
-        .catch((error) => {
-          setAiError(error instanceof Error ? error.message : "No se pudo consultar la IA de empresa.");
-          setAiInsight(buildAiInsight(trimmedQuestion));
-        })
-        .finally(() => {
-          setIsAiThinking(false);
-        });
-      setRecentQuestions((current) => {
-        const withoutCurrent = current.filter(
-          (item) => item.toLowerCase() !== trimmedQuestion.toLowerCase(),
+    setRecentQuestions((current) => {
+      const withoutCurrent = current.filter(
+        (item) => item.toLowerCase() !== trimmedQuestion.toLowerCase(),
+      );
+      return [trimmedQuestion, ...withoutCurrent].slice(0, 4);
+    });
+
+    // Llamada directa a la IA (sin retardo artificial); la animación se muestra mientras
+    // la petición real está en curso.
+    void consultarEmpresaIa(trimmedQuestion)
+      .then((response) => {
+        setAiInsight(normalizeEmpresaIaResponse(response));
+      })
+      .catch((error) => {
+        setAiError(
+          error instanceof Error ? error.message : "No se pudo consultar la IA de empresa.",
         );
-        return [trimmedQuestion, ...withoutCurrent].slice(0, 4);
+        setAiInsight(buildAiInsight(trimmedQuestion));
+      })
+      .finally(() => {
+        setIsAiThinking(false);
       });
-      aiTimeoutRef.current = null;
-    }, 1850);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -466,11 +454,15 @@ export default function ConsultorIAPage() {
                           />
                         </div>
                       </div>
-                    ) : aiError ? (
-                      <div className="mt-4 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-5 text-sm leading-6 text-amber-50">
-                        {aiError}
-                      </div>
-                    ) : aiInsight ? (
+                    ) : (
+                      <>
+                      {aiError ? (
+                        <div className="mt-4 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-5 text-sm leading-6 text-amber-50">
+                          {aiError}
+                          {aiInsight ? " Mientras tanto, te mostramos una sugerencia generada localmente." : ""}
+                        </div>
+                      ) : null}
+                      {aiInsight ? (
                       <div className="mt-4 space-y-4">
                         <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-4">
                           <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/70">Consulta</p>
@@ -544,10 +536,12 @@ export default function ConsultorIAPage() {
                           </ul>
                         </div>
                       </div>
-                    ) : (
+                    ) : !aiError ? (
                       <div className="mt-4 rounded-2xl border border-dashed border-cyan-100/18 bg-slate-950/40 p-5 text-sm text-cyan-100/72">
                         Selecciona una pregunta recomendada o escribe tu consulta para recibir un analisis mas completo.
                       </div>
+                    ) : null}
+                      </>
                     )}
                   </article>
                 </div>
