@@ -122,15 +122,21 @@ export default function AuthView({
   };
 
   const handleRegister = async () => {
+    const isEmpresa = accountType === "empresa";
     const trimmedNombre = nombre.trim();
-    const trimmedApellido = apellido.trim();
+    // Las empresas solo ingresan el nombre de la empresa; IAM exige apellido, se envia un placeholder.
+    const trimmedApellido = isEmpresa ? "Empresa" : apellido.trim();
     const trimmedEmail = email.trim();
     const trimmedPhone = phone.trim();
     const trimmedPais = "";
     const trimmedCiudad = "";
 
     if (!trimmedNombre || !trimmedApellido || !trimmedEmail || !trimmedPhone || !password) {
-      setFeedback("Completa nombre, apellido, correo, telefono y contraseña.");
+      setFeedback(
+        isEmpresa
+          ? "Completa el nombre de la empresa, correo, telefono y contraseña."
+          : "Completa nombre, apellido, correo, telefono y contraseña.",
+      );
       return;
     }
 
@@ -167,8 +173,8 @@ export default function AuthView({
       if (code && accountType === "empresa") {
         const attributed = await claimReferral({
           code,
-          nombre: `${trimmedNombre} ${trimmedApellido}`.trim(),
-          contacto: `${trimmedNombre} ${trimmedApellido}`.trim(),
+          nombre: trimmedNombre,
+          contacto: trimmedNombre,
           email: trimmedEmail,
           telefono: trimmedPhone,
           pais: trimmedPais || "Bolivia",
@@ -275,7 +281,24 @@ export default function AuthView({
             </div>
 
             <form className="mt-6 auth-row" onSubmit={onSubmit} noValidate={mode === "login"}>
-              {mode === "register" && (
+              {mode === "register" && accountType === "empresa" && (
+                <div>
+                  <label className="auth-label" htmlFor="nombre">
+                    Nombre de la empresa
+                  </label>
+                  <input
+                    className="auth-input"
+                    id="nombre"
+                    name="nombre"
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                    placeholder="Ej: TechStore Bolivia"
+                    required
+                  />
+                </div>
+              )}
+
+              {mode === "register" && accountType !== "empresa" && (
                 <div className="auth-row two">
                   <div>
                     <label className="auth-label" htmlFor="nombre">
