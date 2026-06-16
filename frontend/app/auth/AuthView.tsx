@@ -1,22 +1,27 @@
 "use client";
 
 import { login, register } from "@/lib/api/authApi";
+import { claimReferral, trackReferralClick } from "@/lib/api/referralApi";
 import { getRedirectPathByUserType } from "@/lib/auth/redirectHelper";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Mode = "login" | "register";
 export type AccountType = "cliente" | "empresa" | "especialista" | "embajador";
 
+const REFERRAL_STORAGE_KEY = "techmarket.referralCode";
+
 type AuthViewProps = {
   initialMode: Mode;
   initialType: AccountType;
+  referralCode?: string;
 };
 
 export default function AuthView({
   initialMode,
   initialType,
+  referralCode,
 }: AuthViewProps) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -34,6 +39,29 @@ export default function AuthView({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Al llegar por un link de embajador (?ref=CODE): persistimos el código,
+  // forzamos el registro de empresa y registramos el clic.
+  useEffect(() => {
+    if (!referralCode) return;
+    try {
+      window.localStorage.setItem(REFERRAL_STORAGE_KEY, referralCode);
+    } catch {
+      // ignore
+    }
+    setMode("register");
+    setAccountType("empresa");
+    void trackReferralClick(referralCode);
+  }, [referralCode]);
+
+  const resolveReferralCode = (): string | null => {
+    if (referralCode?.trim()) return referralCode.trim();
+    try {
+      return window.localStorage.getItem(REFERRAL_STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  };
 
   const title = useMemo(() => {
     if (mode === "login") return "Accede a tu espacio TechMarket";
@@ -132,6 +160,29 @@ export default function AuthView({
         terminos: true,
       });
       setFeedback("Registro completado correctamente.");
+
+      // Atribución de referido: si la empresa llegó por un link de embajador,
+      // queda enganchada al árbol de referidos de ese embajador.
+      const code = resolveReferralCode();
+      if (code && accountType === "empresa") {
+        const attributed = await claimReferral({
+          code,
+          nombre: `${trimmedNombre} ${trimmedApellido}`.trim(),
+          contacto: `${trimmedNombre} ${trimmedApellido}`.trim(),
+          email: trimmedEmail,
+          telefono: trimmedPhone,
+          pais: trimmedPais || "Bolivia",
+          ciudad: trimmedCiudad || "Santa Cruz",
+          tipo: "empresa",
+        });
+        if (attributed) {
+          try {
+            window.localStorage.removeItem(REFERRAL_STORAGE_KEY);
+          } catch {
+            // ignore
+          }
+        }
+      }
 
       console.log("[AuthView - handleRegister] Session recibida:", session);
       console.log("[AuthView - handleRegister] session.user:", session.user);

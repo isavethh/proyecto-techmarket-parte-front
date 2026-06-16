@@ -8,7 +8,7 @@ type ApiErrorBody = {
 };
 
 const IA_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_IA_URL ?? "http://localhost:8092";
+  process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_IA_URL ?? "http://localhost:8082";
 
 export type GlobalSearchItem = {
   id: string;

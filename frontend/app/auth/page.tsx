@@ -7,6 +7,7 @@ type AccountType = "cliente" | "empresa" | "especialista";
 type SearchParams = {
   mode?: string;
   type?: string;
+  ref?: string;
 };
 
 const accountTypes = new Set<string>([
@@ -29,5 +30,14 @@ export default async function AuthPage({
       ? params.type
       : "cliente";
 
-  return <AuthView initialMode={initialMode} initialType={initialType} />;
+  const referralCode =
+    typeof params.ref === "string" && params.ref.trim() ? params.ref.trim() : undefined;
+
+  return (
+    <AuthView
+      initialMode={initialMode}
+      initialType={initialType}
+      referralCode={referralCode}
+    />
+  );
 }
