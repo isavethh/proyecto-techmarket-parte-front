@@ -1,5 +1,7 @@
 "use client";
 
+import { consultarEmpresaIa } from "@/lib/api/empresaAiApi";
+
 export type ExecutiveMetric = {
   id: string;
   label: string;
@@ -295,12 +297,9 @@ export async function fetchCompanySummary() {
   }
 }
 
-export async function askCompanyAi(question: string, context?: unknown) {
+export async function askCompanyAi(question: string) {
   try {
-    return await requestEmpresa<AiBusinessInsight>("/api/empresa/ia/consulta", {
-      method: "POST",
-      body: JSON.stringify({ question, context }),
-    });
+    return await consultarEmpresaIa(question);
   } catch {
     return emptyAiInsight;
   }

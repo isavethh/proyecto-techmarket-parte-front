@@ -70,19 +70,44 @@ export type SpecialistScheduleOptimizationResponse = {
   planSugerido: string[];
 };
 
-function getStoredUserId(): string | null {
-  const techmarketUserId = getTechmarketUserId();
-  if (techmarketUserId) {
-    return techmarketUserId;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function normalizeUuid(value: string | number | null | undefined): string | null {
+  if (value === undefined || value === null) {
+    return null;
   }
 
-  if (process.env.NEXT_PUBLIC_DEV_SPECIALIST_USER_ID) {
-    return process.env.NEXT_PUBLIC_DEV_SPECIALIST_USER_ID;
+  const normalized = String(value).trim();
+  return UUID_PATTERN.test(normalized) ? normalized : null;
+}
+
+function isDevUserIdPlaceholder(value: string | null | undefined): boolean {
+  if (!value) {
+    return true;
+  }
+
+  const normalized = value.trim();
+  return !normalized || normalized === "UUID_REAL_SPECIALIST" || normalized === "UUID_REAL_ESPECIALISTA";
+}
+
+function getUserIdHeader(): string | null {
+  const techmarketUserId = getTechmarketUserId();
+  const normalizedTechmarketUserId = normalizeUuid(techmarketUserId);
+  if (normalizedTechmarketUserId) {
+    return normalizedTechmarketUserId;
+  }
+
+  const devUserId = process.env.NEXT_PUBLIC_DEV_SPECIALIST_USER_ID;
+  if (!isDevUserIdPlaceholder(devUserId)) {
+    const normalizedDevUserId = normalizeUuid(devUserId);
+    if (normalizedDevUserId) {
+      return normalizedDevUserId;
+    }
   }
 
   const user = getUser() as { id?: string | number; userId?: string | number; usuarioId?: string | number } | null;
   const candidate = user?.id ?? user?.userId ?? user?.usuarioId;
-  return candidate === undefined || candidate === null ? null : String(candidate);
+  return normalizeUuid(candidate);
 }
 
 function buildHeaders(hasBody: boolean): Headers {
@@ -93,14 +118,17 @@ function buildHeaders(hasBody: boolean): Headers {
   }
 
   const token = getToken();
-  const userId = getStoredUserId();
+  const userId = getUserIdHeader();
 
-  if (!token || !userId) {
+  if (!token) {
     throw new Error("No autorizado. Vuelve a iniciar sesión.");
   }
 
   headers.set("Authorization", `Bearer ${token}`);
-  headers.set("X-User-Id", userId);
+
+  if (userId) {
+    headers.set("X-User-Id", userId);
+  }
 
   return headers;
 }

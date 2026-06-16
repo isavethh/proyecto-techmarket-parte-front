@@ -1,4 +1,6 @@
-﻿export type ExecutiveMetric = {
+﻿import { consultarEmpresaIa } from "@/lib/api/empresaAiApi";
+
+export type ExecutiveMetric = {
   id: string;
   label: string;
   value: string;
@@ -1240,11 +1242,12 @@ export async function uploadCompanyImage(file: File, folder: string) {
   );
 }
 
-export async function askCompanyAi(question: string, context?: unknown) {
-  return requestCompanyApiWithFallback("/api/empresa/ia/consulta", buildAiInsight(question), {
-    method: "POST",
-    body: JSON.stringify({ question, context }),
-  });
+export async function askCompanyAi(question: string) {
+  try {
+    return await consultarEmpresaIa(question);
+  } catch {
+    return buildAiInsight(question);
+  }
 }
 
 export async function fetchCompanySummary() {

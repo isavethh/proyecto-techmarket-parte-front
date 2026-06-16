@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
-import { askCompanyAi } from "../../lib/companyApi";
+import { consultarEmpresaIa, type EmpresaIaResponse } from "@/lib/api/empresaAiApi";
 
 type AiBusinessInsight = {
   summary: string;
@@ -203,11 +203,47 @@ function buildAiInsight(question: string): AiBusinessInsight {
   };
 }
 
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+
+const asString = (value: unknown, fallback = ""): string =>
+  typeof value === "string" && value.trim() ? value : fallback;
+
+const asStringArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+
+function normalizeEmpresaIaResponse(response: EmpresaIaResponse): AiBusinessInsight {
+  const source = asRecord(response);
+  const nested = asRecord(source.respuesta);
+  const data = Object.keys(nested).length > 0 ? nested : source;
+  const serialized = JSON.stringify(response, null, 2);
+
+  return {
+    summary: asString(data.summary, asString(data.resumen, asString(data.diagnostico, serialized))),
+    dataPoints: asStringArray(data.dataPoints).length
+      ? asStringArray(data.dataPoints)
+      : asStringArray(data.datos),
+    advice: asString(data.advice, asString(data.consejo, asString(data.recomendacion))),
+    nextStep: asString(data.nextStep, asString(data.siguientePaso, asString(data.proximoPaso))),
+    actionPlan: asStringArray(data.actionPlan).length
+      ? asStringArray(data.actionPlan)
+      : asStringArray(data.planAccion),
+    watchItems: asStringArray(data.watchItems).length
+      ? asStringArray(data.watchItems)
+      : asStringArray(data.indicadores),
+    priority: asString(data.priority, asString(data.prioridad, "Media")) === "Alta" ? "Alta" : "Media",
+    confidence: asString(data.confidence, asString(data.confianza, "Media")) === "Alta" ? "Alta" : "Media",
+    focusLabel: asString(data.focusLabel, asString(data.etiquetaFoco, "Volver al resumen ejecutivo")),
+    focusHref: asString(data.focusHref, asString(data.enlaceFoco, "/empresa")),
+  };
+}
+
 export default function ConsultorIAPage() {
   const [aiQuestion, setAiQuestion] = useState("");
   const [lastAiQuestion, setLastAiQuestion] = useState("");
   const [aiInsight, setAiInsight] = useState<AiBusinessInsight | null>(null);
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [thinkingMessageIndex, setThinkingMessageIndex] = useState(0);
   const [recentQuestions, setRecentQuestions] = useState<string[]>([]);
   const aiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -242,17 +278,22 @@ export default function ConsultorIAPage() {
     setAiQuestion(trimmedQuestion);
     setLastAiQuestion(trimmedQuestion);
     setAiInsight(null);
+    setAiError(null);
     setIsAiThinking(true);
     setThinkingMessageIndex(0);
 
     aiTimeoutRef.current = setTimeout(() => {
-      void askCompanyAi(trimmedQuestion).then((insight) => {
-        setAiInsight({
-          ...buildAiInsight(trimmedQuestion),
-          ...(insight as AiBusinessInsight),
+      void consultarEmpresaIa(trimmedQuestion)
+        .then((response) => {
+          setAiInsight(normalizeEmpresaIaResponse(response));
+        })
+        .catch((error) => {
+          setAiError(error instanceof Error ? error.message : "No se pudo consultar la IA de empresa.");
+          setAiInsight(buildAiInsight(trimmedQuestion));
+        })
+        .finally(() => {
+          setIsAiThinking(false);
         });
-        setIsAiThinking(false);
-      });
       setRecentQuestions((current) => {
         const withoutCurrent = current.filter(
           (item) => item.toLowerCase() !== trimmedQuestion.toLowerCase(),
@@ -424,6 +465,10 @@ export default function ConsultorIAPage() {
                             style={{ width: `${35 + thinkingMessageIndex * 20}%` }}
                           />
                         </div>
+                      </div>
+                    ) : aiError ? (
+                      <div className="mt-4 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-5 text-sm leading-6 text-amber-50">
+                        {aiError}
                       </div>
                     ) : aiInsight ? (
                       <div className="mt-4 space-y-4">
