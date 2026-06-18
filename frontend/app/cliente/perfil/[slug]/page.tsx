@@ -11,7 +11,9 @@ import {
   setDefaultClientAddress,
   updateClientProfile,
   type ClientAddress,
+  type ClientIdentityHeaders,
 } from "@/lib/api/iaApi";
+import { getCurrentUserProfile } from "@/lib/api/authApi";
 import {
   ClientInfoCard,
   ClientPageHeader,
@@ -218,8 +220,32 @@ function ClienteUsuarioPerfilContent() {
 
     const loadRemoteProfile = async () => {
       try {
+        // IAM es la fuente de identidad (nombre/apellido/email reales del usuario
+        // logueado). Es opcional: si falla, seguimos con lo que tenga TechMarket-IA.
+        let identity: ClientIdentityHeaders | undefined;
+        let iamName = "";
+        let iamEmail = "";
+        let iamPhone = "";
+        let iamCity = "";
+        try {
+          const iam = await getCurrentUserProfile();
+          identity = {
+            email: iam.email,
+            nombre: iam.nombre,
+            apellido: iam.apellido,
+            telefono: iam.telefono ?? "",
+          };
+          iamName = [iam.nombre, iam.apellido].filter(Boolean).join(" ").trim();
+          iamEmail = iam.email ?? "";
+          iamPhone = iam.telefono ?? "";
+          iamCity = iam.ciudad ?? "";
+        } catch {
+          // IAM opcional; TechMarket-IA aprovisiona igual con lo que haya.
+        }
+
+        // Pasamos la identidad para que TechMarket-IA aprovisione (lazy) la fila.
         const [remoteProfile, remoteAddresses] = await Promise.all([
-          getClientProfile(),
+          getClientProfile(identity),
           listClientAddresses(),
         ]);
 
@@ -227,19 +253,23 @@ function ClienteUsuarioPerfilContent() {
           return;
         }
 
-        const fullName = [remoteProfile.nombre, remoteProfile.apellido]
+        const remoteName = [remoteProfile.nombre, remoteProfile.apellido]
           .filter(Boolean)
           .join(" ")
           .trim();
+        const fullName = iamName || remoteName;
 
-        const computedOwnSlug = toClientProfileSlug(fullName || remoteProfile.email || "perfil");
+        const computedOwnSlug = toClientProfileSlug(
+          fullName || iamEmail || remoteProfile.email || "perfil",
+        );
         setOwnSlug(computedOwnSlug);
 
         setEditableProfile((current) => ({
           ...current,
           name: fullName || current.name,
-          email: remoteProfile.email || current.email,
-          phone: remoteProfile.telefono ?? "",
+          email: iamEmail || remoteProfile.email || current.email,
+          city: iamCity || current.city,
+          phone: iamPhone || remoteProfile.telefono || "",
           avatar: remoteProfile.avatar ?? "",
         }));
         setAddresses(remoteAddresses);
@@ -286,12 +316,21 @@ function ClienteUsuarioPerfilContent() {
 
     try {
       const [nombre, ...apellidoParts] = normalizedProfile.name.split(" ").filter(Boolean);
-      const updatedProfile = await updateClientProfile({
-        nombre: nombre || normalizedProfile.name,
-        apellido: apellidoParts.join(" "),
-        telefono: normalizedProfile.phone,
-        avatar: normalizedProfile.avatar,
-      });
+      const apellido = apellidoParts.join(" ");
+      const updatedProfile = await updateClientProfile(
+        {
+          nombre: nombre || normalizedProfile.name,
+          apellido,
+          telefono: normalizedProfile.phone,
+          avatar: normalizedProfile.avatar,
+        },
+        {
+          email: normalizedProfile.email,
+          nombre: nombre || normalizedProfile.name,
+          apellido,
+          telefono: normalizedProfile.phone,
+        },
+      );
 
       const remoteName = [updatedProfile.nombre, updatedProfile.apellido].filter(Boolean).join(" ");
       const nextProfile = {

@@ -304,6 +304,51 @@ export async function login(credentials: LoginCredentials): Promise<AuthSession>
   return session;
 }
 
+export type CurrentUserProfile = {
+  id: string;
+  email: string;
+  nombre: string;
+  apellido: string;
+  tipo: string;
+  telefono?: string | null;
+  pais?: string | null;
+  ciudad?: string | null;
+  avatar?: string | null;
+  estado?: string | null;
+};
+
+/**
+ * Devuelve el perfil del usuario autenticado desde IAM (fuente de identidad).
+ * A diferencia de los datos de dominio en TechMarket-IA, este endpoint siempre
+ * tiene el nombre/apellido reales del usuario logueado vía el JWT.
+ */
+export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
+  if (typeof window === "undefined") {
+    throw new Error("No se puede leer el perfil fuera del navegador.");
+  }
+
+  const token = window.localStorage.getItem("accessToken");
+  if (!token) {
+    throw new Error("No hay sesión activa.");
+  }
+
+  const response = await fetch(buildUrl("/users/profile"), {
+    method: "GET",
+    headers: {
+      "X-Tenant-Id": "00000000-0000-0000-0000-000000000000",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const body = await readResponseBody(response);
+
+  if (!response.ok) {
+    throw new Error(resolveErrorMessage(body, "No se pudo cargar el perfil del usuario."));
+  }
+
+  return body as CurrentUserProfile;
+}
+
 export async function refreshAuthSession(): Promise<AuthSession> {
   if (typeof window === "undefined") {
     throw new Error("No se puede refrescar la sesión fuera del navegador.");

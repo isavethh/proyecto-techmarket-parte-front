@@ -16,6 +16,7 @@ import {
   useState,
 } from "react";
 import { CommunityFeedPost, upsertCommunityFeedPosts } from "../lib/communityFeed";
+import { getCurrentUserProfile, type CurrentUserProfile } from "@/lib/api/authApi";
 
 type ClientExperienceShellProps = {
   children: ReactNode;
@@ -25,18 +26,46 @@ type ClientTopbarControlsProps = {
   sectionLabel: string;
 };
 
+type ClientProfileView = {
+  name: string;
+  email: string;
+  account: string;
+  initials: string;
+};
+
 type ClientExperienceContextValue = {
   openPostModal: () => void;
+  clientProfile: ClientProfileView;
 };
 
 const ClientExperienceContext = createContext<ClientExperienceContextValue | null>(null);
 
-const CLIENT_PROFILE = {
+// Valores por defecto mientras carga el perfil real del usuario autenticado.
+const DEFAULT_CLIENT_PROFILE: ClientProfileView = {
   name: "Cliente",
-  email: "cliente.test@techmarket.com",
-  city: "Bolivia",
+  email: "",
   account: "Cliente",
   initials: "US",
+};
+
+const getInitials = (name: string): string =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((token) => token[0]?.toUpperCase() ?? "")
+    .join("") || "US";
+
+const toClientProfileView = (profile: CurrentUserProfile): ClientProfileView => {
+  const name = [profile.nombre, profile.apellido].filter(Boolean).join(" ").trim();
+  const displayName = name || profile.email || "Cliente";
+
+  return {
+    name: displayName,
+    email: profile.email ?? "",
+    account: "Cliente",
+    initials: getInitials(displayName),
+  };
 };
 
 const buildClientProfileHref = (name: string): string => {
@@ -82,7 +111,7 @@ export const useClientExperience = (): ClientExperienceContextValue => {
 
 export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps) {
   const router = useRouter();
-  const { openPostModal } = useClientExperience();
+  const { openPostModal, clientProfile } = useClientExperience();
   const pathname = usePathname();
   const canCreatePost = canCreateClientPostOnRoute(pathname);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -147,7 +176,7 @@ export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps
         aria-label="Abrir menu de perfil"
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-300 to-blue-600 text-[11px] font-bold text-slate-950">
-          {CLIENT_PROFILE.initials}
+          {clientProfile.initials}
         </span>
         <span className="hidden text-xs font-semibold text-cyan-100 md:block">{sectionLabel}</span>
       </button>
@@ -160,23 +189,21 @@ export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps
           aria-label="Menu de perfil"
         >
           <p className="tech-mono text-xs text-cyan-200/70">PERFIL CLIENTE</p>
-          <p className="mt-2 text-base font-semibold text-cyan-50">{CLIENT_PROFILE.name}</p>
-          <p className="mt-1 text-sm text-cyan-100/80">{CLIENT_PROFILE.email}</p>
+          <p className="mt-2 text-base font-semibold text-cyan-50">{clientProfile.name}</p>
+          {clientProfile.email ? (
+            <p className="mt-1 text-sm text-cyan-100/80">{clientProfile.email}</p>
+          ) : null}
 
           <div className="mt-3 space-y-2 rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-3 text-xs text-cyan-100/80">
             <div className="flex items-center justify-between gap-3">
-              <span>Ciudad</span>
-              <strong className="text-cyan-50">{CLIENT_PROFILE.city}</strong>
-            </div>
-            <div className="flex items-center justify-between gap-3">
               <span>Estado</span>
-              <strong className="text-cyan-50">{CLIENT_PROFILE.account}</strong>
+              <strong className="text-cyan-50">{clientProfile.account}</strong>
             </div>
           </div>
 
           <div className="mt-3 grid gap-2">
             <Link
-              href={buildClientProfileHref(CLIENT_PROFILE.name)}
+              href={buildClientProfileHref(clientProfile.name)}
               onClick={() => setIsProfileMenuOpen(false)}
               className="auth-action block w-full"
             >
@@ -211,8 +238,27 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   const [imageName, setImageName] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [clientProfile, setClientProfile] = useState<ClientProfileView>(DEFAULT_CLIENT_PROFILE);
 
   const modalTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    getCurrentUserProfile()
+      .then((profile) => {
+        if (active) {
+          setClientProfile(toClientProfileView(profile));
+        }
+      })
+      .catch(() => {
+        // Si falla, se mantienen los valores por defecto.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -285,13 +331,13 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
 
     const nextPost: CommunityFeedPost = {
       id: `client-post-${Date.now()}`,
-      author: CLIENT_PROFILE.name,
+      author: clientProfile.name,
       role: "Cliente",
       time: formatQuickTimestamp(),
       title: `${CLIENT_ALLOWED_POST_CATEGORY}: ${normalizedText.slice(0, 56)}${normalizedText.length > 56 ? "..." : ""}`,
       body: normalizedText,
       tag: CLIENT_ALLOWED_POST_CATEGORY,
-      location: CLIENT_PROFILE.city,
+      location: "",
       image: imagePreview,
       createdAt: getCurrentIso(),
     };
@@ -303,7 +349,7 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
   };
 
   return (
-    <ClientExperienceContext.Provider value={{ openPostModal }}>
+    <ClientExperienceContext.Provider value={{ openPostModal, clientProfile }}>
       {children}
 
       <AnimatePresence>

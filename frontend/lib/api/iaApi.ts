@@ -522,16 +522,40 @@ export async function deleteConversationMessage(messageId: string): Promise<Mess
   });
 }
 
-export async function getClientProfile(): Promise<ClientProfile> {
-  return request<ClientProfile>("/api/clients/profile", { method: "GET" });
+// Identidad del usuario tomada de IAM. Se manda por headers para que TechMarket-IA
+// aprovisione (lazy) la fila de cliente la primera vez (los auto-registrados solo
+// existen en IAM). Ver ClientUserProvisioner en el backend.
+export type ClientIdentityHeaders = {
+  email?: string | null;
+  nombre?: string | null;
+  apellido?: string | null;
+  telefono?: string | null;
+};
+
+function buildIdentityHeaders(identity?: ClientIdentityHeaders): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (identity?.email) headers["X-User-Email"] = identity.email;
+  if (identity?.nombre) headers["X-User-First-Name"] = identity.nombre;
+  if (identity?.apellido) headers["X-User-Last-Name"] = identity.apellido;
+  if (identity?.telefono) headers["X-User-Phone"] = identity.telefono;
+  return headers;
+}
+
+export async function getClientProfile(identity?: ClientIdentityHeaders): Promise<ClientProfile> {
+  return request<ClientProfile>("/api/clients/profile", {
+    method: "GET",
+    headers: buildIdentityHeaders(identity),
+  });
 }
 
 export async function updateClientProfile(
   payload: UpdateClientProfilePayload,
+  identity?: ClientIdentityHeaders,
 ): Promise<ClientProfile> {
   return request<ClientProfile>("/api/clients/profile", {
     method: "PUT",
     body: JSON.stringify(payload),
+    headers: buildIdentityHeaders(identity),
   });
 }
 
