@@ -24,26 +24,18 @@ export default function EmbajadorVisionUsuariosPage() {
               <LiveApiBadge label="API — /reports/referrals + /ai/insights" />
             </div>
 
-            {aiInsights && aiInsights.length > 0 ? (
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {aiInsights.map((insight) => (
-                  <article key={insight.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-cyan-50">{insight.title}</p>
-                      {insight.priority ? (
-                        <span className="rounded-full border border-cyan-100/15 bg-slate-950/40 px-2 py-0.5 text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">
-                          {insight.priority}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-2 text-sm text-cyan-100/80">{insight.description}</p>
-                    {insight.actionSuggestion ? (
-                      <p className="mt-3 text-sm leading-6 text-emerald-100/85">
-                        Sugerencia: {insight.actionSuggestion}
-                      </p>
-                    ) : null}
-                  </article>
-                ))}
+            {aiInsights ? (
+              <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
+                <p className="text-sm font-semibold text-cyan-50">Recomendación IA</p>
+                <p className="mt-2 text-sm text-cyan-100/80">{aiInsights.recomendacion}</p>
+                <div className="mt-4 grid gap-3 md:grid-cols-4">
+                  {aiInsights.radar.map((item) => (
+                    <article key={item.etiqueta} className="rounded-xl border border-cyan-100/10 bg-slate-950/35 p-3">
+                      <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/70">{item.etiqueta}</p>
+                      <p className="mt-2 text-2xl font-bold text-cyan-50">{item.valor}</p>
+                    </article>
+                  ))}
+                </div>
               </div>
             ) : null}
 
