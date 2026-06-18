@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// La IA de empresa vive en TechMarket-AI (servicio Gemini, puerto 8091), no en TechMarket-IA.
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || process.env.NEXT_PUBLIC_AI_SERVICE_URL;
+// Rama demo: la IA de empresa usa el stub de TechMarket-IA (:8082) para no depender del
+// AI service (:8091). Mismo path /api/empresa/ia/consulta (EmpresaResenasController).
+const BACKEND_URL = process.env.TECHMARKET_API_URL || process.env.NEXT_PUBLIC_TECHMARKET_API_URL;
 
 async function readResponseBody(response: Response): Promise<unknown> {
   const contentType = response.headers.get("content-type") ?? "";
@@ -31,12 +32,15 @@ function buildHeaders(request: NextRequest): Headers {
 }
 
 export async function POST(request: NextRequest) {
-  if (!AI_SERVICE_URL) {
-    return NextResponse.json({ message: "NEXT_PUBLIC_AI_SERVICE_URL no esta configurada." }, { status: 500 });
+  if (!BACKEND_URL) {
+    return NextResponse.json(
+      { message: "NEXT_PUBLIC_TECHMARKET_API_URL no esta configurada." },
+      { status: 500 },
+    );
   }
 
   try {
-    const response = await fetch(new URL("/api/empresa/ia/consulta", AI_SERVICE_URL), {
+    const response = await fetch(new URL("/api/empresa/ia/consulta", BACKEND_URL), {
       method: "POST",
       headers: buildHeaders(request),
       body: await request.text(),
@@ -45,6 +49,6 @@ export async function POST(request: NextRequest) {
     const body = await readResponseBody(response);
     return NextResponse.json(body, { status: response.status });
   } catch {
-    return NextResponse.json({ message: "No se pudo conectar con TechMarket-AI." }, { status: 502 });
+    return NextResponse.json({ message: "No se pudo conectar con TechMarket-IA." }, { status: 502 });
   }
 }
