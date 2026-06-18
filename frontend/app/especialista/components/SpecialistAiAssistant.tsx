@@ -7,33 +7,16 @@ import {
   getSpecialistImprovementPlan,
   getSpecialistPricingSuggestion,
   getSpecialistScheduleOptimization,
+  type BusinessInsight,
   type SpecialistAiInsightsResponse,
-  type SpecialistAiQueryResponse,
-  type SpecialistImprovementPlanResponse,
-  type SpecialistPricingSuggestionResponse,
-  type SpecialistScheduleOptimizationResponse,
 } from "@/lib/api/specialistAiApi";
 import type { SpecialistService } from "../specialistData";
 
-type AiResult =
-  | { type: "query"; title: string; data: SpecialistAiQueryResponse }
-  | { type: "pricing"; title: string; data: SpecialistPricingSuggestionResponse }
-  | { type: "improvement"; title: string; data: SpecialistImprovementPlanResponse }
-  | { type: "schedule"; title: string; data: SpecialistScheduleOptimizationResponse };
+type AiResult = { title: string; data: BusinessInsight };
 
 type SpecialistAiAssistantProps = {
   services: SpecialistService[];
 };
-
-function parsePrice(value?: string): number {
-  if (!value) {
-    return 0;
-  }
-
-  const normalized = value.replace(/[^\d.,]/g, "").replace(/\./g, "").replace(",", ".");
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-}
 
 function pickDefaultService(services: SpecialistService[]): SpecialistService | null {
   return services.find((service) => service.featured) ?? services[0] ?? null;
@@ -59,57 +42,57 @@ function renderResult(result: AiResult | null) {
   if (!result) {
     return (
       <p className="text-sm leading-6 text-cyan-100/75">
-        Escribe una consulta o usa una accion rapida para recibir recomendaciones reales desde TechMarket-IA.
+        Escribe una consulta o usa una accion rapida para recibir recomendaciones reales desde TechMarket-AI.
       </p>
     );
   }
 
-  if (result.type === "query") {
-    const answer = result.data.respuesta;
-    return (
-      <div>
-        <p className="text-sm font-semibold text-cyan-50">{answer?.resumen ?? "La IA respondio la consulta."}</p>
-        {renderList(answer?.planAccion)}
-        {answer?.foco ? <p className="mt-3 text-xs uppercase tracking-[0.14em] text-emerald-100/80">Foco: {answer.foco}</p> : null}
-      </div>
-    );
-  }
-
-  if (result.type === "pricing") {
-    const suggestion = result.data.sugerencia;
-    return (
-      <div>
-        <p className="text-sm font-semibold text-cyan-50">
-          Precio recomendado: {suggestion?.precioRecomendado ?? "No disponible"}
-        </p>
-        {suggestion?.rangoOptimo ? (
-          <p className="mt-2 text-sm text-cyan-100/75">
-            Rango optimo: {suggestion.rangoOptimo.min ?? "min"} - {suggestion.rangoOptimo.max ?? "max"}
-          </p>
-        ) : null}
-        {suggestion?.justificacion ? <p className="mt-3 text-sm leading-6 text-cyan-100/78">{suggestion.justificacion}</p> : null}
-      </div>
-    );
-  }
-
-  if (result.type === "improvement") {
-    return (
-      <div>
-        <p className="text-sm font-semibold text-cyan-50">{result.data.plan?.objetivo ?? "Plan de mejora generado."}</p>
-        {renderList(result.data.plan?.acciones)}
-        {result.data.plan?.tiempoEstimado ? (
-          <p className="mt-3 text-xs uppercase tracking-[0.14em] text-emerald-100/80">
-            Tiempo estimado: {result.data.plan.tiempoEstimado}
-          </p>
-        ) : null}
-      </div>
-    );
-  }
+  const { data } = result;
 
   return (
-    <div>
-      <p className="text-sm font-semibold text-cyan-50">{result.data.sugerencia ?? "Optimizacion de agenda generada."}</p>
-      {renderList(result.data.planSugerido)}
+    <div className="space-y-3">
+      {data.summary ? <p className="text-sm font-semibold text-cyan-50">{data.summary}</p> : null}
+      {data.advice ? <p className="text-sm leading-6 text-cyan-100/78">{data.advice}</p> : null}
+
+      {data.dataPoints?.length ? (
+        <div>
+          <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/65">Datos clave</p>
+          {renderList(data.dataPoints)}
+        </div>
+      ) : null}
+
+      {data.actionPlan?.length ? (
+        <div>
+          <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/65">Plan de accion</p>
+          {renderList(data.actionPlan)}
+        </div>
+      ) : null}
+
+      {data.watchItems?.length ? (
+        <div>
+          <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/65">A vigilar</p>
+          {renderList(data.watchItems)}
+        </div>
+      ) : null}
+
+      {data.nextStep ? (
+        <p className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-sm leading-6 text-emerald-50">
+          Siguiente paso: {data.nextStep}
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        {data.priority ? (
+          <span className="rounded-full border border-cyan-100/15 bg-white/5 px-2.5 py-1 text-cyan-100/80">
+            Prioridad: {data.priority}
+          </span>
+        ) : null}
+        {data.confidence ? (
+          <span className="rounded-full border border-cyan-100/15 bg-white/5 px-2.5 py-1 text-cyan-100/80">
+            Confianza: {data.confidence}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -154,12 +137,12 @@ export function SpecialistAiAssistant({ services }: SpecialistAiAssistantProps) 
     };
   }, []);
 
-  async function runAction<T>(key: string, request: () => Promise<T>, onSuccess: (data: T) => AiResult) {
+  async function runAction(key: string, request: () => Promise<BusinessInsight>, title: string) {
     try {
       setLoadingAction(key);
       setError(null);
       const response = await request();
-      setResult(onSuccess(response));
+      setResult({ title, data: response });
     } catch (err) {
       setError(err instanceof Error ? err.message : "La IA no pudo completar la accion.");
     } finally {
@@ -169,41 +152,29 @@ export function SpecialistAiAssistant({ services }: SpecialistAiAssistantProps) 
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void runAction(
-      "query",
-      () => askSpecialistAi(question),
-      (data) => ({ type: "query", title: "Respuesta IA", data }),
-    );
+    void runAction("query", () => askSpecialistAi(question), "Respuesta IA");
   }
 
   function handlePricingSuggestion() {
     const serviceName = defaultService?.name ?? "Servicio tecnico";
     void runAction(
       "pricing",
-      () =>
-        getSpecialistPricingSuggestion({
-          servicio: serviceName,
-          precioActual: parsePrice(defaultService?.price),
-        }),
-      (data) => ({ type: "pricing", title: `Precio sugerido para ${serviceName}`, data }),
+      () => getSpecialistPricingSuggestion({ serviceName }),
+      `Precio sugerido para ${serviceName}`,
     );
   }
 
   function handleImprovementPlan() {
-    const area = insights?.focoSugerido?.trim() || defaultService?.type || "perfil tecnico";
+    const focus = defaultService?.type || "perfil tecnico";
     void runAction(
       "improvement",
-      () => getSpecialistImprovementPlan({ area }),
-      (data) => ({ type: "improvement", title: `Plan de mejora: ${area}`, data }),
+      () => getSpecialistImprovementPlan({ focus }),
+      `Plan de mejora: ${focus}`,
     );
   }
 
   function handleScheduleOptimization() {
-    void runAction(
-      "schedule",
-      () => getSpecialistScheduleOptimization(),
-      (data) => ({ type: "schedule", title: "Optimizacion de agenda", data }),
-    );
+    void runAction("schedule", () => getSpecialistScheduleOptimization(), "Optimizacion de agenda");
   }
 
   const isSubmitting = loadingAction === "query";
@@ -217,7 +188,7 @@ export function SpecialistAiAssistant({ services }: SpecialistAiAssistantProps) 
           <h3 className="mt-2 text-2xl font-bold text-white">Asistente IA del especialista</h3>
         </div>
         <span className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-100">
-          Backend real
+          IA real (Gemini)
         </span>
       </div>
 
@@ -234,18 +205,54 @@ export function SpecialistAiAssistant({ services }: SpecialistAiAssistantProps) 
             <p className="mt-3 text-sm text-cyan-100/70">Cargando insights de IA...</p>
           ) : insights ? (
             <div className="mt-3 space-y-3">
-              {insights.recomendacion ? <p className="text-sm leading-6 text-cyan-100/78">{insights.recomendacion}</p> : null}
-              {insights.focoSugerido ? (
-                <p className="text-xs uppercase tracking-[0.14em] text-emerald-100/80">Foco sugerido: {insights.focoSugerido}</p>
-              ) : null}
-              {insights.radar?.length ? (
+              {insights.radarBars?.length ? (
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {insights.radar.map((item) => (
-                    <div key={`${item.etiqueta ?? item.label}-${item.valor ?? item.value}`} className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
-                      <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/65">{item.etiqueta ?? item.label}</p>
-                      <p className="mt-1 text-xl font-bold text-cyan-50">{item.valor ?? item.value ?? 0}</p>
+                  {insights.radarBars.map((item) => (
+                    <div
+                      key={`${item.label}-${item.value}`}
+                      className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3"
+                    >
+                      <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/65">{item.label}</p>
+                      <p className="mt-1 text-xl font-bold text-cyan-50">{item.value}</p>
                     </div>
                   ))}
+                </div>
+              ) : null}
+
+              {insights.recommendedQuestions?.length ? (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/65">Preguntas sugeridas</p>
+                  <div className="mt-2 grid gap-2">
+                    {insights.recommendedQuestions.map((suggested) => (
+                      <button
+                        key={suggested}
+                        type="button"
+                        onClick={() => setQuestion(suggested)}
+                        className="rounded-2xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-left text-sm text-cyan-100/82 transition hover:bg-cyan-100/10"
+                      >
+                        {suggested}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {insights.scenarioPrompts?.length ? (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/65">Escenarios</p>
+                  <div className="mt-2 space-y-2">
+                    {insights.scenarioPrompts.map((scenario) => (
+                      <button
+                        key={scenario.title}
+                        type="button"
+                        onClick={() => setQuestion(scenario.prompt)}
+                        className="block w-full rounded-2xl border border-cyan-100/10 bg-slate-950/35 px-3 py-2 text-left transition hover:bg-cyan-100/10"
+                      >
+                        <p className="text-sm font-semibold text-cyan-50">{scenario.title}</p>
+                        <p className="mt-1 text-xs leading-5 text-cyan-100/72">{scenario.impact}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ) : null}
             </div>

@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "@/lib/api/apiClient";
+import { getAiInsights } from "@/lib/api/ambassador/aiApi";
+import type { AiInsight } from "@/lib/api/ambassador/types";
 
 // ---------------------------------------------------------------------------
 // Types matching REAL backend responses
@@ -658,6 +660,36 @@ export function useAmbassadorConversionFunnel() {
   return useApiFetch<ApiConversionFunnel>("/api/ambassadors/reports/conversion-funnel");
 }
 
+/**
+ * Insights de IA del embajador desde TechMarket-AI (:8091, Gemini). Devuelve la lista de
+ * insights accionables ({@link AiInsight}). No usa useApiFetch porque ese helper solo apunta al
+ * servicio principal (:8082); aqui se consume el servicio de IA via apiClient (service "ai").
+ */
 export function useAmbassadorAiInsights() {
-  return useApiFetch<ApiAiInsights>("/api/ambassadors/ai/insights");
+  const [data, setData] = useState<AiInsight[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    getAiInsights()
+      .then((insights) => {
+        if (active) setData(insights);
+      })
+      .catch((err) => {
+        if (active) {
+          setData(null);
+          setError(err instanceof Error ? err.message : "No se pudieron cargar los insights de IA.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return { data, loading, error };
 }

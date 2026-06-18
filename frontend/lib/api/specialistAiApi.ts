@@ -9,65 +9,48 @@ type ApiErrorBody = {
 
 export type SpecialistAiRecord = Record<string, unknown>;
 
-export type SpecialistAiInsightRadarItem = {
-  etiqueta?: string;
-  label?: string;
-  valor?: number;
-  value?: number;
+/**
+ * Insight accionable que devuelve TechMarket-AI (:8091) para query/pricing/improvement/schedule.
+ * Coincide con `BusinessInsight` del backend (salida estructurada del LLM).
+ */
+export type BusinessInsight = {
+  summary: string;
+  dataPoints: string[];
+  advice: string;
+  nextStep: string;
+  actionPlan: string[];
+  watchItems: string[];
+  priority: string;
+  confidence: string;
+  focusLabel: string;
+  focusHref: string;
 };
 
+export type SpecialistScenarioPrompt = {
+  title: string;
+  prompt: string;
+  impact: string;
+};
+
+export type SpecialistRadarBar = {
+  label: string;
+  value: number;
+};
+
+/** Dashboard de insights del especialista (GET /insights). Coincide con `SpecialistInsights`. */
 export type SpecialistAiInsightsResponse = {
-  radar?: SpecialistAiInsightRadarItem[];
-  recomendacion?: string;
-  focoSugerido?: string;
-  [key: string]: unknown;
-};
-
-export type SpecialistAiAnswer = {
-  resumen: string;
-  planAccion: string[];
-  foco: string;
-};
-
-export type SpecialistAiQueryResponse = {
-  consulta: string;
-  respuesta: SpecialistAiAnswer;
+  recommendedQuestions: string[];
+  scenarioPrompts: SpecialistScenarioPrompt[];
+  radarBars: SpecialistRadarBar[];
 };
 
 export type SpecialistPricingSuggestionPayload = {
-  servicio: string;
-  precioActual: number;
-};
-
-export type SpecialistPricingSuggestionResponse = {
-  servicio: string;
-  precioActual: string;
-  sugerencia: {
-    precioRecomendado: string;
-    rangoOptimo: {
-      min: string;
-      max: string;
-    };
-    justificacion: string;
-  };
+  serviceId?: string;
+  serviceName: string;
 };
 
 export type SpecialistImprovementPlanPayload = {
-  area: string;
-};
-
-export type SpecialistImprovementPlanResponse = {
-  area: string;
-  plan: {
-    objetivo: string;
-    acciones: string[];
-    tiempoEstimado: string;
-  };
-};
-
-export type SpecialistScheduleOptimizationResponse = {
-  sugerencia: string;
-  planSugerido: string[];
+  focus: string;
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -195,12 +178,12 @@ export function getSpecialistAiInsights(): Promise<SpecialistAiInsightsResponse>
   return specialistAiRequest<SpecialistAiInsightsResponse>("/api/specialists/ai/insights");
 }
 
-export function askSpecialistAi(consulta: string): Promise<SpecialistAiQueryResponse> {
+export function askSpecialistAi(consulta: string): Promise<BusinessInsight> {
   if (typeof consulta !== "string" || !consulta.trim()) {
     throw new Error("La consulta para la IA es obligatoria.");
   }
 
-  return specialistAiRequest<SpecialistAiQueryResponse>("/api/specialists/ai/query", {
+  return specialistAiRequest<BusinessInsight>("/api/specialists/ai/query", {
     method: "POST",
     body: { consulta: consulta.trim() },
   });
@@ -208,8 +191,8 @@ export function askSpecialistAi(consulta: string): Promise<SpecialistAiQueryResp
 
 export function getSpecialistPricingSuggestion(
   payload: SpecialistPricingSuggestionPayload,
-): Promise<SpecialistPricingSuggestionResponse> {
-  return specialistAiRequest<SpecialistPricingSuggestionResponse>("/api/specialists/ai/pricing-suggestion", {
+): Promise<BusinessInsight> {
+  return specialistAiRequest<BusinessInsight>("/api/specialists/ai/pricing-suggestion", {
     method: "POST",
     body: payload,
   });
@@ -217,16 +200,15 @@ export function getSpecialistPricingSuggestion(
 
 export function getSpecialistImprovementPlan(
   payload: SpecialistImprovementPlanPayload,
-): Promise<SpecialistImprovementPlanResponse> {
-  return specialistAiRequest<SpecialistImprovementPlanResponse>("/api/specialists/ai/improvement-plan", {
+): Promise<BusinessInsight> {
+  return specialistAiRequest<BusinessInsight>("/api/specialists/ai/improvement-plan", {
     method: "POST",
     body: payload,
   });
 }
 
-export function getSpecialistScheduleOptimization(
-): Promise<SpecialistScheduleOptimizationResponse> {
-  return specialistAiRequest<SpecialistScheduleOptimizationResponse>("/api/specialists/ai/schedule-optimization", {
+export function getSpecialistScheduleOptimization(): Promise<BusinessInsight> {
+  return specialistAiRequest<BusinessInsight>("/api/specialists/ai/schedule-optimization", {
     method: "POST",
   });
 }

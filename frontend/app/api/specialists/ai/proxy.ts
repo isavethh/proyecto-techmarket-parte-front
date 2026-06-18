@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.TECHMARKET_API_URL || process.env.NEXT_PUBLIC_TECHMARKET_API_URL;
+// La IA del especialista vive en TechMarket-AI (servicio Gemini, puerto 8091), no en TechMarket-IA.
+const BACKEND_URL = process.env.AI_SERVICE_URL || process.env.NEXT_PUBLIC_AI_SERVICE_URL;
 
 type ProxyMethod = "GET" | "POST";
 
@@ -42,7 +43,10 @@ export async function proxySpecialistAiRequest(
   method: ProxyMethod,
 ): Promise<NextResponse> {
   if (!BACKEND_URL) {
-    return NextResponse.json({ message: "TECHMARKET_API_URL no esta configurada." }, { status: 500 });
+    return NextResponse.json(
+      { message: "AI_SERVICE_URL no esta configurada." },
+      { status: 500 },
+    );
   }
 
   try {
@@ -55,6 +59,9 @@ export async function proxySpecialistAiRequest(
     const body = await readResponseBody(response);
     return NextResponse.json(body, { status: response.status });
   } catch {
-    return NextResponse.json({ message: "No se pudo conectar con TechMarket-IA." }, { status: 502 });
+    return NextResponse.json(
+      { message: "No se pudo conectar con el servicio de IA." },
+      { status: 502 },
+    );
   }
 }
