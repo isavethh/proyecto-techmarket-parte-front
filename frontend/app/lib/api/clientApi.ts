@@ -1,7 +1,6 @@
 import { apiFetch } from "./index";
 import type {
   ApiAddress,
-  ApiCart,
   ApiChat,
   ApiClientProfile,
   ApiCommunity,
@@ -10,8 +9,6 @@ import type {
   ApiFavoriteProduct,
   ApiMessage,
   ApiNotification,
-  ApiOrder,
-  ApiOrderDetail,
 } from "./types";
 
 // ─── Perfil ───────────────────────────────────────────────────────────────────
@@ -61,74 +58,6 @@ export async function deleteAddress(addressId: string): Promise<void> {
 export async function setDefaultAddress(addressId: string): Promise<void> {
   await apiFetch(`/api/clients/addresses/${addressId}/default`, {
     method: "PUT",
-  });
-}
-
-// ─── Carrito ──────────────────────────────────────────────────────────────────
-
-export async function getCart(): Promise<ApiCart | null> {
-  return apiFetch<ApiCart>("/api/clients/cart");
-}
-
-export async function addToCart(
-  productoId: string,
-  cantidad: number,
-): Promise<ApiCart | null> {
-  return apiFetch<ApiCart>("/api/clients/cart/items", {
-    method: "POST",
-    body: JSON.stringify({ productoId, cantidad }),
-  });
-}
-
-export async function updateCartItem(
-  itemId: string,
-  cantidad: number,
-): Promise<ApiCart | null> {
-  return apiFetch<ApiCart>(`/api/clients/cart/items/${itemId}`, {
-    method: "PUT",
-    body: JSON.stringify({ cantidad }),
-  });
-}
-
-export async function removeCartItem(itemId: string): Promise<ApiCart | null> {
-  return apiFetch<ApiCart>(`/api/clients/cart/items/${itemId}`, {
-    method: "DELETE",
-  });
-}
-
-export async function clearCart(): Promise<void> {
-  await apiFetch("/api/clients/cart", { method: "DELETE" });
-}
-
-export async function checkout(
-  direccionEnvioId: string,
-  metodoPago: string,
-): Promise<{ ordenId: string; estado: string; total: number } | null> {
-  return apiFetch("/api/clients/checkout", {
-    method: "POST",
-    body: JSON.stringify({ direccionEnvioId, metodoPago }),
-  });
-}
-
-// ─── Órdenes ──────────────────────────────────────────────────────────────────
-
-export async function getOrders(): Promise<ApiOrder[] | null> {
-  return apiFetch<ApiOrder[]>("/api/clients/orders");
-}
-
-export async function getOrderById(
-  orderId: string,
-): Promise<ApiOrderDetail | null> {
-  return apiFetch<ApiOrderDetail>(`/api/clients/orders/${orderId}`);
-}
-
-export async function cancelOrder(
-  orderId: string,
-  motivo: string,
-): Promise<void> {
-  await apiFetch(`/api/clients/orders/${orderId}/cancel`, {
-    method: "PUT",
-    body: JSON.stringify({ motivo }),
   });
 }
 

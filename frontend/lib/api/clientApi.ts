@@ -2,9 +2,6 @@ import { getToken } from "@/lib/auth/tokenStore";
 import type {
   ApiClientProfile,
   ApiAddress,
-  ApiCart,
-  ApiOrder,
-  ApiOrderDetail,
   ApiChat,
   ApiMessage,
   ApiFavoriteProduct,
@@ -94,77 +91,6 @@ export async function setDefaultAddress(addressId: string): Promise<void> {
   const res = await fetch(buildUrl(`/api/clients/addresses/${addressId}/default`), {
     method: "PUT",
     headers: authHeaders(),
-  });
-  if (!res.ok) throw new Error(`Error ${res.status}`);
-}
-
-// ─── Carrito ──────────────────────────────────────────────────────────────────
-
-export async function getCart(): Promise<ApiCart> {
-  const res = await fetch(buildUrl("/api/clients/cart"), { headers: authHeaders() });
-  return handleResponse<ApiCart>(res);
-}
-
-export async function addToCart(productoId: string, cantidad: number): Promise<ApiCart> {
-  const res = await fetch(buildUrl("/api/clients/cart/items"), {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ productoId, cantidad }),
-  });
-  return handleResponse<ApiCart>(res);
-}
-
-export async function updateCartItem(itemId: string, cantidad: number): Promise<ApiCart> {
-  const res = await fetch(buildUrl(`/api/clients/cart/items/${itemId}`), {
-    method: "PUT",
-    headers: authHeaders(),
-    body: JSON.stringify({ cantidad }),
-  });
-  return handleResponse<ApiCart>(res);
-}
-
-export async function removeCartItem(itemId: string): Promise<ApiCart> {
-  const res = await fetch(buildUrl(`/api/clients/cart/items/${itemId}`), {
-    method: "DELETE",
-    headers: authHeaders(),
-  });
-  return handleResponse<ApiCart>(res);
-}
-
-export async function clearCart(): Promise<void> {
-  const res = await fetch(buildUrl("/api/clients/cart"), {
-    method: "DELETE",
-    headers: authHeaders(),
-  });
-  if (!res.ok) throw new Error(`Error ${res.status}`);
-}
-
-// ─── Checkout y órdenes ───────────────────────────────────────────────────────
-
-export async function checkout(direccionEnvioId: string, metodoPago: string): Promise<{ ordenId: string; estado: string; total: number }> {
-  const res = await fetch(buildUrl("/api/clients/checkout"), {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ direccionEnvioId, metodoPago }),
-  });
-  return handleResponse<{ ordenId: string; estado: string; total: number }>(res);
-}
-
-export async function getOrders(): Promise<ApiOrder[]> {
-  const res = await fetch(buildUrl("/api/clients/orders"), { headers: authHeaders() });
-  return handleResponse<ApiOrder[]>(res);
-}
-
-export async function getOrder(orderId: string): Promise<ApiOrderDetail> {
-  const res = await fetch(buildUrl(`/api/clients/orders/${orderId}`), { headers: authHeaders() });
-  return handleResponse<ApiOrderDetail>(res);
-}
-
-export async function cancelOrder(orderId: string, motivo: string): Promise<void> {
-  const res = await fetch(buildUrl(`/api/clients/orders/${orderId}/cancel`), {
-    method: "PUT",
-    headers: authHeaders(),
-    body: JSON.stringify({ motivo }),
   });
   if (!res.ok) throw new Error(`Error ${res.status}`);
 }

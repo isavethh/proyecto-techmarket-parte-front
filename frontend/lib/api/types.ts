@@ -66,36 +66,6 @@ export type ApiProductsResponse = {
   productos: ApiProduct[];
 };
 
-// ─── Carrito y órdenes ────────────────────────────────────────────────────────
-
-export type ApiCartItem = {
-  id: string;
-  productoId: string;
-  cantidad: number;
-  precioUnitario: number;
-};
-
-export type ApiCart = {
-  id: string;
-  subtotal: number;
-  items: ApiCartItem[];
-};
-
-export type ApiOrder = {
-  id: string;
-  fechaCreacion: string;
-  estado: string;
-  total: number;
-};
-
-export type ApiOrderDetail = {
-  id: string;
-  estado: string;
-  total: number;
-  items: Array<{ productoId: string; cantidad: number }>;
-  tracking: { codigo: string; empresa: string };
-};
-
 // ─── Reseñas ──────────────────────────────────────────────────────────────────
 
 export type ApiReview = {

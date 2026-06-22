@@ -71,31 +71,6 @@ export interface ApiAddress {
   esPredeterminada: boolean;
 }
 
-export interface ApiCartItem {
-  id: string;
-  productoId: string;
-  cantidad: number;
-  precioUnitario: number;
-}
-
-export interface ApiCart {
-  id: string;
-  subtotal: number;
-  items: ApiCartItem[];
-}
-
-export interface ApiOrder {
-  id: string;
-  fechaCreacion: string;
-  estado: string;
-  total: number;
-}
-
-export interface ApiOrderDetail extends ApiOrder {
-  items: Array<{ productoId: string; cantidad: number }>;
-  tracking: { codigo: string; empresa: string };
-}
-
 export interface ApiChat {
   id: string;
   empresa: { nombre: string };
