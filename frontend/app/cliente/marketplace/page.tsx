@@ -20,6 +20,10 @@ import {
   PublicationViewerData,
   PublicationViewerModal,
 } from "../../components/PublicationViewerModal";
+import {
+  searchMarketplaceSemantic,
+  type MarketplaceHit,
+} from "@/lib/api/marketplaceSearch";
 type MarketplaceListing = {
   post: {
     id: string;
@@ -131,6 +135,25 @@ export default function ClienteMarketplacePage() {
   const [isLoadingApi, setIsLoadingApi] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [chatByProductId, setChatByProductId] = useState<Record<string, string>>({});
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiHits, setAiHits] = useState<MarketplaceHit[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  async function runSemanticSearch() {
+    const query = aiQuery.trim();
+    if (!query) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      setAiHits(await searchMarketplaceSemantic(query));
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : "No se pudo buscar con IA.");
+      setAiHits(null);
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   const allListings = useMemo(() => apiListings, [apiListings]);
 
@@ -345,6 +368,51 @@ export default function ClienteMarketplacePage() {
                   placeholder="Ej: laptop, monitor, teclado"
                   className="auth-input"
                 />
+
+                <div className="rounded-2xl border border-cyan-100/15 bg-cyan-500/5 p-3">
+                  <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-ai-search">
+                    Busqueda inteligente (IA)
+                  </label>
+                  <input
+                    id="marketplace-ai-search"
+                    value={aiQuery}
+                    onChange={(event) => setAiQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") runSemanticSearch();
+                    }}
+                    placeholder="Ej: alguien que repare placas y configure redes"
+                    className="auth-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={runSemanticSearch}
+                    disabled={aiLoading || !aiQuery.trim()}
+                    className="mt-2 w-full rounded-xl bg-cyan-500/80 px-3 py-2 text-xs font-semibold text-slate-950 disabled:opacity-50"
+                  >
+                    {aiLoading ? "Buscando por significado..." : "Buscar con IA"}
+                  </button>
+                  {aiError && <p className="mt-2 text-xs text-rose-300">{aiError}</p>}
+                  {aiHits && (
+                    <div className="mt-3 space-y-2">
+                      {aiHits.length === 0 ? (
+                        <p className="text-xs text-cyan-100/70">Sin coincidencias por significado.</p>
+                      ) : (
+                        aiHits.map((hit) => (
+                          <div
+                            key={hit.id}
+                            className="rounded-xl border border-cyan-100/10 bg-slate-950/40 px-3 py-2"
+                          >
+                            <p className="text-xs font-semibold text-cyan-50">{hit.title}</p>
+                            <p className="text-[11px] text-cyan-200/70">
+                              {hit.type === "empresa" ? "Empresa" : "Especialista"}
+                              {hit.ownerName ? ` · ${hit.ownerName}` : ""}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-category">
                   Categoria
