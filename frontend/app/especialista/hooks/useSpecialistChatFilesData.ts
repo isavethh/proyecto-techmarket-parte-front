@@ -301,10 +301,15 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
 
       const storedToken = getTechmarketToken();
       const storedUserId = getTechmarketUserId();
-      const currentAuth = authRef.current
-        ?? (storedToken && storedUserId
-          ? { token: storedToken, userId: storedUserId }
-          : await loginTechMarket().then((login) => ({ token: login.accessToken, userId: login.userId })));
+      let currentAuth = authRef.current;
+      if (!currentAuth) {
+        if (storedToken && storedUserId) {
+          currentAuth = { token: storedToken, userId: storedUserId };
+        } else {
+          const login = await loginTechMarket();
+          currentAuth = { token: login.accessToken, userId: login.userId };
+        }
+      }
       const [chatsResult, filesResult] = await Promise.allSettled([
         getSpecialistChats(currentAuth.token, currentAuth.userId),
         getSpecialistFiles(currentAuth.token, currentAuth.userId),

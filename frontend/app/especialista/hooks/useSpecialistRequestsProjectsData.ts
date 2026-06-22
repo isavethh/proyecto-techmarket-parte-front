@@ -144,11 +144,15 @@ export function useSpecialistRequestsProjectsData() {
 
       const storedToken = getTechmarketToken();
       const storedUserId = getTechmarketUserId();
-      const currentAuth =
-        authRef.current ??
-        (storedToken && storedUserId
-          ? { token: storedToken, userId: storedUserId }
-          : await loginTechMarket().then((login) => ({ token: login.accessToken, userId: login.userId })));
+      let currentAuth = authRef.current;
+      if (!currentAuth) {
+        if (storedToken && storedUserId) {
+          currentAuth = { token: storedToken, userId: storedUserId };
+        } else {
+          const login = await loginTechMarket();
+          currentAuth = { token: login.accessToken, userId: login.userId };
+        }
+      }
       authRef.current = currentAuth;
 
       const [requestsResult, projectsResult, historyResult] = await Promise.allSettled([
