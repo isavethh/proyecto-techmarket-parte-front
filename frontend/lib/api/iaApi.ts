@@ -761,6 +761,60 @@ export async function createSpecialistChat(
   });
 }
 
+export type CreateAppointmentPayload = {
+  especialistaId: string;
+  servicio?: string;
+  descripcion?: string;
+  fecha: string;
+  hora?: string;
+  ubicacion?: string;
+  notas?: string;
+};
+
+export type CreateAppointmentResponse = {
+  id: string;
+  estado: string;
+  mensaje: string;
+};
+
+export type ClientAppointment = {
+  id: string;
+  especialista: string | null;
+  servicio: string;
+  fecha: string | null;
+  hora: string | null;
+  estado: string;
+  ubicacion: string | null;
+  notas: string | null;
+};
+
+/** El cliente agenda una cita con un especialista (crea la cita en estado "pendiente"). */
+export async function createClientAppointment(
+  payload: CreateAppointmentPayload,
+): Promise<CreateAppointmentResponse> {
+  return request<CreateAppointmentResponse>("/api/clients/appointments", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Lista las citas del cliente con su estado del ciclo (pendiente/aceptada/rechazada/completada). */
+export async function listClientAppointments(): Promise<ClientAppointment[]> {
+  return request<ClientAppointment[]>("/api/clients/appointments", { method: "GET" });
+}
+
+/** El cliente califica al especialista de una cita; la reseña impacta su reputación real. */
+export async function reviewClientAppointment(
+  appointmentId: string,
+  calificacion: number,
+  comentario?: string,
+): Promise<{ id: string; mensaje: string }> {
+  return request<{ id: string; mensaje: string }>(
+    `/api/clients/appointments/${appointmentId}/review`,
+    { method: "POST", body: JSON.stringify({ calificacion, comentario }) },
+  );
+}
+
 export async function createClientChatMessage(
   chatId: string,
   contenido: string,

@@ -16,9 +16,7 @@ import {
   type SpecialistServiceInput,
 } from "@/lib/api/specialists";
 import {
-  portfolioSeedItems,
   specialistProfile,
-  specialistServices,
   type PortfolioItem,
   type SpecialistService,
 } from "../specialistData";
@@ -111,32 +109,32 @@ export function useSpecialistBackendData() {
         ? normalizeBackendList<BackendPortfolioItem>(portfolioResult.value)
         : [];
 
-      setProfile(profileResult.status === "rejected" ? specialistProfile : uiProfile);
-      setProfileSource(profileResult.status === "rejected" ? "fallback" : hasBackendProfileData(profileResult.value) ? "backend" : "empty");
+      setProfile(profileResult.status === "rejected" ? neutralSpecialistProfile : uiProfile);
+      setProfileSource(profileResult.status === "rejected" ? "empty" : hasBackendProfileData(profileResult.value) ? "backend" : "empty");
       setServices(
         servicesResult.status === "fulfilled"
           ? backendServices.map((service) => mapBackendServiceToUiService(service, uiProfile.name))
-          : specialistServices,
+          : [],
       );
-      setServicesSource(servicesResult.status === "fulfilled" ? getDatasetSource(backendServices) : "fallback");
+      setServicesSource(servicesResult.status === "fulfilled" ? getDatasetSource(backendServices) : "empty");
       setPortfolio(
         portfolioResult.status === "fulfilled"
           ? backendPortfolio.map(mapBackendPortfolioToUiPortfolio)
-          : portfolioSeedItems,
+          : [],
       );
-      setPortfolioSource(portfolioResult.status === "fulfilled" ? getDatasetSource(backendPortfolio) : "fallback");
+      setPortfolioSource(portfolioResult.status === "fulfilled" ? getDatasetSource(backendPortfolio) : "empty");
     } catch (err) {
       if (!isMounted()) {
         return;
       }
 
       setError(err instanceof Error ? err.message : "Error desconocido al cargar datos del especialista");
-      setProfile(specialistProfile);
-      setServices(specialistServices);
-      setPortfolio(portfolioSeedItems);
-      setProfileSource("fallback");
-      setServicesSource("fallback");
-      setPortfolioSource("fallback");
+      setProfile(neutralSpecialistProfile);
+      setServices([]);
+      setPortfolio([]);
+      setProfileSource("empty");
+      setServicesSource("empty");
+      setPortfolioSource("empty");
     } finally {
       if (isMounted()) {
         setLoading(false);

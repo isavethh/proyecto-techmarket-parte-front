@@ -15,8 +15,6 @@ import {
 import { getTechmarketToken, getTechmarketUserId } from "@/lib/auth/tokenStore";
 import { apiRequest } from "@/lib/api/client";
 import {
-  specialistCertifications,
-  specialistReviews,
   type SpecialistCertificationItem,
   type UserReview,
 } from "../specialistData";
@@ -164,8 +162,8 @@ export function useSpecialistReviewsCertificationsData() {
         setReviews(uiReviews);
         setReviewsSource(getDatasetSource(backendReviews));
       } else {
-        setReviews(specialistReviews);
-        setReviewsSource("fallback");
+        setReviews([]);
+        setReviewsSource("empty");
       }
 
       if (statsResult.status === "fulfilled") {
@@ -179,16 +177,16 @@ export function useSpecialistReviewsCertificationsData() {
         setCertifications(backendCertifications.map(mapBackendCertificationToUiCertification));
         setCertificationsSource(getDatasetSource(backendCertifications));
       } else {
-        setCertifications(specialistCertifications);
-        setCertificationsSource("fallback");
+        setCertifications([]);
+        setCertificationsSource("empty");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido al cargar resenas y certificaciones");
-      setReviews(specialistReviews);
+      setReviews([]);
       setKpis(emptyKpis);
-      setCertifications(specialistCertifications);
-      setReviewsSource("fallback");
-      setCertificationsSource("fallback");
+      setCertifications([]);
+      setReviewsSource("empty");
+      setCertificationsSource("empty");
     } finally {
       setLoading(false);
     }

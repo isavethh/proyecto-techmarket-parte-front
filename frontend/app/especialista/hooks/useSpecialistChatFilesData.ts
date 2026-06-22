@@ -17,7 +17,6 @@ import {
   type SpecialistFile,
 } from "@/lib/api/specialists";
 import {
-  specialistChats,
   type SpecialistChatItem,
   type SpecialistChatMessageItem,
   type SpecialistFileItem,
@@ -326,12 +325,12 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
         : [];
       const uiChats = chatsResult.status === "fulfilled"
         ? backendChats.map((chat, index) => mapBackendChatToUiChat(chat, index, currentAuth.userId))
-        : specialistChats;
+        : [];
       debugSpecialistResult("[chat mapped]", uiChats);
 
       setAuth(currentAuth);
       setChats(uiChats);
-      setChatsSource(chatsResult.status === "fulfilled" ? getDatasetSource(backendChats) : "fallback");
+      setChatsSource(chatsResult.status === "fulfilled" ? getDatasetSource(backendChats) : "empty");
       setSelectedChatId((current) => {
         const preferredChatId = current || initialChatId;
         const selectedChatStillExists = preferredChatId && uiChats.some((chat) => chat.id === preferredChatId);

@@ -7,7 +7,6 @@ import {
   type SpecialistProfile as BackendSpecialistProfile,
 } from "@/lib/api/specialists";
 import { getTechmarketToken, getTechmarketUserId } from "@/lib/auth/tokenStore";
-import { specialistProfile } from "../specialistData";
 import { debugSpecialistResult, type DatasetSource } from "./specialistBackendHelpers";
 import type { SpecialistUiProfile } from "./useSpecialistBackendData";
 
@@ -129,8 +128,8 @@ export function useSpecialistProfileData(enabled = true) {
         }
 
         setError(err instanceof Error ? err.message : "Error desconocido al cargar perfil del especialista");
-        setProfile(specialistProfile);
-        setProfileSource("fallback");
+        setProfile(neutralSpecialistProfile);
+        setProfileSource("empty");
       } finally {
         if (isMounted) {
           setLoading(false);

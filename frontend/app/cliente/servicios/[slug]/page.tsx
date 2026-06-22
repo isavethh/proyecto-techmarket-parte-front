@@ -9,6 +9,7 @@ import {
 } from "../../../components/ClientPageSections";
 import ClientSidebar from "../../ClientSidebar";
 import {
+  createClientAppointment,
   getMarketplaceProduct,
   getMarketplaceSpecialistService,
   listProductReviews,
@@ -42,6 +43,42 @@ function SpecialistServiceDetailView({ service }: { service: SpecialistServiceDe
       message: `Hola, vi tu servicio "${service.nombre}" y me interesa saber más.`,
     });
     router.push(`/cliente/chat?${params.toString()}`);
+  };
+
+  const [showBooking, setShowBooking] = useState(false);
+  const [fecha, setFecha] = useState("");
+  const [hora, setHora] = useState("09:00");
+  const [bookingState, setBookingState] = useState<{
+    loading: boolean;
+    message: string | null;
+    ok: boolean;
+  }>({ loading: false, message: null, ok: false });
+
+  const handleBook = async () => {
+    if (!fecha) {
+      setBookingState({ loading: false, message: "Elige una fecha para la cita.", ok: false });
+      return;
+    }
+    setBookingState({ loading: true, message: null, ok: false });
+    try {
+      const res = await createClientAppointment({
+        especialistaId: service.especialistaId,
+        servicio: service.nombre,
+        fecha,
+        hora,
+      });
+      setBookingState({
+        loading: false,
+        message: res.mensaje ?? "Cita solicitada al especialista.",
+        ok: true,
+      });
+    } catch (err) {
+      setBookingState({
+        loading: false,
+        message: err instanceof Error ? err.message : "No se pudo agendar la cita.",
+        ok: false,
+      });
+    }
   };
 
   const priceLabel =
@@ -101,6 +138,55 @@ function SpecialistServiceDetailView({ service }: { service: SpecialistServiceDe
             >
               💬 Contactar al especialista
             </button>
+
+            <button
+              type="button"
+              onClick={() => setShowBooking((open) => !open)}
+              className="rounded-2xl border border-cyan-200/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/20"
+            >
+              📅 Agendar cita
+            </button>
+
+            {showBooking ? (
+              <div className="space-y-3 rounded-2xl border border-cyan-100/15 bg-white/5 p-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex flex-col gap-1 text-xs text-cyan-100/70">
+                    Fecha
+                    <input
+                      type="date"
+                      value={fecha}
+                      onChange={(event) => setFecha(event.target.value)}
+                      className="rounded-lg border border-cyan-100/20 bg-slate-950/50 px-2 py-1.5 text-sm text-cyan-50"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-cyan-100/70">
+                    Hora
+                    <input
+                      type="time"
+                      value={hora}
+                      onChange={(event) => setHora(event.target.value)}
+                      className="rounded-lg border border-cyan-100/20 bg-slate-950/50 px-2 py-1.5 text-sm text-cyan-50"
+                    />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleBook}
+                  disabled={bookingState.loading}
+                  className="w-full rounded-xl border border-cyan-200/40 bg-cyan-300/20 px-4 py-2.5 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/30 disabled:opacity-60"
+                >
+                  {bookingState.loading ? "Agendando…" : "Confirmar cita"}
+                </button>
+              </div>
+            ) : null}
+
+            {bookingState.message ? (
+              <p
+                className={`text-xs ${bookingState.ok ? "text-emerald-300" : "text-rose-300"}`}
+              >
+                {bookingState.message}
+              </p>
+            ) : null}
           </div>
         </div>
       </section>

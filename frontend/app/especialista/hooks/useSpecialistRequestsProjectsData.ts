@@ -16,9 +16,6 @@ import {
 } from "@/lib/api/specialists";
 import { getTechmarketToken, getTechmarketUserId } from "@/lib/auth/tokenStore";
 import {
-  specialistProjectHistory,
-  specialistProjects,
-  specialistRequests,
   type SpecialistProjectHistoryItem,
   type SpecialistProjectItem,
   type SpecialistRequestItem,
@@ -49,23 +46,6 @@ type SpecialistProjectHistoryWithBackendData = SpecialistProjectHistoryItem & {
   service: string;
   total?: string;
 };
-
-function withFallbackProjectFields(project: SpecialistProjectItem): SpecialistProjectWithAssignment {
-  return {
-    ...project,
-    assignmentDate: project.startDate || "Fecha no disponible",
-    estimatedEndDate: project.endDate && project.endDate !== "Fin no definido" ? project.endDate : undefined,
-  };
-}
-
-function withFallbackHistoryFields(history: SpecialistProjectHistoryItem): SpecialistProjectHistoryWithBackendData {
-  return {
-    ...history,
-    service: history.project,
-    customer: "Cliente no especificado",
-    total: undefined,
-  };
-}
 
 export function mapBackendRequestToUiRequest(request: SpecialistRequest, index: number): SpecialistRequestWithUrgency {
   const requestWithUrgency = request as SpecialistRequest & { urgencia?: unknown };
@@ -170,8 +150,8 @@ export function useSpecialistRequestsProjectsData() {
         setRequests(backendRequests.map(mapBackendRequestToUiRequest));
         setRequestsSource(getDatasetSource(backendRequests));
       } else {
-        setRequests(specialistRequests.map((request) => ({ ...request, urgency: "No registrada" })));
-        setRequestsSource("fallback");
+        setRequests([]);
+        setRequestsSource("empty");
       }
 
       if (projectsResult.status === "fulfilled") {
@@ -179,8 +159,8 @@ export function useSpecialistRequestsProjectsData() {
         setProjects(backendProjects.map(mapBackendProjectToUiProject));
         setProjectsSource(getDatasetSource(backendProjects));
       } else {
-        setProjects(specialistProjects.map(withFallbackProjectFields));
-        setProjectsSource("fallback");
+        setProjects([]);
+        setProjectsSource("empty");
       }
 
       if (historyResult.status === "fulfilled") {
@@ -188,17 +168,17 @@ export function useSpecialistRequestsProjectsData() {
         setHistory(backendHistory.map(mapBackendHistoryToUiHistory));
         setHistorySource(getDatasetSource(backendHistory));
       } else {
-        setHistory(specialistProjectHistory.map(withFallbackHistoryFields));
-        setHistorySource("fallback");
+        setHistory([]);
+        setHistorySource("empty");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido al cargar solicitudes y proyectos");
-      setRequests(specialistRequests.map((request) => ({ ...request, urgency: "No registrada" })));
-      setProjects(specialistProjects.map(withFallbackProjectFields));
-      setHistory(specialistProjectHistory.map(withFallbackHistoryFields));
-      setRequestsSource("fallback");
-      setProjectsSource("fallback");
-      setHistorySource("fallback");
+      setRequests([]);
+      setProjects([]);
+      setHistory([]);
+      setRequestsSource("empty");
+      setProjectsSource("empty");
+      setHistorySource("empty");
     } finally {
       setLoading(false);
     }
