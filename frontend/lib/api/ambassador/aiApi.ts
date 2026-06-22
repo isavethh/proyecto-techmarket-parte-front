@@ -20,8 +20,17 @@ export function queryAi(data: AiQueryPayload): Promise<AiQueryResponse> {
   return apiPost<AiQueryResponse>(`${BASE}/query`, data, AI);
 }
 
-export function getAiInsights(): Promise<AiInsight[]> {
-  return apiGet<AiInsight[]>(`${BASE}/insights`, AI);
+export async function getAiInsights(): Promise<AiInsight[]> {
+  // El servicio AI es stateless: traemos el contexto real del embajador desde TechMarket-IA
+  // (referidos, comisiones, nivel) y se lo pasamos para que los insights reflejen su situacion
+  // real. Best-effort: si IA no responde, se piden insights sin contexto en vez de fallar.
+  let context: unknown;
+  try {
+    context = await apiGet<unknown>("/api/ambassadors/ia-contexto");
+  } catch {
+    context = undefined;
+  }
+  return apiPost<AiInsight[]>(`${BASE}/insights`, context ? { embajador: context } : {}, AI);
 }
 
 export function getProspectScore(data: ProspectScorePayload): Promise<ProspectScoreResponse> {

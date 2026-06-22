@@ -333,68 +333,6 @@ export type CreateSpecialistFileResponse = {
   mensaje: string;
 };
 
-export type SpecialistWallet = {
-  id?: string;
-  saldoDisponible?: number | string;
-  availableBalance?: number | string;
-  saldoPendiente?: number | string;
-  pendingBalance?: number | string;
-  moneda?: string;
-  currency?: string;
-  metodoRetiro?: string;
-  withdrawMethod?: string;
-  estado?: string;
-  status?: string;
-};
-
-export type SpecialistEarningsSummary = {
-  ingresosTotales?: number | string;
-  totalEarnings?: number | string;
-  ingresosMes?: number | string;
-  monthlyEarnings?: number | string;
-  pagosPendientes?: number | string;
-  pendingPayments?: number | string;
-  comisiones?: number | string;
-  commissions?: number | string;
-  serviciosPagados?: number | string;
-  paidServices?: number | string;
-};
-
-export type SpecialistTransaction = {
-  id?: string;
-  transactionId?: string;
-  cliente?: string;
-  customer?: string;
-  clientName?: string;
-  proyecto?: string;
-  project?: string;
-  service?: string;
-  servicio?: string;
-  monto?: number | string;
-  amount?: number | string;
-  comision?: number | string;
-  commission?: number | string;
-  estado?: string;
-  status?: string;
-  tipo?: string;
-  type?: string;
-  fecha?: string;
-  date?: string;
-  createdAt?: string;
-  moneda?: string;
-  currency?: string;
-};
-
-export type CreateSpecialistWithdrawalInput = {
-  monto: number;
-};
-
-export type SpecialistWithdrawalResponse = {
-  monto?: string;
-  mensaje?: string;
-  fechaEstimada?: string;
-};
-
 export type SpecialistReview = {
   id?: string;
   reviewId?: string;
@@ -784,43 +722,6 @@ export async function deleteSpecialistFile(token: string, userId: string, fileId
     token,
     userId,
   });
-}
-
-export async function getSpecialistWallet(token: string, userId: string) {
-  return apiRequest<SpecialistWallet>("/api/specialists/wallet", {
-    token,
-    userId,
-  });
-}
-
-export async function requestSpecialistWithdrawal(
-  token: string,
-  userId: string,
-  body: CreateSpecialistWithdrawalInput,
-) {
-  return apiRequest<SpecialistWithdrawalResponse>("/api/specialists/wallet/withdraw", {
-    method: "POST",
-    token,
-    userId,
-    body,
-  });
-}
-
-export async function getSpecialistEarningsSummary(token: string, userId: string) {
-  return apiRequest<SpecialistEarningsSummary>("/api/specialists/earnings/summary", {
-    token,
-    userId,
-  });
-}
-
-export async function getSpecialistTransactions(token: string, userId: string) {
-  return apiRequest<SpecialistTransaction[] | ListResponse<SpecialistTransaction> | { data: SpecialistTransaction[] }>(
-    "/api/specialists/transactions",
-    {
-      token,
-      userId,
-    }
-  );
 }
 
 export async function getSpecialistReviews(token: string, userId: string) {

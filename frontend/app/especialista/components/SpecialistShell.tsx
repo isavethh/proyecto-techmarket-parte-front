@@ -84,17 +84,6 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
       "Canal de cierre comercial",
     ],
   },
-  "Pagos e ingresos": {
-    eyebrow: "BILLETERA ACTIVA",
-    title: "Ingresos del especialista",
-    description:
-      "Esta vista resume saldos, pagos pendientes, comisiones y transacciones asociadas a servicios tecnicos.",
-    points: [
-      "Saldo disponible",
-      "Ingresos y comisiones",
-      "Historial de pagos",
-    ],
-  },
   Reputacion: {
     eyebrow: "CONFIANZA VISIBLE",
     title: "Opiniones y calificaciones",

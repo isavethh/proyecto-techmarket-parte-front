@@ -175,7 +175,11 @@ async function specialistAiRequest<T>(
 }
 
 export function getSpecialistAiInsights(): Promise<SpecialistAiInsightsResponse> {
-  return specialistAiRequest<SpecialistAiInsightsResponse>("/api/specialists/ai/insights");
+  // POST (con cuerpo vacio) para que el proxy pueda inyectar el contexto real del especialista.
+  return specialistAiRequest<SpecialistAiInsightsResponse>("/api/specialists/ai/insights", {
+    method: "POST",
+    body: {},
+  });
 }
 
 export function askSpecialistAi(consulta: string): Promise<BusinessInsight> {

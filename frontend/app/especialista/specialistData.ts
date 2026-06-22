@@ -99,33 +99,6 @@ export type SpecialistFileItem = {
   url?: string;
 };
 
-export type SpecialistWalletItem = {
-  availableBalance: string;
-  pendingBalance: string;
-  currency: string;
-  withdrawMethod: string;
-  status: string;
-};
-
-export type SpecialistEarningsSummaryItem = {
-  totalEarnings: string;
-  monthlyEarnings: string;
-  pendingPayments: string;
-  commissions: string;
-  paidServices: string;
-};
-
-export type SpecialistTransactionItem = {
-  id: string;
-  customer: string;
-  project: string;
-  amount: string;
-  commission: string;
-  status: string;
-  type: string;
-  date: string;
-};
-
 export type SpecialistCertificationItem = {
   id: string;
   title: string;
@@ -453,55 +426,6 @@ export const specialistFiles: SpecialistFileItem[] = [
   },
 ];
 
-export const specialistWallet: SpecialistWalletItem = {
-  availableBalance: "Bs 2.450",
-  pendingBalance: "Bs 680",
-  currency: "BOB",
-  withdrawMethod: "Transferencia bancaria",
-  status: "Activa",
-};
-
-export const specialistEarningsSummary: SpecialistEarningsSummaryItem = {
-  totalEarnings: "Bs 8.920",
-  monthlyEarnings: "Bs 1.840",
-  pendingPayments: "Bs 680",
-  commissions: "Bs 320",
-  paidServices: "24",
-};
-
-export const specialistTransactions: SpecialistTransactionItem[] = [
-  {
-    id: "txn-1",
-    customer: "Carlos M.",
-    project: "Reparacion de laptops",
-    amount: "Bs 320",
-    commission: "Bs 24",
-    status: "Pagado",
-    type: "Servicio tecnico",
-    date: "Hoy",
-  },
-  {
-    id: "txn-2",
-    customer: "Laura P.",
-    project: "Mantenimiento preventivo",
-    amount: "Bs 180",
-    commission: "Bs 14",
-    status: "Pendiente",
-    type: "Servicio programado",
-    date: "Ayer",
-  },
-  {
-    id: "txn-3",
-    customer: "Empresa Norte",
-    project: "Configuracion de red local",
-    amount: "Bs 740",
-    commission: "Bs 58",
-    status: "Procesado",
-    type: "Proyecto",
-    date: "Hace 3 dias",
-  },
-];
-
 export const specialistCertifications: SpecialistCertificationItem[] = [
   {
     id: "cert-1",
@@ -532,7 +456,6 @@ export const specialistNavLinks = [
   { title: "Solicitudes", href: "/especialista/solicitudes" },
   { title: "Proyectos", href: "/especialista/proyectos" },
   { title: "Chat", href: "/especialista/chat" },
-  { title: "Pagos e ingresos", href: "/especialista/pagos" },
   { title: "Reputacion", href: "/especialista/reputacion" },
 ];
 
