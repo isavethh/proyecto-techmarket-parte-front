@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
-import { CommunityFeedPost, readCommunityFeedPosts, upsertCommunityFeedPosts, writeCommunityFeedPosts } from "../../lib/communityFeed";
+import { readCommunityFeedPosts, writeCommunityFeedPosts } from "../../lib/communityFeed";
 import { getUser } from "@/lib/auth/tokenStore";
 import {
   createCompanyPublication,
@@ -69,27 +69,6 @@ const company = {
   name: "",
   logo: "",
 };
-
-const buildCommunityFeedPost = (
-  id: string,
-  title: string,
-  message: string,
-  image: string | undefined,
-  tag: string,
-  createdAt: string,
-): CommunityFeedPost => ({
-  id,
-  author: company.name,
-  authorId: company.id || undefined,
-  role: "Empresa verificada",
-  time: "Reciente",
-  title,
-  body: message,
-  tag,
-  location: "Comunidad TechMarket",
-  image,
-  createdAt,
-});
 
 type ProductCard = {
   id: string;
@@ -789,51 +768,6 @@ export default function PublicacionesPage() {
     setOfferEditMessage("");
   };
 
-  useEffect(() => {
-    const seededPosts = postItems.map((post, index) =>
-      buildCommunityFeedPost(
-        `seed-company-${post.id}`,
-        post.title,
-        post.message,
-        post.image,
-        "Publicacion",
-        new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString(),
-      ),
-    );
-
-    upsertCommunityFeedPosts(seededPosts);
-  }, [postItems]);
-
-  useEffect(() => {
-    if (!textPostItems.length) return;
-    const seeded = textPostItems.map((post, index) =>
-      buildCommunityFeedPost(
-        `seed-textpost-${post.id ?? index}`,
-        post.title || "Publicación de texto",
-        post.message,
-        post.image || undefined,
-        "Publicacion de texto",
-        post.date || new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString(),
-      ),
-    );
-    upsertCommunityFeedPosts(seeded);
-  }, [textPostItems]);
-
-  useEffect(() => {
-    if (!surveyItems.length) return;
-    const seeded = surveyItems.map((survey, index) =>
-      buildCommunityFeedPost(
-        `seed-survey-${survey.id ?? index}`,
-        "Encuesta activa",
-        survey.question,
-        undefined,
-        "Encuesta",
-        new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString(),
-      ),
-    );
-    upsertCommunityFeedPosts(seeded);
-  }, [surveyItems]);
-
   const handleMainFilterChange = (filter: MainFilter) => {
     setActiveFilter(filter);
 
@@ -900,17 +834,6 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
 
   setSurveyItems((current) => [newSurvey, ...current]);
   void createCompanySurvey({ question, options });
-
-  upsertCommunityFeedPosts([
-    buildCommunityFeedPost(
-      newSurvey.id,
-      "Nueva encuesta activa",
-      question,
-      undefined,
-      "Encuesta",
-      new Date().toISOString(),
-    ),
-  ]);
 
   setShowSurveyCreateModal(false);
   setSurveyCreateMessage("");
