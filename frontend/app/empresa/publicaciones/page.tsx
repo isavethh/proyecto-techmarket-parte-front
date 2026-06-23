@@ -1266,7 +1266,6 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
     }
 
     const newId = `pub-${Date.now()}`;
-    let communityTag = "Publicacion";
 
     if (formData.targetFilter === "Publicaciones") {
       setPostItems((current) => [
@@ -1280,7 +1279,6 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
         ...current,
       ]);
       setActiveFilter("Publicaciones");
-      communityTag = "Publicacion";
     }
 
     if (formData.targetFilter === "Productos disponibles") {
@@ -1296,7 +1294,6 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
         ...current,
       ]);
       setActiveFilter("Productos disponibles");
-      communityTag = "Producto";
     }
 
     if (formData.targetFilter === "Servicios") {
@@ -1311,7 +1308,6 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
         ...current,
       ]);
       setActiveFilter("Servicios");
-      communityTag = "Servicio";
     }
 
     if (formData.targetFilter === "Ofertas y promociones") {
@@ -1328,7 +1324,6 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
         ...current,
       ]);
       setActiveFilter("Ofertas y promociones");
-      communityTag = formData.label;
     }
 
 
@@ -1344,7 +1339,6 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
         ...current,
       ]);
       setActiveFilter("Publicaciones de texto");
-      communityTag = "Texto";
     }
 
     void createCompanyPublication({
@@ -1359,9 +1353,6 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
       options: [],
     });
 
-    upsertCommunityFeedPosts([
-      buildCommunityFeedPost(newId, title, description, image, communityTag, new Date().toISOString()),
-    ]);
     setFormData({
       title: "",
       targetFilter: formData.targetFilter,
