@@ -16,7 +16,6 @@ import {
   type SpecialistServiceInput,
 } from "@/lib/api/specialists";
 import {
-  specialistProfile,
   type PortfolioItem,
   type SpecialistService,
 } from "../specialistData";
@@ -24,7 +23,13 @@ import { getTechmarketToken, getTechmarketUserId } from "@/lib/auth/tokenStore";
 import { debugSpecialistResult, getDatasetSource, normalizeBackendList, type DatasetSource } from "./specialistBackendHelpers";
 import { hasBackendProfileData, mapBackendProfileToUiProfile, neutralSpecialistProfile } from "./useSpecialistProfileData";
 
-export type SpecialistUiProfile = typeof specialistProfile;
+export type SpecialistUiProfile = {
+  name: string;
+  avatar: string;
+  specialization: string;
+  location: string;
+  bio: string;
+};
 
 export function mapBackendServiceToUiService(
   service: BackendSpecialistService,
