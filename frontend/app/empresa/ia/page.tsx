@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { CompanyPageHeader } from "../../components/CompanyPageSections";
 import { CompanySidebar } from "../CompanySidebar";
 import { consultarEmpresaIa, type EmpresaIaResponse } from "@/lib/api/empresaAiApi";
+import { buildCompanyAiContext } from "../companyEndpoints";
 
 type AiBusinessInsight = {
   summary: string;
@@ -134,8 +135,11 @@ export default function ConsultorIAPage() {
     });
 
     // Llamada directa a la IA (sin retardo artificial); la animación se muestra mientras
-    // la petición real está en curso.
-    void consultarEmpresaIa(trimmedQuestion)
+    // la petición real está en curso. Antes de preguntar reunimos todo el contexto real
+    // del negocio para que la respuesta sea lo más exacta y específica posible.
+    void buildCompanyAiContext()
+      .catch(() => null)
+      .then((context) => consultarEmpresaIa(trimmedQuestion, context))
       .then((response) => {
         setAiInsight(normalizeEmpresaIaResponse(response));
       })

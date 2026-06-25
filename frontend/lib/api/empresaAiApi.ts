@@ -110,7 +110,10 @@ function resolveErrorMessage(body: unknown, fallback: string): string {
   return fallback;
 }
 
-export async function consultarEmpresaIa(consulta: string): Promise<EmpresaIaResponse> {
+export async function consultarEmpresaIa(
+  consulta: string,
+  extraContext?: Record<string, unknown> | null,
+): Promise<EmpresaIaResponse> {
   const trimmed = consulta.trim();
 
   if (!trimmed) {
@@ -124,11 +127,13 @@ export async function consultarEmpresaIa(consulta: string): Promise<EmpresaIaRes
       method: "POST",
       headers: buildHeaders(),
       // El backend (TechMarket-AI) lee el campo `question`; `context` es un objeto estructurado.
+      // Cuanta más información real del negocio se envíe aquí, más exacta es la respuesta de la IA.
       body: JSON.stringify({
         question: trimmed,
         context: {
           rol: "empresa",
           canal: "consultor-ia",
+          ...(extraContext ?? {}),
         },
       }),
     });

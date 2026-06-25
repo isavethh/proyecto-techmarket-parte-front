@@ -1,6 +1,7 @@
 "use client";
 
 import { consultarEmpresaIa } from "@/lib/api/empresaAiApi";
+import { fetchCompanyAnalytics, fetchCompanyReviews } from "../lib/companyApi";
 
 export type ExecutiveMetric = {
   id: string;
@@ -297,9 +298,182 @@ export async function fetchCompanySummary() {
   }
 }
 
+/**
+ * Reúne TODA la información real disponible del negocio (perfil, métricas, alertas,
+ * publicaciones, reseñas y analíticas) en un único objeto de contexto. Cuanta más
+ * información se entregue a la IA, más exactas y específicas son sus recomendaciones.
+ */
+export async function buildCompanyAiContext(): Promise<Record<string, unknown>> {
+  const [profile, summaryRaw, publications, reviewsRaw, analyticsRaw] = await Promise.all([
+    fetchCompanyProfile().catch(() => emptyProfile),
+    fetchCompanySummary().catch(() => null),
+    fetchCompanyPublications().catch(() => null),
+    fetchCompanyReviews().catch(() => []),
+    fetchCompanyAnalytics().catch(() => null),
+  ]);
+
+  const summary = asRecord(summaryRaw);
+  const analytics = asRecord(analyticsRaw);
+  const pubs = asRecord(publications);
+  const reviews = Array.isArray(reviewsRaw) ? reviewsRaw.map(asRecord) : [];
+
+  const arr = (value: unknown): Record<string, unknown>[] =>
+    Array.isArray(value) ? value.map(asRecord) : [];
+
+  const products = arr(pubs.products);
+  const services = arr(pubs.services);
+  const offers = arr(pubs.offers);
+  const surveys = arr(pubs.surveys);
+  const posts = arr(pubs.posts);
+  const textPosts = arr(pubs.textPosts);
+  const interactingUsers = arr(pubs.users);
+
+  const metrics = arr(summary.metrics);
+  const alerts = arr(summary.alerts);
+  const recentActivity = arr(summary.recentActivity);
+  const radar = arr(summary.radar);
+  const recommendedActions = arr(summary.recommendedActions);
+
+  const publicationMetrics = arr(analytics.publicationMetrics);
+  const ratingLevels = arr(analytics.ratingLevels);
+  const userComments = arr(analytics.userComments);
+  const growthSeries = arr(analytics.growthSeries);
+
+  // --- Estadísticas derivadas de reseñas (para que la IA razone con números reales) ---
+  const reviewStars = reviews
+    .map((review) => asNumber(review.stars))
+    .filter((stars) => stars > 0);
+  const avgReviewStars = reviewStars.length
+    ? Number((reviewStars.reduce((total, stars) => total + stars, 0) / reviewStars.length).toFixed(2))
+    : 0;
+  const pendingFollowUps = reviews.filter((review) => review.needsFollowUp === true).length;
+  const unanswered = reviews.filter((review) => review.wasResponded !== true).length;
+  const responseRate = reviews.length
+    ? Math.round(((reviews.length - unanswered) / reviews.length) * 100)
+    : 0;
+
+  const business = profile.businessData;
+
+  // --- Resumen ejecutivo en texto plano: garantiza una lectura clara para el modelo ---
+  const digestLines = [
+    `Empresa: ${business.name || "(sin nombre)"}${business.slogan ? ` — "${business.slogan}"` : ""}.`,
+    business.category || business.businessType
+      ? `Rubro: ${[business.category, business.businessType].filter(Boolean).join(" / ")}.`
+      : "",
+    business.specialization ? `Especialización: ${business.specialization}.` : "",
+    business.experienceYears ? `Años de experiencia: ${business.experienceYears}.` : "",
+    `Calificación: ${business.rating || avgReviewStars || 0}/5 sobre ${business.reviewCount || reviews.length} reseñas.`,
+    profile.specialties.length ? `Especialidades: ${profile.specialties.join(", ")}.` : "",
+    profile.coverageAreas.length ? `Zonas de cobertura: ${profile.coverageAreas.join(", ")}.` : "",
+    profile.locationOverview.city || profile.locationOverview.zone
+      ? `Ubicación: ${[profile.locationOverview.zone, profile.locationOverview.city].filter(Boolean).join(", ")}.`
+      : "",
+    `Catálogo: ${products.length} productos, ${services.length} servicios, ${offers.length} ofertas, ${surveys.length} encuestas, ${posts.length + textPosts.length} publicaciones de texto.`,
+    `Reseñas: promedio ${avgReviewStars}/5, ${responseRate}% respondidas, ${unanswered} sin responder, ${pendingFollowUps} requieren seguimiento.`,
+    interactingUsers.length ? `Usuarios que interactúan con encuestas/publicaciones: ${interactingUsers.length}.` : "",
+    typeof analytics.growthIndex === "number" ? `Índice de crecimiento mensual: ${analytics.growthIndex}%.` : "",
+  ].filter((line) => typeof line === "string" && line.trim().length > 0);
+
+  return {
+    resumenEjecutivo: digestLines.join(" "),
+    perfil: {
+      nombre: business.name,
+      slogan: business.slogan,
+      especializacion: business.specialization,
+      categoria: business.category,
+      tipoNegocio: business.businessType,
+      calificacion: business.rating,
+      totalReseñas: business.reviewCount,
+      añosExperiencia: business.experienceYears,
+      descripcion: profile.description,
+      quienesSomos: profile.about,
+      especialidades: profile.specialties,
+      zonasCobertura: profile.coverageAreas,
+      contactos: profile.contactChannels,
+      redes: profile.socialLinks,
+      horarios: profile.schedules,
+      sucursales: profile.branches,
+      ubicacion: profile.locationOverview,
+    },
+    indicadores: {
+      metricas: metrics.map((m) => ({ etiqueta: m.label, valor: m.value, tendencia: m.trend })),
+      radar: radar.map((r) => ({ etiqueta: r.label, valor: r.value })),
+      indiceCrecimiento: analytics.growthIndex ?? null,
+      promedioCalificacion: analytics.ratingAverage ?? avgReviewStars,
+      distribucionEstrellas: ratingLevels,
+      serieCrecimiento: growthSeries,
+      visitasPorPublicacion: publicationMetrics.map((p) => ({
+        titulo: p.title,
+        visitas: p.visits,
+        conversion: p.conversion,
+      })),
+    },
+    alertas: alerts.map((a) => ({ titulo: a.title, detalle: a.detail, prioridad: a.priority })),
+    actividadReciente: recentActivity.map((a) => ({ titulo: a.title, detalle: a.detail, cuando: a.time })),
+    accionesRecomendadas: recommendedActions.map((a) => ({
+      titulo: a.title,
+      descripcion: a.description,
+      impacto: a.impact,
+    })),
+    publicaciones: {
+      productos: products.map((p) => ({
+        nombre: p.name,
+        descripcion: p.description,
+        precio: p.price,
+        estado: p.status,
+      })),
+      servicios: services.map((s) => ({
+        nombre: s.name,
+        descripcion: s.description,
+        precio: s.price,
+      })),
+      ofertas: offers.map((o) => ({
+        titulo: o.title,
+        etiqueta: o.label,
+        precioAnterior: o.previousPrice,
+        precioActual: o.currentPrice,
+        descripcion: o.description,
+      })),
+      encuestas: surveys.map((s) => ({
+        pregunta: s.question,
+        opciones: s.options,
+        votos: s.votes,
+      })),
+      publicacionesTexto: [...posts, ...textPosts].map((p) => ({
+        titulo: p.title,
+        mensaje: p.message,
+        fecha: p.date,
+      })),
+      totalUsuariosQueInteractuan: interactingUsers.length,
+    },
+    reseñas: {
+      promedioEstrellas: avgReviewStars,
+      tasaRespuesta: responseRate,
+      sinResponder: unanswered,
+      pendientesSeguimiento: pendingFollowUps,
+      comentariosRecientes: userComments.map((c) => ({
+        usuario: c.user,
+        publicacion: c.publication,
+        texto: c.text,
+        fecha: c.date,
+      })),
+      detalle: reviews.map((review) => ({
+        cliente: review.customer,
+        producto: review.productOrService,
+        estrellas: review.stars,
+        mensaje: review.message,
+        etiquetas: review.tags,
+        requiereSeguimiento: review.needsFollowUp,
+        respondida: review.wasResponded,
+      })),
+    },
+  };
+}
+
 export async function askCompanyAi(question: string) {
   try {
-    return await consultarEmpresaIa(question);
+    const context = await buildCompanyAiContext().catch(() => null);
+    return await consultarEmpresaIa(question, context);
   } catch {
     return emptyAiInsight;
   }
