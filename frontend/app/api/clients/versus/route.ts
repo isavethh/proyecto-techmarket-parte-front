@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
   const productos = await fetchRealContext(headers, productIds);
   if (!productos || productos.length < 2) {
     return NextResponse.json(
-      { message: "No se pudo obtener la informacion real de las publicaciones a comparar." },
+      { message: "No se pudo obtener la información real de las publicaciones a comparar." },
       { status: 502 },
     );
   }

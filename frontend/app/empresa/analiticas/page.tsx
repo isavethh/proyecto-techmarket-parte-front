@@ -76,7 +76,7 @@ export default function AnaliticasPage() {
             <p className="tech-mono text-xs text-cyan-200/75">ANALÍTICAS EMPRESA</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Estado del rendimiento</h1>
             <p className="mt-3 text-sm text-cyan-100/80">
-              Revisa indicadores de visitas, conversion y crecimiento para tomar mejores decisiones.
+              Revisa indicadores de visitas, conversión y crecimiento para tomar mejores decisiones.
             </p>
           </section>
           <CompanySidebar />
@@ -99,7 +99,7 @@ export default function AnaliticasPage() {
                   <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Indice de crecimiento</p>
                   <p className="mt-3 text-4xl font-bold text-emerald-200">+{growthIndex}%</p>
                   <p className="mt-3 text-sm text-cyan-100/80">
-                    El crecimiento actual combina alcance de publicaciones, conversion a chat y retencion por
+                    El crecimiento actual combina alcance de publicaciones, conversión a chat y retencion por
                     recomendaciones de usuarios.
                   </p>
                 </div>
@@ -125,7 +125,7 @@ export default function AnaliticasPage() {
                 </article>
 
                 <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Conversion promedio</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Conversión promedio</p>
                   <p className="mt-3 text-3xl font-bold text-white">{avgConversion}%</p>
                   <p className="mt-2 text-sm text-cyan-100/75">Visita a contacto por chat</p>
                 </article>

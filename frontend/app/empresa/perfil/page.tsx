@@ -212,7 +212,7 @@ export default function Perfil() {
     { id: "general", label: "General" },
     { id: "contacto", label: "Contacto" },
     { id: "servicios", label: "Servicios" },
-    { id: "ubicacion", label: "Ubicacion" },
+    { id: "ubicación", label: "Ubicación" },
     { id: "sucursales", label: "Sucursales" },
   ];
 
@@ -244,7 +244,7 @@ export default function Perfil() {
     setSpecialtyItems(parseList(editForm.specialties));
     setCoverageItems(parseList(editForm.coverageAreas));
     setContactItems([
-      { label: "Telefono", value: editForm.phone.trim() },
+      { label: "Teléfono", value: editForm.phone.trim() },
       { label: "WhatsApp", value: editForm.whatsapp.trim() },
       { label: "Correo", value: editForm.email.trim() },
     ]);
@@ -293,7 +293,7 @@ export default function Perfil() {
       specialties: parseList(editForm.specialties),
       coverageAreas: parseList(editForm.coverageAreas),
       contactChannels: [
-        { label: "Telefono", value: editForm.phone.trim() },
+        { label: "Teléfono", value: editForm.phone.trim() },
         { label: "WhatsApp", value: editForm.whatsapp.trim() },
         { label: "Correo", value: editForm.email.trim() },
       ],
@@ -691,7 +691,7 @@ export default function Perfil() {
                   {renderField("Logo (siglas)", "logo")}
                   {renderField("Slogan", "slogan", true)}
                   {renderField("Especializacion", "specialization")}
-                  {renderField("Categoria", "category")}
+                  {renderField("Categoría", "category")}
                   {renderField("Tipo de negocio", "businessType")}
                   {renderField("Años de experiencia", "experienceYears")}
                   <p className="md:col-span-2 rounded-2xl border border-cyan-100/10 bg-slate-950/30 px-4 py-3 text-xs leading-5 text-cyan-100/60">
@@ -703,7 +703,7 @@ export default function Perfil() {
 
               {activeProfileTab === "contacto" ? (
                 <div className="grid gap-4 md:grid-cols-2">
-                  {renderField("Telefono", "phone")}
+                  {renderField("Teléfono", "phone")}
                   {renderField("WhatsApp", "whatsapp")}
                   {renderField("Correo", "email", true)}
                 </div>
@@ -738,8 +738,8 @@ export default function Perfil() {
                     </p>
                     <div className="grid gap-4 md:grid-cols-2">
                       {renderField("Nombre", "branchMainName")}
-                      {renderField("Telefono", "branchMainPhone")}
-                      {renderField("Direccion", "branchMainAddress", true)}
+                      {renderField("Teléfono", "branchMainPhone")}
+                      {renderField("Dirección", "branchMainAddress", true)}
                       {renderField("Horario", "branchMainHours", true)}
                     </div>
                   </div>
@@ -749,8 +749,8 @@ export default function Perfil() {
                     </p>
                     <div className="grid gap-4 md:grid-cols-2">
                       {renderField("Nombre", "branchNorthName")}
-                      {renderField("Telefono", "branchNorthPhone")}
-                      {renderField("Direccion", "branchNorthAddress", true)}
+                      {renderField("Teléfono", "branchNorthPhone")}
+                      {renderField("Dirección", "branchNorthAddress", true)}
                       {renderField("Horario", "branchNorthHours", true)}
                     </div>
                   </div>

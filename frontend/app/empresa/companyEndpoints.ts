@@ -79,9 +79,9 @@ export type CompanyProfileData = {
 };
 
 export const aiThinkingStates = [
-  "Analizando cambios de conversion y demanda reciente...",
+  "Analizando cambios de conversión y demanda reciente...",
   "Comparando publicaciones, leads y ritmo de respuesta...",
-  "Preparando una recomendacion accionable para hoy...",
+  "Preparando una recomendación accionable para hoy...",
 ];
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_COMPANY_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");

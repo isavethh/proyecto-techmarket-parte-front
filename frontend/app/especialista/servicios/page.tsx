@@ -23,11 +23,11 @@ const SERVICE_TYPE_OPTIONS = [
   "Reparacion",
   "Mantenimiento",
   "Instalacion",
-  "Diagnostico",
+  "Diagnóstico",
   "Soporte técnico",
   "Asesoria",
   "Actualizacion",
-  "Configuracion",
+  "Configuración",
 ];
 
 function parseServicePrice(value: string) {
@@ -214,7 +214,7 @@ export default function EspecialistaServiciosPage() {
             <p className="tech-mono text-xs text-cyan-200/75">SERVICIOS DEL ESPECIALISTA</p>
             <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Servicios profesionales</h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">
-              Servicios definidos para facilitar contacto rápido y decision informada del usuario.
+              Servicios definidos para facilitar contacto rápido y decisión informada del usuario.
             </p>
           </div>
 

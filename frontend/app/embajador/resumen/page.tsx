@@ -17,7 +17,7 @@ export default function EmbajadorResumenPage() {
       { label: "Nivel de embajador", value: stats.nivel, helper: "Rango actual" },
       { label: "Negocios referidos", value: `${stats.negociosReferidos}`, helper: "Cuentas en tu red" },
       { label: "Negocios activos", value: `${stats.negociosActivos}`, helper: "Operando este mes" },
-      { label: "Conversion", value: `${stats.conversionRate}%`, helper: "Lead a cierre comercial" },
+      { label: "Conversión", value: `${stats.conversionRate}%`, helper: "Lead a cierre comercial" },
       { label: "Comisiones totales", value: stats.comisionesTotales, helper: "Acumulado total" },
     ];
   }, [stats]);
@@ -75,7 +75,7 @@ export default function EmbajadorResumenPage() {
                 </div>
               </div>
               <p className="mt-2 text-sm text-cyan-100/78">
-                Usa tu link de referido para invitar negocios nuevos y medir conversion por embajador.
+                Usa tu link de referido para invitar negocios nuevos y medir conversión por embajador.
               </p>
             </div>
           </section>

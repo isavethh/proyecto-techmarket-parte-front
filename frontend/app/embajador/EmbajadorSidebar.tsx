@@ -168,7 +168,7 @@ export function EmbajadorSidebar({
             Negocios referidos
           </Link>
           <Link href="/embajador/vision-usuarios" className={getSidebarLinkClass(activeSection === "usuarios")}>
-            Vision de usuarios
+            Visión de usuarios
           </Link>
           <Link href="/embajador/embajadores-referidos" className={getSidebarLinkClass(activeSection === "embajadores")}>
             Embajadores referidos

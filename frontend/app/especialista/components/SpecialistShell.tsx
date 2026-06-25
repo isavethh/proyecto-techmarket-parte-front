@@ -44,7 +44,7 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
     eyebrow: "CATÁLOGO ACTIVO",
     title: "Servicios listos para contratar",
     description:
-      "Aquí se muestran servicios técnicos claros, con descripción, precio y acceso directo al chat para facilitar la decision.",
+      "Aquí se muestran servicios técnicos claros, con descripción, precio y acceso directo al chat para facilitar la decisión.",
     points: [
       "Servicios destacados",
       "Precio visible o consultable",
@@ -77,7 +77,7 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
     eyebrow: "ATENCIÓN DIRECTA",
     title: "Conversaciones activas",
     description:
-      "Este canal concentra consultas, seguimiento y respuesta rápida para mejorar confianza, atención y conversion comercial.",
+      "Este canal concentra consultas, seguimiento y respuesta rápida para mejorar confianza, atención y conversión comercial.",
     points: [
       "Consultas activas",
       "Seguimiento en tiempo real",
@@ -88,7 +88,7 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
     eyebrow: "CONFIANZA VISIBLE",
     title: "Opiniones y calificaciones",
     description:
-      "La reputación permite al cliente validar calidad de servicio, atención y experiencia antes de tomar una decision.",
+      "La reputación permite al cliente validar calidad de servicio, atención y experiencia antes de tomar una decisión.",
     points: [
       "Calificación general",
       "Comentarios recientes",

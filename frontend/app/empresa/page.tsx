@@ -171,7 +171,7 @@ export default function EmpresaPage() {
               Lo que cambio en tu negocio mientras no estabas
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/85">
-              Enfoque directo en conversion, demanda y oportunidades para tomar decisiones hoy mismo.
+              Enfoque directo en conversión, demanda y oportunidades para tomar decisiones hoy mismo.
             </p>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

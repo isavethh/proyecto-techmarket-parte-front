@@ -132,7 +132,7 @@ type PublicationFormData = {
   description: string;
   price: string;
   previousPrice: string;
-  label: "Oferta" | "Promocion";
+  label: "Oferta" | "Promoción";
   image: string;
 };
 
@@ -170,7 +170,7 @@ type OfferEditForm = {
 
 type PublicationPreview = {
   id: string;
-  kind: "Producto" | "Servicio" | "Oferta" | "Publicacion";
+  kind: "Producto" | "Servicio" | "Oferta" | "Publicación";
   title: string;
   description: string;
   image?: string;
@@ -187,7 +187,7 @@ type PublicationMetric = {
 
 type CompanyFeedItem = {
   id: string;
-  kind: "Producto" | "Servicio" | "Oferta" | "Publicacion" | "Encuesta" | "Texto";
+  kind: "Producto" | "Servicio" | "Oferta" | "Publicación" | "Encuesta" | "Texto";
   title: string;
   description: string;
   date: string;
@@ -252,7 +252,7 @@ function buildPublicationMetrics(publicationId: string): PublicationMetric[] {
     {
       label: "CTR estimado",
       value: `${ctr}%`,
-      trend: "Rendimiento de conversion",
+      trend: "Rendimiento de conversión",
     },
   ];
 }
@@ -535,15 +535,15 @@ export default function PublicacionesPage() {
   const companyFeedItems: CompanyFeedItem[] = [
     ...postItems.map((post) => ({
       id: post.id,
-      kind: "Publicacion" as const,
+      kind: "Publicación" as const,
       title: post.title,
       description: post.message,
       date: post.date,
-      tag: "Publicacion",
+      tag: "Publicación",
       image: post.image,
       preview: {
         id: post.id,
-        kind: "Publicacion" as const,
+        kind: "Publicación" as const,
         title: post.title,
         description: post.message,
         image: post.image,
@@ -560,7 +560,7 @@ export default function PublicacionesPage() {
       image: post.image,
       preview: {
         id: post.id,
-        kind: "Publicacion" as const,
+        kind: "Publicación" as const,
         title: post.title,
         description: post.message,
         image: post.image,
@@ -640,7 +640,7 @@ export default function PublicacionesPage() {
       options: survey.options,
       preview: {
         id: survey.id,
-        kind: "Publicacion" as const,
+        kind: "Publicación" as const,
         title: survey.question,
         description: `Opciones: ${survey.options.join(" • ")}`,
         date: "Encuesta activa",
@@ -1534,7 +1534,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                                 onChange={(event) =>
                                   setFormData((current) => ({
                                     ...current,
-                                    label: event.target.value as "Oferta" | "Promocion",
+                                    label: event.target.value as "Oferta" | "Promoción",
                                   }))
                                 }
                                 className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
@@ -2248,7 +2248,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                   </div>
 
                   <div className="mt-4 rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-3">
-                    <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/70">Recomendacion rápida</p>
+                    <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/70">Recomendación rápida</p>
                     <p className="mt-2 text-sm leading-6 text-cyan-100/84">
                       Esta publicación tiene buen potencial. Ajusta imagen principal y CTA para convertir más clics en chats.
                     </p>
@@ -2258,7 +2258,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
               {selectedPublication && selectedPublicationSocial ? (
                 <div className="mt-5 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
                   <section className="rounded-3xl border border-cyan-100/12 bg-slate-950/40 p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Interaccion</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Interacción</p>
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
                       <Link
@@ -2615,7 +2615,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                       onChange={(event) =>
                         setSurveyForm((current) => ({ ...current, option1: event.target.value }))
                       }
-                      placeholder="Ej: Diagnostico"
+                      placeholder="Ej: Diagnóstico"
                       className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                     />
                   </label>

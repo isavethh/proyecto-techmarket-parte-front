@@ -29,9 +29,9 @@ const recommendedAiQuestions = [
 
 const aiThinkingStates = [
   "Interpretando objetivo comercial y urgencia de negocio...",
-  "Cruce de conversion, interacciones y ritmo de respuesta...",
+  "Cruce de conversión, interacciones y ritmo de respuesta...",
   "Detectando oportunidades por demanda y tipo de publicación...",
-  "Preparando recomendacion concreta para ejecutar hoy...",
+  "Preparando recomendación concreta para ejecutar hoy...",
 ];
 
 const aiSignals = ["NLP", "INTENT", "SCORE", "ACTION"];
@@ -40,7 +40,7 @@ const scenarioPrompts = [
   {
     title: "Plan de cierre diario",
     prompt: "Disename un plan de 3 pasos para responder chats y cerrar ventas hoy.",
-    impact: "Enfocado en velocidad y conversion.",
+    impact: "Enfocado en velocidad y conversión.",
   },
   {
     title: "Reactivacion de alcance",
@@ -58,7 +58,7 @@ const aiRadarBars = [
   { label: "Senal de compra", value: 81 },
   { label: "Interes en servicios", value: 74 },
   { label: "Ritmo de respuesta", value: 63 },
-  { label: "Potencial de conversion", value: 69 },
+  { label: "Potencial de conversión", value: 69 },
 ];
 
 function buildAiInsight(question: string): AiBusinessInsight {
@@ -83,7 +83,7 @@ function buildAiInsight(question: string): AiBusinessInsight {
       watchItems: [
         "Tiempo promedio de primera respuesta.",
         "Chats con seguimiento pendiente despues de 12h.",
-        "Conversion de chat a venta por tipo de producto.",
+        "Conversión de chat a venta por tipo de producto.",
       ],
       priority: "Alta",
       confidence: "Alta",
@@ -94,7 +94,7 @@ function buildAiInsight(question: string): AiBusinessInsight {
 
   if (text.includes("publicac") || text.includes("anuncio") || text.includes("alcance") || text.includes("optimizar")) {
     return {
-      summary: "Para subir resultados rápido, optimiza primero la publicación con mayor histórico de interaccion y aplica un relanzamiento controlado.",
+      summary: "Para subir resultados rápido, optimiza primero la publicación con mayor histórico de interacción y aplica un relanzamiento controlado.",
       dataPoints: [
         "Tus publicaciones visuales superan en interes a las de solo texto.",
         "El mayor impacto viene de titular, portada y CTA de chat.",
@@ -126,7 +126,7 @@ function buildAiInsight(question: string): AiBusinessInsight {
       dataPoints: [
         "Las consultas de mantenimiento y soporte tienden a repetirse semanalmente.",
         "Los clientes empresariales valoran tiempos de respuesta y continuidad.",
-        "Las ofertas combinadas elevan interes cuando simplifican decision.",
+        "Las ofertas combinadas elevan interes cuando simplifican decisión.",
       ],
       advice:
         "Empaqueta servicios en formatos claros (basico, estandar, premium) y comunica tiempo de atencion. Eso mejora comparabilidad y acelera cierre.",
@@ -150,7 +150,7 @@ function buildAiInsight(question: string): AiBusinessInsight {
 
   if (text.includes("oferta") || text.includes("precio") || text.includes("margen")) {
     return {
-      summary: "Puedes mejorar conversion sin sacrificar margen si disenas la oferta por valor percibido y no solo por descuento.",
+      summary: "Puedes mejorar conversión sin sacrificar margen si disenas la oferta por valor percibido y no solo por descuento.",
       dataPoints: [
         "Las ofertas con comparacion visible de precio suelen captar más atención.",
         "El beneficio claro (tiempo, soporte, garantia) reduce sensibilidad al precio.",
@@ -158,7 +158,7 @@ function buildAiInsight(question: string): AiBusinessInsight {
       ],
       advice:
         "Muestra ahorro, pero destaca también resultado concreto. Una oferta ganadora combina valor, claridad de alcance y un CTA de cierre inmediato.",
-      nextStep: "Crea una promoción de 48h con beneficio medible y seguimiento de conversion por chat.",
+      nextStep: "Crea una promoción de 48h con beneficio medible y seguimiento de conversión por chat.",
       actionPlan: [
         "Define precio de referencia y ahorro visible en la card.",
         "Agrega beneficio operativo (soporte, garantia, instalacion).",
@@ -166,7 +166,7 @@ function buildAiInsight(question: string): AiBusinessInsight {
       ],
       watchItems: [
         "Consultas generadas por promoción.",
-        "Conversion por rango de descuento.",
+        "Conversión por rango de descuento.",
         "Impacto en margen promedio por cierre.",
       ],
       priority: "Media",
@@ -179,7 +179,7 @@ function buildAiInsight(question: string): AiBusinessInsight {
   return {
     summary: "Tu estrategia va bien, pero el siguiente salto depende de ejecutar ciclos cortos de mejora en chat, publicaciones y ofertas.",
     dataPoints: [
-      "Tienes base suficiente para optimizar conversion sin cambiar toda la operación.",
+      "Tienes base suficiente para optimizar conversión sin cambiar toda la operación.",
       "La claridad de propuesta impacta más que la cantidad de contenido.",
       "Los mejores resultados vienen de iterar semanalmente sobre una prioridad.",
     ],
@@ -305,7 +305,7 @@ export default function ConsultorIAPage() {
         middleSlot={
           <div className="inline-flex rounded-full border border-cyan-100/15 bg-slate-950/45 px-3 py-1.5 text-xs text-cyan-100/80 md:items-center md:gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.85)]" />
-            <span className="ml-2 md:ml-0">Analisis comercial con IA activo</span>
+            <span className="ml-2 md:ml-0">Análisis comercial con IA activo</span>
           </div>
         }
       />
@@ -316,7 +316,7 @@ export default function ConsultorIAPage() {
             <p className="tech-mono text-xs text-cyan-200/75">CONSULTORIA IA</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Asistente comercial</h1>
             <p className="mt-3 text-sm text-cyan-100/80">
-              Haz preguntas de negocio y recibe recomendaciones accionables para mejorar conversion.
+              Haz preguntas de negocio y recibe recomendaciones accionables para mejorar conversión.
             </p>
           </section>
 
@@ -331,7 +331,7 @@ export default function ConsultorIAPage() {
                   <p className="tech-mono text-xs text-cyan-200/75">CONSULTOR IA</p>
                   <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Asesoria comercial inteligente</h1>
                   <p className="mt-4 max-w-2xl text-sm leading-7 text-cyan-100/80 md:text-base">
-                    Este consultor analiza senales de conversion, demanda y rendimiento para darte respuestas
+                    Este consultor analiza senales de conversión, demanda y rendimiento para darte respuestas
                     accionables de negocio.
                   </p>
                 </div>
@@ -348,7 +348,7 @@ export default function ConsultorIAPage() {
                     </div>
                     <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-3">
                       <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">Modo</p>
-                      <p className="mt-2 text-base font-semibold text-cyan-50">Analisis comercial</p>
+                      <p className="mt-2 text-base font-semibold text-cyan-50">Análisis comercial</p>
                     </div>
                   </div>
                 </div>
@@ -360,7 +360,7 @@ export default function ConsultorIAPage() {
                     <p className="tech-mono text-xs text-cyan-200/80">IA TECHMARKET</p>
                     <h3 className="mt-2 text-2xl font-semibold text-cyan-50">Preguntale por tu negocio</h3>
                     <p className="mt-3 text-sm leading-7 text-cyan-100/82">
-                      Consulta ventas, publicaciones, ofertas o demanda. Recibes diagnostico, plan de acción y foco recomendado.
+                      Consulta ventas, publicaciones, ofertas o demanda. Recibes diagnóstico, plan de acción y foco recomendado.
                     </p>
 
                     <form onSubmit={handleSubmit} className="mt-5 space-y-3">
@@ -471,7 +471,7 @@ export default function ConsultorIAPage() {
 
                         <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-4">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-cyan-50">Diagnostico rápido</p>
+                            <p className="text-sm font-semibold text-cyan-50">Diagnóstico rápido</p>
                             <span
                               className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
                                 aiInsight.priority === "Alta"
@@ -538,7 +538,7 @@ export default function ConsultorIAPage() {
                       </div>
                     ) : !aiError ? (
                       <div className="mt-4 rounded-2xl border border-dashed border-cyan-100/18 bg-slate-950/40 p-5 text-sm text-cyan-100/72">
-                        Selecciona una pregunta recomendada o escribe tu consulta para recibir un analisis más completo.
+                        Selecciona una pregunta recomendada o escribe tu consulta para recibir un análisis más completo.
                       </div>
                     ) : null}
                       </>

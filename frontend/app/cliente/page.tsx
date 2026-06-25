@@ -504,7 +504,7 @@ export default function ClientePage() {
           time: "Reciente",
           title: pub.title,
           body: pub.body,
-          tag: pub.type === "TEXT" ? "Publicacion de texto" : "Publicacion",
+          tag: pub.type === "TEXT" ? "Publicacion de texto" : "Publicación",
           location: "TechMarket",
           image: pub.image,
           createdAt: pub.createdAt,

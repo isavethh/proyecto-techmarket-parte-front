@@ -101,11 +101,11 @@ const getRecommendations = (business: {
   }
 
   if (business.userScore < 80) {
-    recommendations.push("Mejorar percepcion de usuarios con seguimiento y respuestas más rapidas.");
+    recommendations.push("Mejorar percepción de usuarios con seguimiento y respuestas más rapidas.");
   }
 
   if (business.conversionRate < 18) {
-    recommendations.push("Optimizar el mensaje comercial y reforzar las ofertas de conversion.");
+    recommendations.push("Optimizar el mensaje comercial y reforzar las ofertas de conversión.");
   }
 
   return recommendations.slice(0, 3);

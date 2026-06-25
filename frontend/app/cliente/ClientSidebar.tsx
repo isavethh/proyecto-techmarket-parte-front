@@ -46,11 +46,11 @@ const clientSidebarContextByRoute: Record<string, ClientSidebarContext> = {
     title: "Búsqueda guiada",
     description:
       "Encuentra soporte técnico, mantenimiento y atención especializada según necesidad y confianza.",
-    chips: ["Busqueda", "Tecnicos", "Match", "Cobertura"],
+    chips: ["Busqueda", "Técnicos", "Match", "Cobertura"],
   },
   "/cliente/versus": {
     eyebrow: "COMPARACION",
-    title: "Decision informada",
+    title: "Decisión informada",
     description:
       "Compara productos o servicios para elegir mejor según rendimiento, precio y reputación.",
     chips: ["Versus", "Precio", "Rendimiento", "Decision"],
@@ -64,7 +64,7 @@ const clientSidebarContextByRoute: Record<string, ClientSidebarContext> = {
   },
   "/cliente/comunidades": {
     eyebrow: "COMUNIDAD",
-    title: "Interaccion compartida",
+    title: "Interacción compartida",
     description:
       "Participa en conversaciones, sigue actividad de otros usuarios y descubre contenido relevante.",
     chips: ["Comunidad", "Usuarios", "Contenido", "Interaccion"],

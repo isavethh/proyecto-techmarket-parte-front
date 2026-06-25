@@ -64,7 +64,7 @@ export default function EmbajadorGuiaPage() {
             <p className="tech-mono text-xs text-cyan-200/75">GUIA DE USO PARA EMBJADORES</p>
             <h1 className="mt-3 text-3xl font-bold text-cyan-50 md:text-4xl">Aprende a usar tu panel de embajador</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/80">
-              En este modulo puedes registrar negocios, dar seguimiento al onboarding, revisar comisiones y
+              En este módulo puedes registrar negocios, dar seguimiento al onboarding, revisar comisiones y
               gestionar tus referidos. Esta guia resume las acciones principales para que empieces rápido y con
               claridad.
             </p>
@@ -85,7 +85,7 @@ export default function EmbajadorGuiaPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-2xl font-bold text-white">Accesos rapidos</h2>
                 <span className="rounded-full border border-cyan-100/15 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100/85">
-                  Navegacion directa
+                  Navegación directa
                 </span>
               </div>
 

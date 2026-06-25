@@ -62,7 +62,7 @@ export default function EmbajadorPage() {
       { label: "Nivel de embajador", value: stats.nivel, helper: "Rango actual" },
       { label: "Negocios referidos", value: `${stats.negociosReferidos}`, helper: "Cuentas en tu red" },
       { label: "Negocios activos", value: `${stats.negociosActivos}`, helper: "Operando este mes" },
-      { label: "Conversion", value: `${stats.conversionRate}%`, helper: "Lead a cierre comercial" },
+      { label: "Conversión", value: `${stats.conversionRate}%`, helper: "Lead a cierre comercial" },
       { label: "Comisiones totales", value: stats.comisionesTotales, helper: "Acumulado total" },
     ];
   }, [stats]);
@@ -171,7 +171,7 @@ export default function EmbajadorPage() {
                 </div>
               </div>
               <p className="mt-2 text-sm text-cyan-100/78">
-                Usa tu link de referido para invitar negocios nuevos y medir conversion por embajador.
+                Usa tu link de referido para invitar negocios nuevos y medir conversión por embajador.
               </p>
             </div>
           </section>
@@ -334,7 +334,7 @@ export default function EmbajadorPage() {
                     <p className="mt-1 text-lg font-semibold text-cyan-50">{referralRegistrations}</p>
                   </div>
                   <div className="rounded-xl border border-cyan-100/10 bg-slate-950/45 p-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">Conversion</p>
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-cyan-200/70">Conversión</p>
                     <p className="mt-1 text-lg font-semibold text-cyan-50">{referralLinkConversion}%</p>
                   </div>
                 </div>

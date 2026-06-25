@@ -19,31 +19,31 @@ const companyModules = [
   { title: "Perfil", href: "/empresa/perfil" },
   { title: "Publicaciones", href: "/empresa/publicaciones" },
   { title: "Chat", href: "/empresa/chat" },
-  { title: "Resenas", href: "/empresa/resenas" },
+  { title: "Reseñas", href: "/empresa/resenas" },
   { title: "Consultor IA", href: "/empresa/ia" },
-  { title: "Analiticas", href: "/empresa/analiticas" },
+  { title: "Analíticas", href: "/empresa/analiticas" },
 ];
 
 const sidebarContextByRoute: Record<string, SidebarContextCard> = {
   "/empresa": {
     eyebrow: "PANEL EJECUTIVO",
-    title: "Vision general",
+    title: "Visión general",
     description:
       "Acceso rápido a señales comerciales, actividad reciente y decisiones recomendadas para hoy.",
-    chips: ["Leads", "Conversion", "Actividad", "Prioridades"],
+    chips: ["Leads", "Conversión", "Actividad", "Prioridades"],
   },
   "/empresa/perfil": {
     eyebrow: "IDENTIDAD COMERCIAL",
     title: "Presencia de la empresa",
     description:
-      "Aquí gestionas la imagen, confianza y presentacion general de tu empresa dentro de TechMarket.",
+      "Aquí gestionas la imagen, confianza y presentación general de tu empresa dentro de TechMarket.",
     chips: ["Marca", "Confianza", "Perfil", "Presencia"],
   },
   "/empresa/publicaciones": {
     eyebrow: "CONTENIDO ACTIVO",
     title: "Centro de publicaciones",
     description:
-      "Organiza productos, servicios, ofertas, texto e interaccion desde una sola vista comercial.",
+      "Organiza productos, servicios, ofertas, texto e interacción desde una sola vista comercial.",
     chips: ["Feed", "Productos", "Ofertas", "Encuestas"],
   },
   "/empresa/chat": {
@@ -51,21 +51,21 @@ const sidebarContextByRoute: Record<string, SidebarContextCard> = {
     title: "Seguimiento comercial",
     description:
       "Responde rápido, prioriza interesados y convierte consultas en oportunidades reales.",
-    chips: ["Chats", "Respuesta", "Conversion", "Seguimiento"],
+    chips: ["Chats", "Respuesta", "Conversión", "Seguimiento"],
   },
   "/empresa/resenas": {
     eyebrow: "VOZ DEL CLIENTE",
     title: "Confianza visible",
     description:
-      "Revisa la percepcion del cliente y detecta señales repetidas sobre calidad, atención y soporte.",
-    chips: ["Rapidez", "Atencion", "Confianza", "Soporte"],
+      "Revisa la percepción del cliente y detecta señales repetidas sobre calidad, atención y soporte.",
+    chips: ["Rapidez", "Atención", "Confianza", "Soporte"],
   },
   "/empresa/ia": {
     eyebrow: "CONSULTOR IA",
     title: "Apoyo para decidir",
     description:
       "Usa la IA para priorizar acciones, optimizar publicaciones y responder mejor a la demanda.",
-    chips: ["Analisis", "Prioridad", "Recomendacion", "Optimizacion"],
+    chips: ["Analisis", "Prioridad", "Recomendación", "Optimizacion"],
   },
   "/empresa/analiticas": {
     eyebrow: "INDICADORES CLAVE",
@@ -97,7 +97,7 @@ export function CompanySidebar({ className }: CompanySidebarProps) {
 
   return (
     <div className={className}>
-      <p className="tech-mono text-xs text-cyan-200/75">MODULO EMPRESA</p>
+      <p className="tech-mono text-xs text-cyan-200/75">MÓDULO EMPRESA</p>
 
       <nav className="mt-4 space-y-2 text-sm text-cyan-100/90">
         {companyModules.map((module) => {

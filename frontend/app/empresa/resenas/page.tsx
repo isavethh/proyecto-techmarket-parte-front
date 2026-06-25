@@ -148,7 +148,7 @@ export default function ResenasPage() {
   return (
     <div className="flex-1 pb-8">
       <CompanyPageHeader
-        sectionLabel="Resenas"
+        sectionLabel="Reseñas"
         brandHref="/"
         middleSlot={
           <div className="inline-flex rounded-full border border-cyan-100/15 bg-slate-950/45 px-3 py-1.5 text-xs text-cyan-100/80 md:items-center md:gap-2">
@@ -161,7 +161,7 @@ export default function ResenasPage() {
       <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
-            <p className="tech-mono text-xs text-cyan-200/75">MODULO RESEÑAS</p>
+            <p className="tech-mono text-xs text-cyan-200/75">MÓDULO RESEÑAS</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Voz del cliente</h1>
             <p className="mt-3 text-sm text-cyan-100/80">
               Aquí ves todas las reseñas dejadas por clientes que ya conversaron contigo por chat.

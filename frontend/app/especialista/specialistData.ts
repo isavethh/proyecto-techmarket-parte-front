@@ -115,7 +115,7 @@ export const recentActivity: ActivityItem[] = [
   {
     id: "a-1",
     title: "Trabajo completado",
-    detail: "Optimizacion de laptop para analisis de datos",
+    detail: "Optimización de laptop para análisis de datos",
     time: "Hace 3 h",
   },
   {
@@ -138,7 +138,7 @@ export const specialistNavLinks = [
   { title: "Solicitudes", href: "/especialista/solicitudes" },
   { title: "Proyectos", href: "/especialista/proyectos" },
   { title: "Chat", href: "/especialista/chat" },
-  { title: "Reputacion", href: "/especialista/reputacion" },
+  { title: "Reputación", href: "/especialista/reputacion" },
 ];
 
 export function starsLabel(value: number) {

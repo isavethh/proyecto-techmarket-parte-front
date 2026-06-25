@@ -54,7 +54,7 @@ export const businessData = {
 };
 
 export const specialties = [
-  "Diagnostico y reparacion",
+  "Diagnóstico y reparacion",
   "Redes y cableado",
   "Mantenimiento preventivo",
   "Soporte para empresas",
@@ -68,7 +68,7 @@ export const coverageAreas = [
 ];
 
 export const contactChannels = [
-  { label: "Telefono", value: "+591 7500 0001" },
+  { label: "Teléfono", value: "+591 7500 0001" },
   { label: "WhatsApp", value: "+591 7500 0001" },
   { label: "Correo", value: "contacto@techmarketscz.com" },
 ];
@@ -129,7 +129,7 @@ export const executiveMetrics: ExecutiveMetric[] = [
   },
   {
     id: "conversion-rate",
-    label: "Conversion semanal",
+    label: "Conversión semanal",
     value: "18%",
     trend: "+3.2 puntos vs semana anterior",
     tone: "positive",
@@ -223,7 +223,7 @@ export const recentActivity: ActivityItem[] = [
 export const radarBars = [
   { label: "Interes en productos", value: 82 },
   { label: "Consultas técnicas", value: 74 },
-  { label: "Conversion a chat", value: 61 },
+  { label: "Conversión a chat", value: 61 },
   { label: "Retorno de clientes", value: 68 },
 ];
 
@@ -234,9 +234,9 @@ export const recommendedAiQuestions = [
 ];
 
 export const aiThinkingStates = [
-  "Analizando cambios de conversion y demanda reciente...",
+  "Analizando cambios de conversión y demanda reciente...",
   "Comparando publicaciones, leads y ritmo de respuesta...",
-  "Preparando una recomendacion accionable para hoy...",
+  "Preparando una recomendación accionable para hoy...",
 ];
 
 export function buildAiInsight(question: string): AiBusinessInsight {
@@ -302,11 +302,11 @@ export function buildAiInsight(question: string): AiBusinessInsight {
       "Vas en buen ritmo, pero el mayor crecimiento vendra de ejecutar prioridades comerciales en secuencia.",
     dataPoints: [
       "24 leads nuevos en la última sesión comparada.",
-      "Conversion semanal en 18% con tendencia positiva.",
+      "Conversión semanal en 18% con tendencia positiva.",
       "Existe interes alto en productos y consultas técnicas.",
     ],
     advice:
-      "Combina acciones rapidas de chat con mejoras puntuales en publicaciones clave. Esa mezcla acelera conversion sin perder visibilidad.",
+      "Combina acciones rapidas de chat con mejoras puntuales en publicaciones clave. Esa mezcla acelera conversión sin perder visibilidad.",
     nextStep: "Pregunta a la IA por un plan diario de ventas y seguimiento para tu equipo.",
   };
 }
@@ -392,7 +392,7 @@ function normalizeCompanyProfile(payload: unknown): CompanyProfileData {
           value: asString(item.value),
         }))
       : [
-          { label: "Telefono", value: asString(findContact("Telefono")) },
+          { label: "Teléfono", value: asString(findContact("Teléfono")) },
           { label: "WhatsApp", value: asString(findContact("WhatsApp")) },
           { label: "Correo", value: asString(findContact("Correo")) },
         ],
@@ -740,7 +740,7 @@ export const customerReviewsData: CustomerReview[] = [
     reviewDate: "18 abr 2026",
     stars: 5,
     message: "Excelente atención en chat. Me ayudaron rápido con disponibilidad, entrega y forma de pago.",
-    tags: ["Rapidez", "Atencion", "Cierre de venta"],
+    tags: ["Rapidez", "Atención", "Cierre de venta"],
     needsFollowUp: false,
     wasResponded: true,
   },
@@ -753,7 +753,7 @@ export const customerReviewsData: CustomerReview[] = [
     reviewDate: "17 abr 2026",
     stars: 4,
     message: "Buena explicacion por chat. Solo faltaria mejorar el detalle del tiempo de envío en la publicación.",
-    tags: ["Claridad", "Envio", "Publicacion"],
+    tags: ["Claridad", "Envío", "Publicacion"],
     needsFollowUp: true,
     wasResponded: false,
   },
@@ -943,7 +943,7 @@ export const serviceItemsData: ServiceCard[] = [
   {
     id: "serv-1",
     name: "Reparacion de laptops",
-    description: "Diagnostico, mantenimiento y correccion de fallas técnicas.",
+    description: "Diagnóstico, mantenimiento y correccion de fallas técnicas.",
     price: "Consultar",
     image: "/productos/laptop-pro-14.jpg",
   },
@@ -957,7 +957,7 @@ export const serviceItemsData: ServiceCard[] = [
   {
     id: "serv-3",
     name: "Mantenimiento preventivo",
-    description: "Limpieza interna, control de temperatura y optimizacion.",
+    description: "Limpieza interna, control de temperatura y optimización.",
     price: "Bs 95.000",
     image: "/productos/kit-limpieza-pc.jpg",
   },
@@ -973,7 +973,7 @@ export const serviceItemsData: ServiceCard[] = [
 export const offersData: OfferCard[] = [
   {
     id: "offer-1",
-    title: "Descuento en diagnostico + limpieza",
+    title: "Descuento en diagnóstico + limpieza",
     description: "Promo especial para equipos con bajo rendimiento o sobrecalentamiento.",
     currentPrice: "Bs 95.000",
     previousPrice: "Bs 140.000",
@@ -986,7 +986,7 @@ export const offersData: OfferCard[] = [
     description: "Instalacion de red, soporte remoto y acompanamiento mensual.",
     currentPrice: "Bs 420.000",
     previousPrice: "Bs 520.000",
-    label: "Promocion",
+    label: "Promoción",
     image: "/productos/teclado-tkl.jpg",
   },
   {
@@ -1004,7 +1004,7 @@ export const offersData: OfferCard[] = [
     description: "Atención prioritaria para problemas frecuentes de software.",
     currentPrice: "Bs 55.000",
     previousPrice: "Bs 75.000",
-    label: "Promocion",
+    label: "Promoción",
     image: "/productos/laptop-pro-14.jpg",
   },
 ];
@@ -1025,7 +1025,7 @@ export const surveyItemsData: SurveyCard[] = [
   {
     id: "survey-3",
     question: "¿Qué canal prefieres para contacto rápido?",
-    options: ["Chat", "WhatsApp", "Telefono", "Correo"],
+    options: ["Chat", "WhatsApp", "Teléfono", "Correo"],
     votes: 211,
   },
 ];
@@ -1057,7 +1057,7 @@ export const postsData: PostCard[] = [
 export const textPostsData: TextPublicationCard[] = [
   {
     id: "text-1",
-    title: "Atención técnica sin costo de evaluacion",
+    title: "Atención técnica sin costo de evaluación",
     message:
       "Si tu equipo esta lento, escribenos por chat y te orientamos con una primera revision sin compromiso.",
     date: "17 abr 2026",
@@ -1075,7 +1075,7 @@ export const textPostsData: TextPublicationCard[] = [
     id: "text-3",
     title: "Soporte rápido por mensaje",
     message:
-      "Escribenos si necesitas diagnostico, instalacion o mantenimiento. Respondemos desde Santa Cruz.",
+      "Escribenos si necesitas diagnóstico, instalacion o mantenimiento. Respondemos desde Santa Cruz.",
     date: "15 abr 2026",
     image: "/productos/charla.png",
   },

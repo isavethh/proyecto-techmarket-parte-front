@@ -32,7 +32,7 @@ export default function EspecialistaReputacionPage() {
   }
 
   return (
-    <SpecialistShell sectionLabel="Reputacion" statusMessage="Indicadores de confianza y resenas activas">
+    <SpecialistShell sectionLabel="Reputación" statusMessage="Indicadores de confianza y resenas activas">
       <section className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_34%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8">
         <p className="tech-mono text-xs text-cyan-200/75">REPUTACIÓN DEL ESPECIALISTA</p>
         <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Confianza y experiencia</h1>

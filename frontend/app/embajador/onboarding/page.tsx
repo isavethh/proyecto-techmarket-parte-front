@@ -919,7 +919,7 @@ export default function EmbajadorOnboardingPage() {
                       title: "2. Perfil del negocio",
                       items: [
                         {
-                          id: "descripcion",
+                          id: "descripción",
                           label: `descripción (>${MIN_DESCRIPTION_LENGTH} caracteres)`,
                           done: activeBusiness.snapshot.profileDescription.trim().length >= MIN_DESCRIPTION_LENGTH,
                           actionKey: "edit_profile",
@@ -928,7 +928,7 @@ export default function EmbajadorOnboardingPage() {
                           disabledReason: "Completa el registro primero",
                         },
                         {
-                          id: "categoria",
+                          id: "categoría",
                           label: "categoría seleccionada",
                           done: activeBusiness.snapshot.category.trim().length > 0,
                           actionKey: "edit_profile",
@@ -937,7 +937,7 @@ export default function EmbajadorOnboardingPage() {
                           disabledReason: "Completa el registro primero",
                         },
                         {
-                          id: "ubicacion",
+                          id: "ubicación",
                           label: "ubicación válida",
                           done: activeBusiness.snapshot.location.trim().length >= 3,
                           actionKey: "edit_profile",
@@ -948,7 +948,7 @@ export default function EmbajadorOnboardingPage() {
                       ],
                     },
                     {
-                      id: "catalogo",
+                      id: "catálogo",
                       title: "3. Catálogo",
                       items: [
                         {
@@ -963,7 +963,7 @@ export default function EmbajadorOnboardingPage() {
                       ],
                     },
                     {
-                      id: "publicacion",
+                      id: "publicación",
                       title: "4. Primera publicación",
                       items: [
                         {
@@ -1002,7 +1002,7 @@ export default function EmbajadorOnboardingPage() {
                       ],
                     },
                     {
-                      id: "promocion",
+                      id: "promoción",
                       title: "6. Promoción activa",
                       items: [
                         {

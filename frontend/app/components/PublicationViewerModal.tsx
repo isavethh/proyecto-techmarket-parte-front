@@ -199,7 +199,7 @@ function PublicationViewerCard({
           <p className="tech-mono text-xs text-cyan-200/70">
             {publication.variant === "sale"
               ? `ANUNCIO DE ${publication.saleKind === "servicio" ? "SERVICIO" : "PRODUCTO"}`
-              : "PUBLICACION"}
+              : "PUBLICACIÓN"}
           </p>
           <h2 className="mt-2 text-2xl font-semibold text-cyan-50">{publication.title}</h2>
         </div>
