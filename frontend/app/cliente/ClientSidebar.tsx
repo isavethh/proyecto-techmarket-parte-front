@@ -19,7 +19,6 @@ type ClientSidebarContext = {
 const clientModules = [
   { title: "Explorar marketplace", href: "/cliente/marketplace" },
   { title: "Mis chats", href: "/cliente/chat" },
-  { title: "Mis citas", href: "/cliente/citas" },
   { title: "Buscar servicios", href: "/cliente/servicios" },
   { title: "Versus de productos", href: "/cliente/versus" },
   { title: "Explorar empresas", href: "/cliente/empresas" },
@@ -41,13 +40,6 @@ const clientSidebarContextByRoute: Record<string, ClientSidebarContext> = {
     description:
       "Gestiona tus chats con empresas y tecnicos, revisa respuestas y continua consultas sin perder contexto.",
     chips: ["Chats", "Empresas", "Seguimiento", "Respuesta"],
-  },
-  "/cliente/citas": {
-    eyebrow: "AGENDA",
-    title: "Citas con especialistas",
-    description:
-      "Sigue el estado de tus citas: el especialista las acepta, rechaza o marca como realizadas.",
-    chips: ["Citas", "Especialistas", "Estado", "Agenda"],
   },
   "/cliente/servicios": {
     eyebrow: "SERVICIOS",
