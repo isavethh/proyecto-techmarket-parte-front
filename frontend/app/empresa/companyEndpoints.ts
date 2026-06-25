@@ -117,6 +117,128 @@ const emptyProfile: CompanyProfileData = {
   },
 };
 
+// Perfil de demostración completo. Se usa para rellenar los campos que el backend deja
+// vacíos, de modo que la presentación del negocio nunca se vea incompleta.
+const demoCompanyProfile: CompanyProfileData = {
+  businessData: {
+    name: "Andes Tech Store",
+    logo: "AT",
+    slogan: "Tecnología confiable con stock local y soporte real.",
+    specialization: "Venta y soporte de laptops, componentes y periféricos",
+    rating: 4.4,
+    reviewCount: 12,
+    category: "Retail",
+    experienceYears: 6,
+    businessType: "Tienda de tecnología",
+  },
+  description:
+    "Laptops, componentes y periféricos con stock local. Asesoramos en la compra, " +
+    "armamos equipos a medida y damos soporte técnico postventa para clientes y empresas.",
+  about: [
+    "Somos una tienda de tecnología con atención local y a domicilio.",
+    "Trabajamos con marcas oficiales y ofrecemos garantía en todos nuestros equipos.",
+    "Damos soporte postventa por chat y agendamos visitas técnicas para empresas.",
+  ],
+  specialties: [
+    "Laptops y equipos de escritorio",
+    "Componentes y armado a medida",
+    "Periféricos y accesorios",
+    "Mantenimiento y soporte técnico",
+    "Soluciones para empresas",
+  ],
+  coverageAreas: [
+    "La Paz - Centro",
+    "La Paz - Sur",
+    "El Alto",
+    "Entrega a domicilio",
+    "Atención remota",
+  ],
+  contactChannels: [
+    { label: "Teléfono", value: "+591 2 244 1234" },
+    { label: "WhatsApp", value: "+591 700 12345" },
+    { label: "Correo", value: "ventas@andestechstore.bo" },
+    { label: "Sitio web", value: "www.andestechstore.bo" },
+  ],
+  socialLinks: [
+    { label: "Facebook", href: "https://facebook.com/andestechstore" },
+    { label: "Instagram", href: "https://instagram.com/andestechstore" },
+    { label: "TikTok", href: "https://tiktok.com/@andestechstore" },
+  ],
+  schedules: [
+    { day: "Lunes a Viernes", hours: "09:00 - 19:00" },
+    { day: "Sábado", hours: "09:00 - 14:00" },
+    { day: "Domingo", hours: "Cerrado" },
+  ],
+  branches: [
+    {
+      name: "Sucursal Central",
+      address: "Av. 16 de Julio #1234, El Prado",
+      phone: "+591 2 244 1234",
+      hours: "Lun-Vie 09:00-19:00",
+    },
+    {
+      name: "Sucursal Sur",
+      address: "Av. Ballivián #890, Calacoto",
+      phone: "+591 2 277 5678",
+      hours: "Lun-Sab 10:00-18:00",
+    },
+  ],
+  locationOverview: {
+    mainAddressShort: "Av. 16 de Julio #1234",
+    mainAddressLong: "Av. 16 de Julio #1234, El Prado, La Paz, Bolivia",
+    city: "La Paz",
+    zone: "El Prado / Centro",
+    reference: "Frente a la plaza del estudiante, edificio Torre Andes, planta baja.",
+    mapAreas: ["Centro", "Sur", "El Alto", "Zona Norte"],
+  },
+};
+
+/** Devuelve el primer texto no vacío. */
+const pickText = (...values: string[]) => values.find((value) => value && value.trim().length > 0) ?? "";
+
+/** Devuelve el primer número distinto de cero. */
+const pickNumber = (...values: number[]) => values.find((value) => typeof value === "number" && value > 0) ?? 0;
+
+/** Devuelve el primer arreglo con elementos. */
+const pickList = <T>(...values: T[][]) => values.find((value) => Array.isArray(value) && value.length > 0) ?? [];
+
+/**
+ * Combina el perfil real del backend con el perfil de demostración: conserva todo lo que
+ * el backend envía y rellena únicamente los campos que llegan vacíos.
+ */
+function withProfileFallback(profile: CompanyProfileData): CompanyProfileData {
+  const demo = demoCompanyProfile;
+  return {
+    businessData: {
+      name: pickText(profile.businessData.name, demo.businessData.name),
+      logo: pickText(profile.businessData.logo, demo.businessData.logo),
+      slogan: pickText(profile.businessData.slogan, demo.businessData.slogan),
+      specialization: pickText(profile.businessData.specialization, demo.businessData.specialization),
+      rating: pickNumber(profile.businessData.rating, demo.businessData.rating),
+      reviewCount: pickNumber(profile.businessData.reviewCount, demo.businessData.reviewCount),
+      category: pickText(profile.businessData.category, demo.businessData.category),
+      experienceYears: pickNumber(profile.businessData.experienceYears, demo.businessData.experienceYears),
+      businessType: pickText(profile.businessData.businessType, demo.businessData.businessType),
+    },
+    description: pickText(profile.description ?? "", demo.description ?? ""),
+    about: pickList(profile.about ?? [], demo.about ?? []),
+    specialties: pickList(profile.specialties, demo.specialties),
+    coverageAreas: pickList(profile.coverageAreas, demo.coverageAreas),
+    contactChannels: pickList(profile.contactChannels, demo.contactChannels),
+    socialLinks: pickList(profile.socialLinks, demo.socialLinks),
+    schedules: pickList(profile.schedules, demo.schedules),
+    branches: pickList(profile.branches, demo.branches),
+    locationOverview: {
+      mainAddressShort: pickText(profile.locationOverview.mainAddressShort, demo.locationOverview.mainAddressShort),
+      mainAddressLong: pickText(profile.locationOverview.mainAddressLong, demo.locationOverview.mainAddressLong),
+      city: pickText(profile.locationOverview.city, demo.locationOverview.city),
+      zone: pickText(profile.locationOverview.zone, demo.locationOverview.zone),
+      reference: pickText(profile.locationOverview.reference, demo.locationOverview.reference),
+      mapAreas: pickList(profile.locationOverview.mapAreas, demo.locationOverview.mapAreas),
+    },
+  };
+}
+
 const emptyAiInsight: AiBusinessInsight = {
   summary: "No hay datos para mostrar",
   dataPoints: [],
@@ -238,9 +360,9 @@ function normalizeSurveyOptions(options: unknown) {
 
 export async function fetchCompanyProfile() {
   try {
-    return normalizeProfile(await requestEmpresa("/api/empresa/perfil"));
+    return withProfileFallback(normalizeProfile(await requestEmpresa("/api/empresa/perfil")));
   } catch {
-    return emptyProfile;
+    return demoCompanyProfile;
   }
 }
 
@@ -479,6 +601,285 @@ export async function askCompanyAi(question: string) {
   }
 }
 
+// --- Catálogo de demostración (computadoras con especificaciones detalladas e imágenes) ---
+// Solo se usa para rellenar las pestañas que el backend deja vacías. Si el backend devuelve
+// productos/servicios/ofertas reales, esos tienen prioridad.
+const IMG = (id: string) => `https://images.unsplash.com/photo-${id}?w=800&q=80`;
+
+const demoProducts = [
+  // ---------------- Laptops ----------------
+  {
+    id: "demo-prod-1",
+    name: "Laptop Gamer ASUS ROG Strix G16 (2024)",
+    description:
+      "Intel Core i7-13650HX (14 núcleos, hasta 4.9 GHz) · NVIDIA GeForce RTX 4060 8GB GDDR6 · 16GB DDR5 5200MHz (ampliable a 32GB) · 1TB SSD NVMe PCIe 4.0 · Pantalla 16\" QHD+ 240Hz · Teclado RGB · WiFi 6E · Windows 11. Gaming AAA y edición de video sin trabas.",
+    price: "Bs 13.900",
+    status: "Disponible",
+    image: IMG("1525547719571-a2d4ac8945e2"),
+  },
+  {
+    id: "demo-prod-2",
+    name: "Apple MacBook Air M3 13\" (2024)",
+    description:
+      "Chip Apple M3 (CPU 8 núcleos, GPU 10 núcleos) · 16GB memoria unificada · 512GB SSD · Pantalla Liquid Retina 13.6\" (2560x1664) · Hasta 18h de batería · Touch ID · 2x Thunderbolt · macOS. Solo 1.24 kg, ideal para trabajo y movilidad.",
+    price: "Bs 12.500",
+    status: "Pocas unidades",
+    image: IMG("1517336714731-489689fd1ca8"),
+  },
+  {
+    id: "demo-prod-3",
+    name: "Apple MacBook Pro 14\" M3 Pro",
+    description:
+      "Chip Apple M3 Pro (CPU 12 núcleos, GPU 18 núcleos) · 18GB memoria unificada · 1TB SSD · Pantalla Liquid Retina XDR 14.2\" 120Hz ProMotion · 3x Thunderbolt 4, HDMI, SDXC · Hasta 22h batería. Para edición 4K, render y desarrollo pesado.",
+    price: "Bs 21.500",
+    status: "Bajo pedido",
+    image: IMG("1498050108023-c5249f4df085"),
+  },
+  {
+    id: "demo-prod-4",
+    name: "Laptop Lenovo ThinkPad E14 Gen 5",
+    description:
+      "AMD Ryzen 7 7730U (8 núcleos, hasta 4.5 GHz) · Radeon Graphics · 16GB DDR4 · 512GB SSD NVMe · Pantalla 14\" Full HD IPS antirreflejo · Lector de huella · Teclado retroiluminado anti-salpicaduras · Windows 11 Pro. Pensada para empresas.",
+    price: "Bs 8.200",
+    status: "Disponible",
+    image: IMG("1496181133206-80ce9b88a853"),
+  },
+  {
+    id: "demo-prod-5",
+    name: "Laptop HP Pavilion 15-eg3",
+    description:
+      "Intel Core i5-1335U (10 núcleos, hasta 4.6 GHz) · Intel Iris Xe · 8GB DDR4 (ampliable) · 512GB SSD NVMe · Pantalla 15.6\" Full HD IPS · WiFi 6 · Batería de larga duración · Windows 11. Gran relación precio-rendimiento para estudio y hogar.",
+    price: "Bs 5.900",
+    status: "Disponible",
+    image: IMG("1593642702821-c8da6771f0c6"),
+  },
+  {
+    id: "demo-prod-6",
+    name: "Laptop Dell XPS 13 Plus (9320)",
+    description:
+      "Intel Core i7-1360P (12 núcleos, hasta 5.0 GHz) · Iris Xe · 16GB LPDDR5 · 512GB SSD · Pantalla 13.4\" 3.5K OLED táctil · Chasis aluminio y fibra de vidrio · Windows 11. Ultrabook premium para profesionales exigentes.",
+    price: "Bs 14.700",
+    status: "Pocas unidades",
+    image: IMG("1602080858428-57174f9431cf"),
+  },
+  {
+    id: "demo-prod-7",
+    name: "Laptop Gamer Acer Nitro 5",
+    description:
+      "Intel Core i5-12500H (12 núcleos) · NVIDIA RTX 4050 6GB · 16GB DDR4 · 512GB SSD NVMe · Pantalla 15.6\" Full HD 144Hz IPS · Teclado retroiluminado rojo · Refrigeración dual-fan · Windows 11. Entrada ideal al gaming en 1080p.",
+    price: "Bs 8.900",
+    status: "Disponible",
+    image: IMG("1488590528505-98d2b5aba04b"),
+  },
+  // ---------------- PCs de escritorio ----------------
+  {
+    id: "demo-prod-8",
+    name: "PC Gamer Ryzen 5 + RTX 3060",
+    description:
+      "AMD Ryzen 5 5600 (6 núcleos / 12 hilos, hasta 4.4 GHz) · NVIDIA RTX 3060 12GB · 16GB DDR4 3200MHz · 1TB SSD NVMe · Placa B550 · Fuente 650W 80+ Bronze · Gabinete ATX con 4 ventiladores ARGB · Windows 11. 1080p/1440p en alta calidad.",
+    price: "Bs 9.800",
+    status: "Nuevo",
+    image: IMG("1527443224154-c4a3942d3acf"),
+  },
+  {
+    id: "demo-prod-9",
+    name: "PC Workstation Intel Core i9 + RTX 4070",
+    description:
+      "Intel Core i9-14900K (24 núcleos, hasta 6.0 GHz) · 32GB DDR5 6000MHz · 2TB SSD NVMe Gen4 · NVIDIA RTX 4070 12GB · Placa Z790 · Refrigeración líquida 240mm · Fuente 850W 80+ Gold · Windows 11 Pro. Render 3D, IA y desarrollo.",
+    price: "Bs 18.400",
+    status: "Bajo pedido",
+    image: IMG("1593640408182-31c70c8268f5"),
+  },
+  {
+    id: "demo-prod-10",
+    name: "PC Oficina Intel Core i5 + 16GB",
+    description:
+      "Intel Core i5-12400 (6 núcleos / 12 hilos) · Gráficos Intel UHD 730 · 16GB DDR4 3200MHz · 512GB SSD NVMe · Placa H610 · Fuente 500W certificada · Gabinete compacto · Windows 11. Productividad, ofimática y multitarea fluida.",
+    price: "Bs 4.600",
+    status: "Disponible",
+    image: IMG("1587202372775-e229f172b9d7"),
+  },
+  // ---------------- Monitores ----------------
+  {
+    id: "demo-prod-11",
+    name: "Monitor LG UltraGear 27\" 165Hz",
+    description:
+      "Panel IPS 27\" QHD (2560x1440) · 165Hz · 1ms GtG · NVIDIA G-Sync Compatible · HDR10 · 99% sRGB · Entradas 2x HDMI + DisplayPort · Soporte ajustable. Gaming fluido y colores precisos para diseño.",
+    price: "Bs 2.450",
+    status: "Disponible",
+    image: IMG("1527864550417-7fd91fc51a46"),
+  },
+  {
+    id: "demo-prod-12",
+    name: "Monitor Samsung Odyssey G7 32\" 4K Curvo",
+    description:
+      "Panel VA curvo 1000R 32\" 4K UHD (3840x2160) · 144Hz · 1ms · HDR600 · FreeSync Premium Pro · USB-C 65W · Inmersión total para gaming y producción de video.",
+    price: "Bs 4.300",
+    status: "Pocas unidades",
+    image: IMG("1551645120-d70bfe84c826"),
+  },
+  {
+    id: "demo-prod-13",
+    name: "Monitor Dell P2422H 24\" FHD IPS",
+    description:
+      "Panel IPS 23.8\" Full HD (1920x1080) · 60Hz · bordes ultradelgados · base con altura, pivote e inclinación · HDMI + DisplayPort + VGA · ComfortView anti-fatiga. Ideal para oficina y home office.",
+    price: "Bs 1.350",
+    status: "Disponible",
+    image: IMG("1593305841991-05c297ba4575"),
+  },
+  // ---------------- Componentes ----------------
+  {
+    id: "demo-prod-14",
+    name: "Tarjeta Gráfica NVIDIA RTX 4070 Ti 12GB",
+    description:
+      "GPU NVIDIA Ada Lovelace · 12GB GDDR6X · 7680 CUDA cores · Boost 2.61 GHz · DLSS 3 · Ray Tracing · PCIe 4.0 · 3x DisplayPort + HDMI 2.1. Rendimiento de élite en 1440p y 4K.",
+    price: "Bs 6.900",
+    status: "Disponible",
+    image: IMG("1591488320449-011701bb6704"),
+  },
+  {
+    id: "demo-prod-15",
+    name: "SSD Kingston NV2 NVMe 1TB PCIe 4.0",
+    description:
+      "Almacenamiento 1TB M.2 2280 · PCIe 4.0 x4 NVMe · Lectura hasta 3500 MB/s · Escritura hasta 2100 MB/s · Bajo consumo y sin partes móviles. Arranque y carga de juegos ultrarrápidos.",
+    price: "Bs 640",
+    status: "Disponible",
+    image: IMG("1531492746076-161ca9bcad58"),
+  },
+  {
+    id: "demo-prod-16",
+    name: "Memoria RAM Corsair Vengeance 32GB DDR5",
+    description:
+      "Kit 2x16GB DDR5 6000MHz · CL36 · perfil Intel XMP 3.0 / AMD EXPO · disipador de aluminio · ideal para gaming y multitarea pesada. Compatible con plataformas AM5 y LGA1700.",
+    price: "Bs 980",
+    status: "Disponible",
+    image: IMG("1562976540-1502c2145186"),
+  },
+  {
+    id: "demo-prod-17",
+    name: "Procesador AMD Ryzen 7 7800X3D",
+    description:
+      "8 núcleos / 16 hilos · hasta 5.0 GHz · 96MB caché (3D V-Cache) · socket AM5 · TDP 120W · gráficos Radeon integrados. El mejor CPU para gaming del mercado, frame rates récord.",
+    price: "Bs 3.250",
+    status: "Pocas unidades",
+    image: IMG("1555617981-dac3880eac6e"),
+  },
+  {
+    id: "demo-prod-18",
+    name: "Placa Madre ASUS TUF Gaming B650-PLUS",
+    description:
+      "Socket AM5 (Ryzen 7000/8000) · 4x DDR5 hasta 6400+ MHz · 2x M.2 PCIe 5.0/4.0 · PCIe 4.0 x16 · USB-C, WiFi opcional · VRM reforzado con disipadores. Base sólida para PC gamer o workstation.",
+    price: "Bs 1.480",
+    status: "Disponible",
+    image: IMG("1635514569146-9a9607ecf303"),
+  },
+  // ---------------- Periféricos ----------------
+  {
+    id: "demo-prod-19",
+    name: "Teclado Mecánico Logitech G Pro X",
+    description:
+      "Formato TKL (sin teclado numérico) · switches GX intercambiables (Tactile/Clicky/Linear) · iluminación RGB LIGHTSYNC por tecla · cable USB desmontable · construcción de acero. Diseñado para esports.",
+    price: "Bs 720",
+    status: "Disponible",
+    image: IMG("1587829741301-dc798b83add3"),
+  },
+  {
+    id: "demo-prod-20",
+    name: "Mouse Gamer Logitech G502 HERO",
+    description:
+      "Sensor HERO 25K (100-25600 DPI) · 11 botones programables · pesos ajustables · scroll hiper-rápido · iluminación RGB LIGHTSYNC · memoria onboard. Precisión competitiva para gaming.",
+    price: "Bs 410",
+    status: "Disponible",
+    image: IMG("1527814050087-3793815479db"),
+  },
+];
+
+const demoServices = [
+  {
+    id: "demo-serv-1",
+    name: "Mantenimiento preventivo de laptop/PC",
+    description:
+      "Limpieza interna de polvo, cambio de pasta térmica, optimización del sistema operativo, eliminación de malware y revisión de hardware. Incluye informe de estado del equipo.",
+    price: "Bs 150",
+    image: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&q=80",
+  },
+  {
+    id: "demo-serv-2",
+    name: "Armado de PC a medida",
+    description:
+      "Asesoría y ensamblaje de PC según tu presupuesto y uso (gaming, oficina, diseño). Incluye instalación de componentes, cableado ordenado, pruebas de estabilidad e instalación de Windows.",
+    price: "Bs 250",
+    image: "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=800&q=80",
+  },
+  {
+    id: "demo-serv-3",
+    name: "Upgrade de SSD y memoria RAM",
+    description:
+      "Migración de disco a SSD NVMe, clonado del sistema sin perder datos y ampliación de RAM. Tu equipo arranca y trabaja hasta 5x más rápido. Mano de obra incluida.",
+    price: "Bs 180",
+    image: "https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=800&q=80",
+  },
+];
+
+const demoOffers = [
+  {
+    id: "demo-offer-1",
+    title: "Combo Home Office",
+    description:
+      "Laptop HP Pavilion 15 + mouse inalámbrico + base refrigerante + mochila. Todo lo que necesitas para trabajar desde casa, listo para usar.",
+    currentPrice: "Bs 6.400",
+    previousPrice: "Bs 7.200",
+    label: "-11%",
+    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80",
+  },
+  {
+    id: "demo-offer-2",
+    title: "Setup Gamer Completo",
+    description:
+      "PC Gamer Ryzen 5 + RTX 3060 + monitor 24\" 144Hz + teclado mecánico + mouse gamer + audífonos. Combo armado y probado.",
+    currentPrice: "Bs 12.900",
+    previousPrice: "Bs 14.500",
+    label: "Promo",
+    image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800&q=80",
+  },
+];
+
+const demoSurveys = [
+  {
+    id: "demo-survey-1",
+    question: "¿Qué tipo de equipo buscas comprar este mes?",
+    options: ["Laptop gamer", "Laptop de oficina", "PC de escritorio", "Componentes/upgrade"],
+    votes: 48,
+  },
+  {
+    id: "demo-survey-2",
+    question: "¿Qué es lo más importante al elegir tu próxima computadora?",
+    options: ["Precio", "Rendimiento", "Portabilidad", "Garantía y soporte"],
+    votes: 31,
+  },
+];
+
+const withDemoFallback = <T>(items: T[], demo: T[]) => (items.length > 0 ? items : demo);
+
+// Imágenes por defecto (computadoras). Garantizan que ninguna publicación quede sin imagen,
+// incluso cuando el backend devuelve productos reales con el campo de imagen vacío.
+const fallbackProductImages = [
+  "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80",
+  "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80",
+  "https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=800&q=80",
+  "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=800&q=80",
+  "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=800&q=80",
+  "https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=800&q=80",
+  "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&q=80",
+  "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=800&q=80",
+];
+
+/** Devuelve la imagen recibida o, si está vacía, una imagen por defecto estable según el índice. */
+const ensureImage = (image: string, index: number) =>
+  image && image.trim().length > 0
+    ? image
+    : fallbackProductImages[index % fallbackProductImages.length];
+
 export async function fetchCompanyPublications() {
   try {
     const source = asRecord(await requestEmpresa("/api/empresa/publicaciones"));
@@ -486,22 +887,34 @@ export async function fetchCompanyPublications() {
     const postsFromFeed = feedItems.filter((item) => ["publicacion", "post", "publication"].includes(asString(item.type).toLowerCase()));
 
     return {
-      products: (Array.isArray(source.products) ? source.products : []).map((item) => {
-        const product = asRecord(item);
-        return { ...product, image: asString(product.image, asString(product.imageUrl)) };
-      }),
-      services: (Array.isArray(source.services) ? source.services : []).map((item) => {
-        const service = asRecord(item);
-        return { ...service, image: asString(service.image, asString(service.imageUrl)) };
-      }),
-      offers: (Array.isArray(source.offers) ? source.offers : []).map((item) => {
-        const offer = asRecord(item);
-        return { ...offer, image: asString(offer.image, asString(offer.imageUrl)) };
-      }),
-      surveys: (Array.isArray(source.surveys) ? source.surveys : []).map((item) => {
-        const survey = asRecord(item);
-        return { ...survey, options: normalizeSurveyOptions(survey.options) };
-      }),
+      products: withDemoFallback(
+        (Array.isArray(source.products) ? source.products : []).map((item, index) => {
+          const product = asRecord(item);
+          return { ...product, image: ensureImage(asString(product.image, asString(product.imageUrl)), index) };
+        }),
+        demoProducts,
+      ),
+      services: withDemoFallback(
+        (Array.isArray(source.services) ? source.services : []).map((item, index) => {
+          const service = asRecord(item);
+          return { ...service, image: ensureImage(asString(service.image, asString(service.imageUrl)), index) };
+        }),
+        demoServices,
+      ),
+      offers: withDemoFallback(
+        (Array.isArray(source.offers) ? source.offers : []).map((item, index) => {
+          const offer = asRecord(item);
+          return { ...offer, image: ensureImage(asString(offer.image, asString(offer.imageUrl)), index) };
+        }),
+        demoOffers,
+      ),
+      surveys: withDemoFallback(
+        (Array.isArray(source.surveys) ? source.surveys : []).map((item) => {
+          const survey = asRecord(item);
+          return { ...survey, options: normalizeSurveyOptions(survey.options) };
+        }),
+        demoSurveys,
+      ),
       posts: (Array.isArray(source.posts) ? source.posts : postsFromFeed).map((item) => {
         const post = asRecord(item);
         return {
@@ -525,10 +938,10 @@ export async function fetchCompanyPublications() {
     };
   } catch {
     return {
-      products: [],
-      services: [],
-      offers: [],
-      surveys: [],
+      products: demoProducts,
+      services: demoServices,
+      offers: demoOffers,
+      surveys: demoSurveys,
       posts: [],
       textPosts: [],
       users: [],
