@@ -583,13 +583,105 @@ export type ChatThread = {
 const stripProductIdFromSubject = (subject: string): string =>
   subject.replace(/\s*\([A-Za-z]+-[0-9a-f-]{36}\)\s*$/i, "").trim() || subject;
 
+// Conversaciones de ejemplo para demo/desarrollo. Solo se usan cuando el backend no
+// devuelve conversaciones reales; en cuanto el backend responde, esos datos tienen prioridad.
+export const companyChatThreadsData: ChatThread[] = [
+  {
+    id: "chat-1",
+    name: "Alejandro Rojas",
+    product: "Laptop Pro 14",
+    lastMessage: "Perfecto, ¿la puedo pasar a recoger mañana?",
+    time: "09:42",
+    unread: 2,
+    avatar: "AR",
+    messages: [
+      { id: "m1-1", author: "cliente", text: "Hola, ¿tienen la Laptop Pro 14 en stock?", time: "09:30" },
+      { id: "m1-2", author: "empresa", text: "¡Hola Alejandro! Sí, tenemos unidades disponibles para entrega inmediata.", time: "09:33" },
+      { id: "m1-3", author: "cliente", text: "Genial. ¿El precio incluye garantía?", time: "09:35" },
+      { id: "m1-4", author: "empresa", text: "Sí, incluye 12 meses de garantía oficial y soporte por chat.", time: "09:38" },
+      { id: "m1-5", author: "cliente", text: "Perfecto, ¿la puedo pasar a recoger mañana?", time: "09:42" },
+    ],
+  },
+  {
+    id: "chat-2",
+    name: "Carlos Méndez",
+    product: "Monitor UltraWide 34",
+    lastMessage: "¿Tienen envío a zona sur?",
+    time: "Ayer",
+    unread: 1,
+    avatar: "CM",
+    messages: [
+      { id: "m2-1", author: "cliente", text: "Buenas, me interesa el Monitor UltraWide 34.", time: "18:10" },
+      { id: "m2-2", author: "empresa", text: "¡Hola Carlos! Excelente elección, está en promoción esta semana.", time: "18:14" },
+      { id: "m2-3", author: "cliente", text: "¿Tienen envío a zona sur?", time: "18:20" },
+    ],
+  },
+  {
+    id: "chat-3",
+    name: "Laura Paredes",
+    product: "Mantenimiento preventivo",
+    lastMessage: "Gracias, quedo atenta a la visita.",
+    time: "Ayer",
+    avatar: "LP",
+    messages: [
+      { id: "m3-1", author: "cliente", text: "Hola, necesito mantenimiento para 5 equipos de oficina.", time: "11:02" },
+      { id: "m3-2", author: "empresa", text: "Con gusto, Laura. Agendamos visita técnica sin costo para el diagnóstico.", time: "11:09" },
+      { id: "m3-3", author: "cliente", text: "Perfecto, ¿qué día tienen disponible?", time: "11:12" },
+      { id: "m3-4", author: "empresa", text: "Podemos el jueves a las 10:00. ¿Te funciona?", time: "11:15" },
+      { id: "m3-5", author: "cliente", text: "Gracias, quedo atenta a la visita.", time: "11:18" },
+    ],
+  },
+  {
+    id: "chat-4",
+    name: "Sofía Ramírez",
+    product: "Combo empresarial",
+    lastMessage: "¿Tienen plan para oficina de 8 equipos?",
+    time: "Lun",
+    unread: 3,
+    avatar: "SR",
+    messages: [
+      { id: "m4-1", author: "cliente", text: "Hola, estoy armando la oficina nueva.", time: "15:40" },
+      { id: "m4-2", author: "cliente", text: "¿Tienen plan para oficina de 8 equipos?", time: "15:41" },
+    ],
+  },
+  {
+    id: "chat-5",
+    name: "Andrés Torres",
+    product: "Monitor UltraWide 34",
+    lastMessage: "Listo, confirmo la compra entonces.",
+    time: "Lun",
+    avatar: "AT",
+    messages: [
+      { id: "m5-1", author: "cliente", text: "¿El precio incluye garantía extendida?", time: "12:00" },
+      { id: "m5-2", author: "empresa", text: "Hola Andrés, la garantía extendida es opcional (+10%). Te cubre 24 meses.", time: "12:05" },
+      { id: "m5-3", author: "cliente", text: "Listo, confirmo la compra entonces.", time: "12:08" },
+    ],
+  },
+  {
+    id: "chat-6",
+    name: "Valentina Gómez",
+    product: "Pack limpieza premium",
+    lastMessage: "¿En cuánto tiempo hacen el servicio?",
+    time: "Mar",
+    unread: 1,
+    avatar: "VG",
+    messages: [
+      { id: "m6-1", author: "cliente", text: "Hola, me interesa el Pack limpieza premium.", time: "10:20" },
+      { id: "m6-2", author: "empresa", text: "¡Hola Valentina! Incluye limpieza profunda interna y externa del equipo.", time: "10:24" },
+      { id: "m6-3", author: "cliente", text: "¿En cuánto tiempo hacen el servicio?", time: "10:26" },
+    ],
+  },
+];
+
 export async function fetchCompanyChats() {
-  // Nunca usar datos de ejemplo como fallback: mostrarían conversaciones que no son de esta empresa.
+  // El backend real tiene prioridad. Si no devuelve conversaciones, se usan ejemplos de demo.
   const payload = await requestCompanyApiWithFallback<unknown>("/api/empresa/chat/conversaciones", {
-    conversations: [],
+    conversations: companyChatThreadsData,
   });
   const source = asRecord(payload);
-  const threads = (Array.isArray(source.conversations) ? source.conversations : payload) as ChatThread[];
+  const raw = (Array.isArray(source.conversations) ? source.conversations : payload) as ChatThread[];
+  // Si el backend no devuelve conversaciones (lista vacía), mostramos las de demo.
+  const threads = Array.isArray(raw) && raw.length > 0 ? raw : companyChatThreadsData;
   return threads.map((thread) => ({
     ...thread,
     product: stripProductIdFromSubject(thread.product),

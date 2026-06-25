@@ -123,6 +123,46 @@ export type MarketplaceProductPage = {
   productos: MarketplaceProductSummary[];
 };
 
+// --- Imágenes de respaldo para productos sin foto -------------------------------------
+// Garantiza que toda publicación de marketplace muestre una imagen. Elige una foto
+// relevante según el nombre del producto y, si no encaja, una imagen tech genérica.
+const PRODUCT_IMAGE_BY_KEYWORD: Array<{ keywords: string[]; url: string }> = [
+  { keywords: ["laptop", "notebook", "macbook", "portatil", "portátil"], url: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&q=80" },
+  { keywords: ["pc", "computador", "desktop", "torre", "gamer", "workstation"], url: "https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=800&q=80" },
+  { keywords: ["monitor", "pantalla", "display", "uhd", "4k"], url: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&q=80" },
+  { keywords: ["teclado", "keyboard", "mecanico", "mecánico"], url: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&q=80" },
+  { keywords: ["mouse", "raton", "ratón"], url: "https://images.unsplash.com/photo-1527814050087-3793815479db?w=800&q=80" },
+  { keywords: ["ssd", "nvme", "disco", "hdd", "almacenamiento"], url: "https://images.unsplash.com/photo-1531492746076-161ca9bcad58?w=800&q=80" },
+  { keywords: ["nas", "respaldo", "servidor", "backup"], url: "https://images.unsplash.com/photo-1547082299-de196ea013d6?w=800&q=80" },
+  { keywords: ["impresora", "printer", "tinta", "toner", "tóner"], url: "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=800&q=80" },
+  { keywords: ["wifi", "router", "mesh", "red", "deco", "tp-link"], url: "https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=800&q=80" },
+  { keywords: ["audifono", "audífono", "auricular", "headphone", "headset"], url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80" },
+  { keywords: ["gpu", "tarjeta de video", "tarjeta grafica", "tarjeta gráfica", "rtx", "geforce"], url: "https://images.unsplash.com/photo-1591488320449-011701bb6704?w=800&q=80" },
+];
+
+const GENERIC_PRODUCT_IMAGE = "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80";
+
+/** Devuelve la imagen recibida o, si está vacía, una imagen relevante según el nombre. */
+export function resolveProductImage(name: string | null | undefined, current: string | null | undefined): string {
+  if (current && current.trim().length > 0) {
+    return current;
+  }
+  const text = (name ?? "").toLowerCase();
+  const match = PRODUCT_IMAGE_BY_KEYWORD.find((entry) => entry.keywords.some((keyword) => text.includes(keyword)));
+  return match ? match.url : GENERIC_PRODUCT_IMAGE;
+}
+
+/** Rellena la imagen principal de cada producto de una página del marketplace. */
+function withProductImages(page: MarketplaceProductPage): MarketplaceProductPage {
+  return {
+    ...page,
+    productos: (page.productos ?? []).map((product) => ({
+      ...product,
+      imagenPrincipal: resolveProductImage(product.nombre, product.imagenPrincipal),
+    })),
+  };
+}
+
 export type VersusProductEval = {
   id: string;
   nombre: string | null;
@@ -605,7 +645,7 @@ export async function listMarketplaceProducts(params?: {
   }
 
   const path = query.toString() ? `/api/marketplace/products?${query}` : "/api/marketplace/products";
-  return request<MarketplaceProductPage>(path, { method: "GET" });
+  return withProductImages(await request<MarketplaceProductPage>(path, { method: "GET" }));
 }
 
 /**
@@ -649,7 +689,7 @@ export async function listMarketplaceServices(params?: {
     query.set("pagina", String(params.pagina));
   }
   const path = query.toString() ? `/api/marketplace/services?${query}` : "/api/marketplace/services";
-  return request<MarketplaceProductPage>(path, { method: "GET" });
+  return withProductImages(await request<MarketplaceProductPage>(path, { method: "GET" }));
 }
 
 export type SpecialistServiceDetail = {
@@ -687,7 +727,7 @@ export async function listMarketplaceSpecialistServices(params?: {
     ? `/api/marketplace/specialist-services?${query}`
     : "/api/marketplace/specialist-services";
   try {
-    return await request<MarketplaceProductPage>(path, { method: "GET" });
+    return withProductImages(await request<MarketplaceProductPage>(path, { method: "GET" }));
   } catch {
     return { total: 0, pagina: 1, productos: [] };
   }
@@ -696,9 +736,14 @@ export async function listMarketplaceSpecialistServices(params?: {
 export async function getMarketplaceProduct(
   productId: string,
 ): Promise<MarketplaceProductDetail> {
-  return request<MarketplaceProductDetail>(`/api/marketplace/products/${productId}`, {
+  const detail = await request<MarketplaceProductDetail>(`/api/marketplace/products/${productId}`, {
     method: "GET",
   });
+  const imagenes = Array.isArray(detail.imagenes) ? detail.imagenes.filter((img) => img && img.trim().length > 0) : [];
+  return {
+    ...detail,
+    imagenes: imagenes.length > 0 ? imagenes : [resolveProductImage(detail.nombre, null)],
+  };
 }
 
 export async function listMarketplaceCategories(): Promise<MarketplaceCategoryNode[]> {
@@ -709,9 +754,11 @@ export async function listMarketplaceCategoryProducts(
   categoryId: string,
   pagina = 1,
 ): Promise<MarketplaceProductPage> {
-  return request<MarketplaceProductPage>(
-    `/api/marketplace/categories/${categoryId}/products?pagina=${pagina}`,
-    { method: "GET" },
+  return withProductImages(
+    await request<MarketplaceProductPage>(
+      `/api/marketplace/categories/${categoryId}/products?pagina=${pagina}`,
+      { method: "GET" },
+    ),
   );
 }
 
@@ -731,9 +778,11 @@ export async function listMarketplaceCompanyProducts(
   companyId: string,
   pagina = 1,
 ): Promise<MarketplaceProductPage> {
-  return request<MarketplaceProductPage>(
-    `/api/marketplace/companies/${companyId}/products?pagina=${pagina}`,
-    { method: "GET" },
+  return withProductImages(
+    await request<MarketplaceProductPage>(
+      `/api/marketplace/companies/${companyId}/products?pagina=${pagina}`,
+      { method: "GET" },
+    ),
   );
 }
 
@@ -877,9 +926,13 @@ export async function markClientChatRead(chatId: string): Promise<MessageRespons
 }
 
 export async function listFavoriteProducts(): Promise<MarketplaceProductSummary[]> {
-  return request<MarketplaceProductSummary[]>("/api/clients/favorites/products", {
+  const products = await request<MarketplaceProductSummary[]>("/api/clients/favorites/products", {
     method: "GET",
   });
+  return (products ?? []).map((product) => ({
+    ...product,
+    imagenPrincipal: resolveProductImage(product.nombre, product.imagenPrincipal),
+  }));
 }
 
 export async function addFavoriteProduct(productId: string): Promise<MessageResponse> {
