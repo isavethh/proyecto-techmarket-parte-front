@@ -17,6 +17,7 @@ import {
   listFavoriteCompanies,
   listFavoriteProducts,
   listMarketplaceCompanies,
+  listMarketplaceProducts,
   searchGlobal,
   searchSuggestions as fetchSearchSuggestions,
   searchTrending,
@@ -136,7 +137,10 @@ const savedItems: MiniCard[] = [];
 
 const baseFeedItems: CommunityFeedPost[] = [];
 
-const aiSuggestions: Array<{ title: string; match: string; rating: string; slug: string; imageClass: string }> = [];
+const formatAiSearchPrice = (value: number | null): string =>
+  typeof value === "number"
+    ? new Intl.NumberFormat("es-BO", { style: "currency", currency: "BOB" }).format(value)
+    : "Sin precio";
 
 const aiThinkingMessages = [
   "Interpretando tu necesidad técnica...",
@@ -346,7 +350,8 @@ export default function ClientePage() {
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [hasAiSearchRun, setHasAiSearchRun] = useState<boolean>(false);
   const [aiThinkingMessageIndex, setAiThinkingMessageIndex] = useState(0);
-  const [aiResults, setAiResults] = useState<typeof aiSuggestions>([]);
+  const [aiResults, setAiResults] = useState<MarketplaceProductSummary[]>([]);
+  const [aiSearchError, setAiSearchError] = useState<string | null>(null);
   const aiSearchTimerRef = useRef<number | null>(null);
   const companyFeedPosts = useSyncExternalStore(
     subscribeCommunityFeed,
@@ -646,7 +651,7 @@ export default function ClientePage() {
 
   const aiSummary = useMemo(() => {
     if (!hasAiSearchRun || !aiResults.length) return "";
-    return `Entendi tu necesidad: ${aiQuery.trim() || "consulta técnica"}.`;
+    return `Encontré ${aiResults.length} ${aiResults.length === 1 ? "publicación" : "publicaciones"} en el marketplace para "${aiQuery.trim()}".`;
   }, [aiQuery, aiResults.length, hasAiSearchRun]);
 
   useEffect(() => {
@@ -775,10 +780,15 @@ export default function ClientePage() {
     }
   };
 
-  const handleAiSearch = (event: FormEvent<HTMLFormElement>) => {
+  const handleAiSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (isThinking) {
+      return;
+    }
+
+    const queryText = aiQuery.trim();
+    if (!queryText) {
       return;
     }
 
@@ -788,12 +798,21 @@ export default function ClientePage() {
     setAiThinkingMessageIndex(0);
     setIsThinking(true);
     setAiResults([]);
+    setAiSearchError(null);
 
-    aiSearchTimerRef.current = window.setTimeout(() => {
+    try {
+      // Búsqueda REAL en el marketplace (TechMarket-IA): título + descripción + sinónimos tech
+      // (notebook -> laptop, etc.) sobre todo el catálogo. Sin RAG ni mocks.
+      const page = await listMarketplaceProducts({ search: queryText });
+      setAiResults(page.productos ?? []);
+    } catch (error) {
       setAiResults([]);
+      setAiSearchError(
+        error instanceof Error ? error.message : "No se pudo buscar en el marketplace.",
+      );
+    } finally {
       setIsThinking(false);
-      aiSearchTimerRef.current = null;
-    }, 1850);
+    }
   };
 
   const handleHeaderSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -1254,30 +1273,55 @@ export default function ClientePage() {
 
                 {aiSummary && <p className="text-sm text-cyan-100/80">{aiSummary}</p>}
 
+                {aiSearchError ? <p className="text-xs text-rose-300">{aiSearchError}</p> : null}
+
                 {!hasAiSearchRun && !isThinking ? (
                   <p className="text-xs text-cyan-200/75">
-                    Escribe tu consulta y presiona &quot;Buscar con IA&quot; para iniciar el analisis.
+                    Escribe una palabra (ej: &quot;notebook&quot;, &quot;monitor&quot;) y presiona
+                    &quot;Buscar con IA&quot; para ver publicaciones del marketplace.
                   </p>
                 ) : null}
 
-                {hasAiSearchRun && aiResults.length > 0 ? (
+                {hasAiSearchRun && !isThinking && aiResults.length === 0 && !aiSearchError ? (
+                  <p className="text-xs text-cyan-100/70">
+                    No se encontraron publicaciones en el marketplace para esa búsqueda.
+                  </p>
+                ) : null}
+
+                {aiResults.length > 0 ? (
                   <div className="grid gap-3 md:grid-cols-3">
                     {aiResults.map((result) => (
-                      <article key={result.title} className="rounded-2xl border border-cyan-100/15 p-4">
-                        <div
-                          className={`h-24 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${result.imageClass}`}
-                        />
-                        <p className="mt-3 text-xs text-cyan-200/75">Servicio técnico</p>
-                        <h3 className="mt-2 text-base font-semibold text-cyan-50">{result.title}</h3>
-                        <p className="mt-2 text-sm text-cyan-100/80">{result.match}</p>
-                        <div className="mt-3 flex items-center justify-between gap-2">
-                          <span className="text-xs text-cyan-200/85">Reputacion {result.rating}</span>
-                          <Link
-                            className="tech-button tech-button-secondary"
-                            href={`/cliente/servicios/${result.slug}`}
-                          >
-                            Ver reseñas
-                          </Link>
+                      <article
+                        key={result.id}
+                        className="overflow-hidden rounded-2xl border border-cyan-100/15"
+                      >
+                        <div className="h-24 w-full bg-slate-800/50">
+                          {result.imagenPrincipal ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={result.imagenPrincipal}
+                              alt={result.nombre}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : null}
+                        </div>
+                        <div className="p-4">
+                          <p className="text-xs text-cyan-200/75">Publicación del marketplace</p>
+                          <h3 className="mt-2 line-clamp-2 text-base font-semibold text-cyan-50">
+                            {result.nombre}
+                          </h3>
+                          <div className="mt-3 flex items-center justify-between gap-2">
+                            <span className="text-sm font-semibold text-cyan-100">
+                              {formatAiSearchPrice(result.precio)}
+                            </span>
+                            <Link
+                              className="tech-button tech-button-secondary"
+                              href="/cliente/marketplace"
+                            >
+                              Ver en marketplace
+                            </Link>
+                          </div>
                         </div>
                       </article>
                     ))}

@@ -126,13 +126,6 @@ function CompanyTopbarControls({ sectionLabel }: CompanyTopbarControlsProps) {
 
   return (
     <div className="relative flex items-center gap-2">
-      <Link
-        href="/empresa/publicaciones"
-        className="hidden rounded-xl border border-cyan-100/15 bg-cyan-300/12 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:border-cyan-300/45 hover:bg-cyan-300/18 sm:inline-flex"
-      >
-        Gestionar publicaciones
-      </Link>
-
       <button
         ref={profileTriggerRef}
         type="button"
