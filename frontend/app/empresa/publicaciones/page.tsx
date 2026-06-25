@@ -1754,12 +1754,16 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                         className="overflow-hidden rounded-3xl border border-cyan-100/10 bg-slate-950/35"
                       >
                       <div className="flex h-44 w-full items-center justify-center bg-white">
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="max-h-full max-w-full object-contain object-center"
-                          loading="lazy"
-                        />
+                        {product.image ? (
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="max-h-full max-w-full object-contain object-center"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="text-sm text-slate-400">Sin imagen</span>
+                        )}
                       </div>
                       <div className="space-y-4 p-5">
                         <div className="flex items-start justify-between gap-4">
