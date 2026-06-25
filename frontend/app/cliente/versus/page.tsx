@@ -6,6 +6,8 @@ import { ClientPageHeader, ClientQuickLinksCard } from "../../components/ClientP
 import ClientSidebar from "../ClientSidebar";
 import {
   MarketplaceProductSummary,
+  VersusVerdict,
+  compareProductsVersus,
   listMarketplaceProducts,
 } from "../../../lib/api/iaApi";
 
@@ -19,6 +21,9 @@ export default function ClienteVersusPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [verdict, setVerdict] = useState<VersusVerdict | null>(null);
+  const [isComparing, setIsComparing] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -66,6 +71,8 @@ export default function ClienteVersusPage() {
   );
 
   const toggleProduct = (id: string) => {
+    setVerdict(null);
+    setCompareError(null);
     setSelectedIds((current) => {
       if (current.includes(id)) {
         return current.length <= 1 ? current : current.filter((item) => item !== id);
@@ -74,6 +81,34 @@ export default function ClienteVersusPage() {
       return current.length >= 4 ? current : [...current, id];
     });
   };
+
+  const canCompareWithAi = selectedIds.length === 2;
+
+  const handleCompareWithAi = async () => {
+    if (!canCompareWithAi || isComparing) {
+      return;
+    }
+
+    setIsComparing(true);
+    setCompareError(null);
+    setVerdict(null);
+
+    try {
+      const result = await compareProductsVersus(selectedIds);
+      setVerdict(result);
+    } catch (requestError) {
+      setCompareError(
+        requestError instanceof Error
+          ? requestError.message
+          : "No se pudo comparar las publicaciones con IA.",
+      );
+    } finally {
+      setIsComparing(false);
+    }
+  };
+
+  const productNameById = (id: string | null) =>
+    id ? (products.find((product) => product.id === id)?.nombre ?? null) : null;
 
   return (
     <div className="flex-1 pb-10">
@@ -127,6 +162,104 @@ export default function ClienteVersusPage() {
             <p className="mt-3 text-sm text-cyan-100/80">
               {error ?? "Selecciona productos del marketplace para verlos lado a lado."}
             </p>
+          </section>
+
+          <section className="tech-card space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="tech-mono text-xs text-cyan-200/75">IA</p>
+                <h3 className="mt-1 text-lg font-semibold text-cyan-50">¿Cuál es el mejor deal?</h3>
+                <p className="mt-1 text-xs text-cyan-100/70">
+                  {canCompareWithAi
+                    ? "La IA compara precio, calificación y reputación del vendedor."
+                    : "Selecciona exactamente 2 publicaciones para pedir el veredicto de la IA."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCompareWithAi}
+                disabled={!canCompareWithAi || isComparing}
+                className="rounded-2xl border border-cyan-300/55 bg-cyan-300/15 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:bg-cyan-300/25 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isComparing ? "Comparando..." : "Comparar con IA"}
+              </button>
+            </div>
+
+            {compareError ? (
+              <p className="rounded-2xl border border-rose-300/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
+                {compareError}
+              </p>
+            ) : null}
+
+            {verdict ? (
+              <div className="space-y-4">
+                {verdict.resumen ? (
+                  <p className="text-base font-semibold text-cyan-50">{verdict.resumen}</p>
+                ) : null}
+
+                {verdict.ganadorId ? (
+                  <p className="inline-flex items-center gap-2 rounded-full border border-emerald-300/50 bg-emerald-400/15 px-3 py-1 text-sm font-semibold text-emerald-100">
+                    🏆 Mejor deal: {productNameById(verdict.ganadorId) ?? "Producto seleccionado"}
+                  </p>
+                ) : null}
+
+                {verdict.veredicto ? (
+                  <p className="text-sm text-cyan-100/85">{verdict.veredicto}</p>
+                ) : null}
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  {(verdict.productos ?? []).map((evaluation) => {
+                    const isWinner = evaluation.id === verdict.ganadorId;
+                    return (
+                      <article
+                        key={`verdict-${evaluation.id}`}
+                        className={`rounded-3xl border p-4 ${
+                          isWinner
+                            ? "border-emerald-300/55 bg-emerald-400/10"
+                            : "border-cyan-100/15 bg-slate-950/30"
+                        }`}
+                      >
+                        <h4 className="text-base font-semibold text-white">
+                          {evaluation.nombre ?? productNameById(evaluation.id) ?? "Producto"}
+                          {isWinner ? (
+                            <span className="ml-2 text-xs text-emerald-200">Mejor deal</span>
+                          ) : null}
+                        </h4>
+
+                        <div className="mt-3 space-y-2 text-xs text-cyan-100/85">
+                          <ScoreBar label="Valor" value={evaluation.scoreValor} />
+                          <ScoreBar label="Precio" value={evaluation.scorePrecio} />
+                          <ScoreBar label="Calidad" value={evaluation.scoreCalidad} />
+                          <ScoreBar label="Reputación" value={evaluation.scoreReputacion} />
+                        </div>
+
+                        {evaluation.pros?.length ? (
+                          <div className="mt-3">
+                            <p className="text-xs font-semibold text-emerald-200">A favor</p>
+                            <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-cyan-100/80">
+                              {evaluation.pros.map((item, index) => (
+                                <li key={`pro-${evaluation.id}-${index}`}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+
+                        {evaluation.contras?.length ? (
+                          <div className="mt-3">
+                            <p className="text-xs font-semibold text-rose-200">En contra</p>
+                            <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-cyan-100/80">
+                              {evaluation.contras.map((item, index) => (
+                                <li key={`con-${evaluation.id}-${index}`}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </section>
 
           {selectedProducts.length ? (
@@ -212,6 +345,23 @@ export default function ClienteVersusPage() {
           )}
         </section>
       </main>
+    </div>
+  );
+}
+
+function ScoreBar({ label, value }: { label: string; value: number | null }) {
+  const safe = typeof value === "number" ? Math.max(0, Math.min(100, value)) : null;
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-20 shrink-0 text-cyan-200/70">{label}</span>
+      <span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-800/70">
+        <span
+          className="block h-full rounded-full bg-cyan-300/70"
+          style={{ width: `${safe ?? 0}%` }}
+        />
+      </span>
+      <span className="w-8 shrink-0 text-right text-cyan-100/80">{safe ?? "—"}</span>
     </div>
   );
 }

@@ -123,6 +123,24 @@ export type MarketplaceProductPage = {
   productos: MarketplaceProductSummary[];
 };
 
+export type VersusProductEval = {
+  id: string;
+  nombre: string | null;
+  pros: string[] | null;
+  contras: string[] | null;
+  scorePrecio: number | null;
+  scoreCalidad: number | null;
+  scoreReputacion: number | null;
+  scoreValor: number | null;
+};
+
+export type VersusVerdict = {
+  ganadorId: string | null;
+  veredicto: string | null;
+  resumen: string | null;
+  productos: VersusProductEval[] | null;
+};
+
 export type MarketplaceProductDetail = {
   id: string;
   nombre: string;
@@ -588,6 +606,35 @@ export async function listMarketplaceProducts(params?: {
 
   const path = query.toString() ? `/api/marketplace/products?${query}` : "/api/marketplace/products";
   return request<MarketplaceProductPage>(path, { method: "GET" });
+}
+
+/**
+ * Versus: pide a la IA cuál de 2 publicaciones es el mejor deal. Llama al proxy same-origin
+ * `/api/clients/versus`, que arma el contexto real desde TechMarket-IA y consulta a TechMarket-AI.
+ */
+export async function compareProductsVersus(productIds: string[]): Promise<VersusVerdict> {
+  const ids = productIds.filter((id) => typeof id === "string" && id.trim().length > 0);
+  if (ids.length < 2) {
+    throw new Error("Selecciona exactamente 2 productos para comparar con IA.");
+  }
+
+  const headers = buildHeaders(undefined, true);
+  let response: Response;
+  try {
+    response = await fetch("/api/clients/versus", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ productIds: ids }),
+    });
+  } catch {
+    throw new Error("No se pudo conectar con el comparador de IA.");
+  }
+
+  const body = await readResponseBody(response);
+  if (!response.ok) {
+    throw new Error(resolveErrorMessage(body, `Error ${response.status} al comparar productos.`));
+  }
+  return body as VersusVerdict;
 }
 
 export async function listMarketplaceServices(params?: {
