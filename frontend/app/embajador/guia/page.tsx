@@ -26,7 +26,7 @@ const mainFunctions = [
   },
   {
     code: "04",
-    title: "Gestion de referidos",
+    title: "Gestión de referidos",
     description:
       "Visualiza el estado de los negocios registrados, su avance y las oportunidades para seguir creciendo.",
   },
@@ -41,7 +41,7 @@ const quickAccessLinks = [
 
 const usefulTips = [
   "Completa correctamente los datos del negocio para agilizar la activacion.",
-  "Da seguimiento al onboarding desde el primer dia para evitar retrasos en las comisiones.",
+  "Da seguimiento al onboarding desde el primer día para evitar retrasos en las comisiones.",
   "Revisa que cada referido mantenga publicaciones y evidencias actualizadas.",
   "Usa los accesos rapidos para pasar de una tarea a otra sin perder el contexto.",
 ];
@@ -65,7 +65,7 @@ export default function EmbajadorGuiaPage() {
             <h1 className="mt-3 text-3xl font-bold text-cyan-50 md:text-4xl">Aprende a usar tu panel de embajador</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/80">
               En este modulo puedes registrar negocios, dar seguimiento al onboarding, revisar comisiones y
-              gestionar tus referidos. Esta guia resume las acciones principales para que empieces rapido y con
+              gestionar tus referidos. Esta guia resume las acciones principales para que empieces rápido y con
               claridad.
             </p>
 

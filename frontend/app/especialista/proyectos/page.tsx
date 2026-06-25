@@ -144,7 +144,7 @@ export default function EspecialistaProyectosPage() {
         <p className="tech-mono text-xs text-cyan-200/75">PROYECTOS DEL ESPECIALISTA</p>
         <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Proyectos activos</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">
-          Seguimiento de trabajos tecnicos, estado operativo, fechas y progreso visible para mantener control del servicio.
+          Seguimiento de trabajos técnicos, estado operativo, fechas y progreso visible para mantener control del servicio.
         </p>
       </section>
 
@@ -284,7 +284,7 @@ export default function EspecialistaProyectosPage() {
       <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
         <h2 className="text-2xl font-bold text-white">Historial de proyectos</h2>
         <p className="mt-2 text-sm leading-6 text-cyan-100/75">
-          Registro de movimientos recientes, cambios de estado y avances reportados en trabajos tecnicos.
+          Registro de movimientos recientes, cambios de estado y avances reportados en trabajos técnicos.
         </p>
         <div className="mt-5 grid gap-3 lg:grid-cols-3">
           {history.length === 0 ? (

@@ -244,7 +244,7 @@ const upsertThreadFromMarketplace = (
     sellerId,
     sellerName: fallbackSellerName,
     company: intent.company || fallbackSellerName,
-    product: intent.product || "Publicacion de marketplace",
+    product: intent.product || "Publicación de marketplace",
     avatar: createAvatar(intent.company || fallbackSellerName),
     unread: 0,
     online: true,
@@ -670,7 +670,7 @@ function ClienteChatContent() {
             <p className="tech-mono text-xs text-cyan-200/75">BANDEJA DE CHATS</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Conversaciones ordenadas</h1>
             <p className="mt-2 text-sm text-cyan-100/75">
-              Vista completa para revisar todos tus chats, abrir cada hilo y responder rapido.
+              Vista completa para revisar todos tus chats, abrir cada hilo y responder rápido.
             </p>
             {isLoading ? (
               <p className="mt-2 text-xs text-cyan-200/75">Cargando conversaciones...</p>
@@ -766,7 +766,7 @@ function ClienteChatContent() {
 
               {filteredThreads.length === 0 ? (
                 <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-4 text-sm text-cyan-100/75">
-                  No encontramos chats para esa busqueda.
+                  No encontramos chats para esa búsqueda.
                 </div>
               ) : null}
             </div>
@@ -790,7 +790,7 @@ function ClienteChatContent() {
                   </div>
 
                   <div className="text-right text-xs text-cyan-200/70">
-                    <p>{activeThread.online ? "Activo ahora" : "Ultima conexion reciente"}</p>
+                    <p>{activeThread.online ? "Activo ahora" : "Última conexión reciente"}</p>
                     <p className="mt-1">{formatRelativeTime(activeThread.updatedAt)}</p>
                   </div>
                 </div>

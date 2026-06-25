@@ -353,7 +353,7 @@ export default function Perfil() {
             <p className="tech-mono text-xs text-cyan-200/75">PERFIL EMPRESA</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Identidad y datos del negocio</h1>
             <p className="mt-3 text-sm text-cyan-100/80">
-              Gestiona la informacion clave de tu empresa para mantener un perfil claro y confiable.
+              Gestiona la información clave de tu empresa para mantener un perfil claro y confiable.
             </p>
           </section>
           <CompanySidebar />
@@ -383,7 +383,7 @@ export default function Perfil() {
                     <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                         <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">
-                          Calificacion general
+                          Calificación general
                         </p>
                         <div className="mt-4 space-y-3">
                           <div className="space-y-1">
@@ -407,8 +407,8 @@ export default function Perfil() {
                       </div>
                       <div className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                         <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cobertura</p>
-                        <p className="mt-3 text-base font-semibold text-white">Atencion local y a domicilio</p>
-                        <p className="mt-1 text-sm text-cyan-100/70">Segun zona de servicio</p>
+                        <p className="mt-3 text-base font-semibold text-white">Atención local y a domicilio</p>
+                        <p className="mt-1 text-sm text-cyan-100/70">Según zona de servicio</p>
                       </div>
                     </div>
                   </div>
@@ -418,11 +418,11 @@ export default function Perfil() {
                     <div className="mt-4 overflow-hidden rounded-2xl border border-cyan-100/10 bg-[linear-gradient(135deg,_rgba(14,116,144,0.9),_rgba(8,47,73,0.96))] p-5 text-sm text-cyan-50">
                       <div className="flex items-center justify-between">
                         <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.24em]">Mapa</span>
-                        <span className="text-xs text-cyan-100/70">Ubicacion principal</span>
+                        <span className="text-xs text-cyan-100/70">Ubicación principal</span>
                       </div>
                       <div className="mt-5 grid gap-3 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
                         <div className="flex items-center justify-between gap-3">
-                          <span className="font-semibold">Direccion principal</span>
+                          <span className="font-semibold">Dirección principal</span>
                           <span className="text-right text-cyan-100/80">{locationCard.mainAddressShort}</span>
                         </div>
                         <div className="flex items-center justify-between gap-3">
@@ -454,8 +454,8 @@ export default function Perfil() {
 
               <section className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
                 <article className="h-full rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
-                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Informacion general</p>
-                  <h2 className="mt-3 text-2xl font-bold text-white">Descripcion del negocio</h2>
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Información general</p>
+                  <h2 className="mt-3 text-2xl font-bold text-white">Descripción del negocio</h2>
                   {profileDescription ? (
                     <p className="mt-4 text-sm leading-7 text-cyan-100/80">{profileDescription}</p>
                   ) : (
@@ -464,7 +464,7 @@ export default function Perfil() {
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
                     <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
-                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Categoria o rubro</p>
+                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Categoría o rubro</p>
                       <p className="mt-2 font-semibold text-white">{businessProfile.category}</p>
                     </div>
                     <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
@@ -490,12 +490,12 @@ export default function Perfil() {
                 </article>
 
                 <article className="h-full rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
-                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Ubicacion y cobertura</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Ubicación y cobertura</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Donde atiende</h2>
 
                   <div className="mt-5 grid gap-4">
                     <div className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-4">
-                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Direccion principal</p>
+                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Dirección principal</p>
                       <p className="mt-2 font-semibold text-white">{locationCard.mainAddressLong}</p>
                       <p className="mt-1 text-sm text-cyan-100/70">Referencia: {locationCard.reference}</p>
                     </div>
@@ -570,7 +570,7 @@ export default function Perfil() {
                 </article>
 
                 <article className="rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
-                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Horarios de atencion</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Horarios de atención</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Disponibilidad semanal</h2>
 
                   <div className="mt-5 space-y-3">
@@ -590,7 +590,7 @@ export default function Perfil() {
 
               <section className="rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
                 <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Sucursales o sedes</p>
-                <h2 className="mt-3 text-2xl font-bold text-white">Puntos de atencion</h2>
+                <h2 className="mt-3 text-2xl font-bold text-white">Puntos de atención</h2>
                 <div className="mt-6 grid gap-4 grid-cols-1 lg:grid-cols-2">
                   {branchItems.length ? (
                     branchItems.map((branch, branchIndex) => (
@@ -598,15 +598,15 @@ export default function Perfil() {
                         <p className="text-lg font-semibold text-white">{branch.name}</p>
                         <div className="mt-4 space-y-3 text-sm text-cyan-100/80">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Direccion</p>
+                            <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Dirección</p>
                             <p className="mt-1 break-words">{branch.address}</p>
                           </div>
                           <div>
-                            <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Telefono</p>
+                            <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Teléfono</p>
                             <p className="mt-1 break-words">{branch.phone}</p>
                           </div>
                           <div>
-                            <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Horario de atencion</p>
+                            <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Horario de atención</p>
                             <p className="mt-1 leading-7 break-words">{branch.hours}</p>
                           </div>
                         </div>
@@ -623,7 +623,7 @@ export default function Perfil() {
                   <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Confianza</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Resumen visual</h2>
                   <div className="mt-6 rounded-2xl border border-cyan-100/10 bg-white/5 p-5">
-                    <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificacion promedio</p>
+                    <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificación promedio</p>
                     <div className="mt-3">
                       <RatingStars rating={businessProfile.rating} />
                     </div>
@@ -632,7 +632,7 @@ export default function Perfil() {
                 </article>
 
                 <article className="rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
-                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Descripcion completa</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Descripción completa</p>
                   <h2 className="mt-3 text-2xl font-bold text-white">Quienes somos</h2>
                   <div className="mt-4 space-y-4 text-sm leading-7 text-cyan-100/80">
                     {profileAbout.length ? (
@@ -653,7 +653,7 @@ export default function Perfil() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Perfil empresa</p>
-                <h2 className="mt-2 text-2xl font-bold text-white">Editar informacion del perfil</h2>
+                <h2 className="mt-2 text-2xl font-bold text-white">Editar información del perfil</h2>
               </div>
               <button
                 type="button"
@@ -719,7 +719,7 @@ export default function Perfil() {
               {activeProfileTab === "ubicacion" ? (
                 <div className="grid gap-4 md:grid-cols-2">
                   {renderField("Direccion corta (mapa)", "mainAddressShort")}
-                  {renderField("Direccion completa", "mainAddressLong")}
+                  {renderField("Dirección completa", "mainAddressLong")}
                   {renderField("Ciudad", "city")}
                   {renderField("Zona", "zone")}
                   {renderField("Referencia", "reference", true)}

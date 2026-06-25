@@ -431,7 +431,7 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
   const sendMessage = useCallback(
     async (chatId: string, messageText: string) => {
       if (!auth?.token || !auth.userId) {
-        setActionError("No hay sesion activa para enviar el mensaje.");
+        setActionError("No hay sesión activa para enviar el mensaje.");
         return;
       }
 
@@ -457,7 +457,7 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
   const uploadFile = useCallback(
     async (input: CreateSpecialistFileInput) => {
       if (!auth?.token || !auth.userId) {
-        const message = "No hay sesion activa para registrar el archivo.";
+        const message = "No hay sesión activa para registrar el archivo.";
         setActionError(message);
         throw new Error(message);
       }
@@ -483,7 +483,7 @@ export function useSpecialistChatFilesData(initialChatId = ""): {
   const deleteFile = useCallback(
     async (fileId: string) => {
       if (!auth?.token || !auth.userId) {
-        setActionError("No hay sesion activa para eliminar el archivo.");
+        setActionError("No hay sesión activa para eliminar el archivo.");
         return;
       }
 

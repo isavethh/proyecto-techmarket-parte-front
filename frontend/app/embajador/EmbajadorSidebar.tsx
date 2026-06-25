@@ -96,7 +96,7 @@ export function EmbajadorTopbarControls({ profile }: { profile?: ApiProfile | nu
               <strong className="text-cyan-50">{profile?.ciudad ?? "—"}</strong>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span>Codigo referido</span>
+              <span>Código referido</span>
               <strong className="text-cyan-50">{profile?.codigoReferido ?? "—"}</strong>
             </div>
           </div>
@@ -107,7 +107,7 @@ export function EmbajadorTopbarControls({ profile }: { profile?: ApiProfile | nu
               onClick={() => logout(router)}
               className="auth-action block w-full text-left"
             >
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </div>
         </div>
@@ -150,7 +150,7 @@ export function EmbajadorSidebar({
             <strong className="text-cyan-50">{profile?.pais ?? "—"}</strong>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span>Codigo referido</span>
+            <span>Código referido</span>
             <strong className="text-cyan-50">{profile?.codigoReferido ?? "—"}</strong>
           </div>
         </div>
@@ -203,7 +203,7 @@ export function EmbajadorSidebar({
             Guia de uso
           </Link>
           <button type="button" onClick={onLogout} className="auth-action">
-            Cerrar sesion
+            Cerrar sesión
           </button>
         </div>
       </section>

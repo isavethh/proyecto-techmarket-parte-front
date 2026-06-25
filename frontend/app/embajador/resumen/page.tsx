@@ -39,14 +39,14 @@ export default function EmbajadorResumenPage() {
               <LiveApiBadge label="API — /profile + /referrals + /commissions" />
             </div>
             <h1 className="mt-3 text-3xl font-bold text-cyan-50 md:text-4xl">
-              Asi les esta yendo a tus negocios referidos
+              Así les está yendo a tus negocios referidos
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/80">
-              Bienvenido al panel de embajador. Aqui puedes ver el rendimiento de tu red de negocios referidos.
+              Bienvenido al panel de embajador. Aquí puedes ver el rendimiento de tu red de negocios referidos.
             </p>
 
             <div className="mt-4 rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-3 text-sm text-cyan-100/82">
-              Tu posicion en la red es Raíz. Tus referidos se organizan en niveles relativos a ti.
+              Tu posición en la red es Raíz. Tus referidos se organizan en niveles relativos a ti.
             </div>
 
             <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -61,7 +61,7 @@ export default function EmbajadorResumenPage() {
 
             <div className="mt-6 rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-cyan-50">Accion urgente para crecer tu red</p>
+                <p className="text-sm font-semibold text-cyan-50">Acción urgente para crecer tu red</p>
                 <div className="flex flex-wrap gap-2">
                   <Link href="/embajador/negocios-referidos" className="tech-button tech-button-secondary px-4 py-2 text-xs">
                     Negocios referidos

@@ -122,7 +122,7 @@ export default function EmpresaPage() {
         middleSlot={(
           <div className="inline-flex rounded-full border border-cyan-100/15 bg-slate-950/45 px-3 py-1.5 text-xs text-cyan-100/80 md:items-center md:gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.85)]" />
-            <span className="ml-2 md:ml-0">Ultima sesion: hace 2 dias</span>
+            <span className="ml-2 md:ml-0">Última sesión: hace 2 días</span>
           </div>
         )}
       />
@@ -133,7 +133,7 @@ export default function EmpresaPage() {
             <p className="tech-mono text-xs text-cyan-200/75">PANEL EJECUTIVO</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Estado de tu empresa</h1>
             <p className="mt-3 text-sm text-cyan-100/80">
-              Lo mas importante desde tu ultima visita para tomar decisiones rapido.
+              Lo más importante desde tu última visita para tomar decisiones rápido.
             </p>
           </section>
 
@@ -166,7 +166,7 @@ export default function EmpresaPage() {
 
         <section className="space-y-6">
           <section className="overflow-hidden rounded-3xl border border-cyan-100/15 bg-[linear-gradient(125deg,rgba(7,29,50,0.96),rgba(9,44,73,0.9),rgba(6,23,43,0.95))] p-5 shadow-xl shadow-slate-950/35 md:p-6">
-            <p className="tech-mono text-xs text-cyan-200/80">RESUMEN DESDE TU ULTIMA VISITA</p>
+            <p className="tech-mono text-xs text-cyan-200/80">RESUMEN DESDE TU ÚLTIMA VISITA</p>
             <h2 className="mt-2 text-2xl font-semibold text-cyan-50 md:text-3xl">
               Lo que cambio en tu negocio mientras no estabas
             </h2>
@@ -212,7 +212,7 @@ export default function EmpresaPage() {
                   <textarea
                     value={aiQuestion}
                     onChange={(event) => setAiQuestion(event.target.value)}
-                    placeholder="Ej: que accion me conviene priorizar hoy para vender mas?"
+                    placeholder="Ej: ¿qué acción me conviene priorizar hoy para vender más?"
                     rows={4}
                     className="w-full resize-none rounded-2xl border border-cyan-100/15 bg-slate-950/45 px-4 py-3 text-sm leading-6 text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/35"
                   />
@@ -311,7 +311,7 @@ export default function EmpresaPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="tech-mono text-xs text-cyan-200/75">ALERTAS CLAVE</p>
-                  <h3 className="mt-2 text-xl font-semibold text-cyan-50">Lo que requiere atencion ahora</h3>
+                  <h3 className="mt-2 text-xl font-semibold text-cyan-50">Lo que requiere atención ahora</h3>
                 </div>
                 <Link
                   href="/empresa/analiticas"
@@ -352,7 +352,7 @@ export default function EmpresaPage() {
 
             <article className="tech-card">
               <p className="tech-mono text-xs text-cyan-200/75">ACTIVIDAD RECIENTE</p>
-              <h3 className="mt-2 text-xl font-semibold text-cyan-50">Lo ultimo en tu empresa</h3>
+              <h3 className="mt-2 text-xl font-semibold text-cyan-50">Lo último en tu empresa</h3>
 
               <div className="mt-4 space-y-3">
                 {summaryActivity.length ? (

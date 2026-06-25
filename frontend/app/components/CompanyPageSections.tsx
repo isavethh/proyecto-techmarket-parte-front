@@ -190,7 +190,7 @@ function CompanyTopbarControls({ sectionLabel }: CompanyTopbarControlsProps) {
               onClick={() => setIsProfileMenuOpen(false)}
               className="auth-action block w-full"
             >
-              Resenas
+              Reseñas
             </Link>
             <Link
               href="/empresa/ia"
@@ -204,7 +204,7 @@ function CompanyTopbarControls({ sectionLabel }: CompanyTopbarControlsProps) {
               onClick={handleLogout}
               className="auth-action block w-full text-left"
             >
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </div>
         </div>

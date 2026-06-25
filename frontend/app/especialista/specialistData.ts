@@ -120,7 +120,7 @@ export const recentActivity: ActivityItem[] = [
   },
   {
     id: "a-2",
-    title: "Nueva resena 5 estrellas",
+    title: "Nueva reseña 5 estrellas",
     detail: "Comentario recibido en servicio de mantenimiento",
     time: "Hoy",
   },

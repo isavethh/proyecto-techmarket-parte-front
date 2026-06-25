@@ -45,7 +45,7 @@ export default function ComisionesPage() {
             </div>
             <h1 className="mt-3 text-3xl font-bold text-cyan-50 md:text-4xl">Comisiones y Ganancias</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/80">
-              Monitorea el valor generado por tu red. Aqui puedes ver tus ingresos acumulados, lo que tienes pendiente por cobrar y tu historial de comisiones.
+              Monitorea el valor generado por tu red. Aquí puedes ver tus ingresos acumulados, lo que tienes pendiente por cobrar y tu historial de comisiones.
             </p>
 
             <div className="mt-6 grid gap-3 grid-cols-2 lg:grid-cols-4">

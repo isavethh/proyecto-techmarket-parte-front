@@ -199,7 +199,7 @@ function MarketplaceSellerProfileContent() {
               </div>
             </div>
             <p className="mt-3 text-sm leading-7 text-cyan-100/85">
-              Aqui aparecen solo anuncios de este vendedor. No se mezclan publicaciones de otros perfiles.
+              Aquí aparecen solo anuncios de este vendedor. No se mezclan publicaciones de otros perfiles.
             </p>
           </section>
 

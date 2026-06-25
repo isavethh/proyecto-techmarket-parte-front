@@ -42,7 +42,7 @@ function renderResult(result: AiResult | null) {
   if (!result) {
     return (
       <p className="text-sm leading-6 text-cyan-100/75">
-        Escribe una consulta o usa una accion rapida para recibir recomendaciones reales desde TechMarket-AI.
+        Escribe una consulta o usa una acción rápida para recibir recomendaciones reales desde TechMarket-AI.
       </p>
     );
   }
@@ -63,7 +63,7 @@ function renderResult(result: AiResult | null) {
 
       {data.actionPlan?.length ? (
         <div>
-          <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/65">Plan de accion</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/65">Plan de acción</p>
           {renderList(data.actionPlan)}
         </div>
       ) : null}
@@ -144,7 +144,7 @@ export function SpecialistAiAssistant({ services }: SpecialistAiAssistantProps) 
       const response = await request();
       setResult({ title, data: response });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "La IA no pudo completar la accion.");
+      setError(err instanceof Error ? err.message : "La IA no pudo completar la acción.");
     } finally {
       setLoadingAction(null);
     }
@@ -156,7 +156,7 @@ export function SpecialistAiAssistant({ services }: SpecialistAiAssistantProps) 
   }
 
   function handlePricingSuggestion() {
-    const serviceName = defaultService?.name ?? "Servicio tecnico";
+    const serviceName = defaultService?.name ?? "Servicio técnico";
     void runAction(
       "pricing",
       () => getSpecialistPricingSuggestion({ serviceName }),
@@ -165,7 +165,7 @@ export function SpecialistAiAssistant({ services }: SpecialistAiAssistantProps) 
   }
 
   function handleImprovementPlan() {
-    const focus = defaultService?.type || "perfil tecnico";
+    const focus = defaultService?.type || "perfil técnico";
     void runAction(
       "improvement",
       () => getSpecialistImprovementPlan({ focus }),
@@ -300,7 +300,7 @@ export function SpecialistAiAssistant({ services }: SpecialistAiAssistantProps) 
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               rows={4}
-              placeholder="Ej: Como puedo mejorar mis solicitudes esta semana?"
+              placeholder="Ej: ¿Cómo puedo mejorar mis solicitudes esta semana?"
               className="mt-3 w-full resize-none rounded-2xl border border-cyan-100/10 bg-slate-950/60 px-4 py-3 text-sm text-cyan-50 outline-none transition placeholder:text-cyan-100/35 focus:border-cyan-300/45"
             />
             <button

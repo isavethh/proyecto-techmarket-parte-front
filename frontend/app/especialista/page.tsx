@@ -72,7 +72,7 @@ export default function EspecialistaCorePage() {
               <p className="mt-1 text-sm text-cyan-100/75">Mayor interes comercial</p>
             </article>
             <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificacion</p>
+              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificación</p>
               <p className="mt-2 text-2xl font-bold text-cyan-50">{kpis.averageRating} / 5</p>
               <p className="mt-1 text-sm text-cyan-100/75">{kpis.totalReviews} reseñas</p>
             </article>
@@ -84,7 +84,7 @@ export default function EspecialistaCorePage() {
         <Link href="/especialista/servicios" className="flex h-full min-h-[154px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Seccion</p>
           <h2 className="text-xl font-semibold text-white">Servicios</h2>
-          <p className="mt-2 text-sm leading-6 text-cyan-100/75">Revisa el catalogo de servicios y propuesta comercial.</p>
+          <p className="mt-2 text-sm leading-6 text-cyan-100/75">Revisa el catálogo de servicios y propuesta comercial.</p>
         </Link>
         <Link href="/especialista/solicitudes" className="flex h-full min-h-[154px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Seccion</p>
@@ -103,7 +103,7 @@ export default function EspecialistaCorePage() {
         </Link>
         <Link href="/especialista/reputacion" className="flex h-full min-h-[154px] flex-col rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-4 transition hover:border-cyan-300/35 hover:bg-slate-950/50">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Seccion</p>
-          <h2 className="text-xl font-semibold text-white">Reputacion</h2>
+          <h2 className="text-xl font-semibold text-white">Reputación</h2>
           <p className="mt-2 text-sm leading-6 text-cyan-100/75">Analiza calificaciones, comentarios y confianza.</p>
         </Link>
       </section>

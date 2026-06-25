@@ -327,7 +327,7 @@ export default function ClienteMarketplacePage() {
     if (!listing.post.companyId) {
       setActivePublication(null);
       setApiError(
-        "No se pudo abrir el chat porque esta publicacion no trae una empresa asociada desde la API.",
+        "No se pudo abrir el chat porque esta publicación no trae una empresa asociada desde la API.",
       );
       return;
     }
@@ -371,7 +371,7 @@ export default function ClienteMarketplacePage() {
 
                 <div className="rounded-2xl border border-cyan-100/15 bg-cyan-500/5 p-3">
                   <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-ai-search">
-                    Busqueda inteligente (IA)
+                    Búsqueda inteligente (IA)
                   </label>
                   <input
                     id="marketplace-ai-search"
@@ -415,7 +415,7 @@ export default function ClienteMarketplacePage() {
                 </div>
 
                 <label className="block text-xs font-semibold text-cyan-200/80" htmlFor="marketplace-category">
-                  Categoria
+                  Categoría
                 </label>
                 <select
                   id="marketplace-category"
@@ -477,7 +477,7 @@ export default function ClienteMarketplacePage() {
             <p className="tech-mono text-xs text-cyan-200/80">EXPLORAR MARKETPLACE</p>
             <h1 className="mt-2 text-2xl font-semibold text-cyan-50 md:text-3xl">Anuncios activos de productos en venta</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/85">
-              Estilo marketplace: cards visuales, multiples publicaciones por vendedor, filtros rapidos y resultados ordenados para decidir mas rapido.
+              Estilo marketplace: cards visuales, multiples publicaciones por vendedor, filtros rapidos y resultados ordenados para decidir más rápido.
             </p>
             {isLoadingApi ? (
               <p className="mt-3 text-xs text-cyan-200/75">Cargando productos desde la API...</p>

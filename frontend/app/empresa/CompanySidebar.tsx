@@ -29,14 +29,14 @@ const sidebarContextByRoute: Record<string, SidebarContextCard> = {
     eyebrow: "PANEL EJECUTIVO",
     title: "Vision general",
     description:
-      "Acceso rapido a señales comerciales, actividad reciente y decisiones recomendadas para hoy.",
+      "Acceso rápido a señales comerciales, actividad reciente y decisiones recomendadas para hoy.",
     chips: ["Leads", "Conversion", "Actividad", "Prioridades"],
   },
   "/empresa/perfil": {
     eyebrow: "IDENTIDAD COMERCIAL",
     title: "Presencia de la empresa",
     description:
-      "Aqui gestionas la imagen, confianza y presentacion general de tu empresa dentro de TechMarket.",
+      "Aquí gestionas la imagen, confianza y presentacion general de tu empresa dentro de TechMarket.",
     chips: ["Marca", "Confianza", "Perfil", "Presencia"],
   },
   "/empresa/publicaciones": {
@@ -50,14 +50,14 @@ const sidebarContextByRoute: Record<string, SidebarContextCard> = {
     eyebrow: "CONVERSACIONES",
     title: "Seguimiento comercial",
     description:
-      "Responde rapido, prioriza interesados y convierte consultas en oportunidades reales.",
+      "Responde rápido, prioriza interesados y convierte consultas en oportunidades reales.",
     chips: ["Chats", "Respuesta", "Conversion", "Seguimiento"],
   },
   "/empresa/resenas": {
     eyebrow: "VOZ DEL CLIENTE",
     title: "Confianza visible",
     description:
-      "Revisa la percepcion del cliente y detecta señales repetidas sobre calidad, atencion y soporte.",
+      "Revisa la percepcion del cliente y detecta señales repetidas sobre calidad, atención y soporte.",
     chips: ["Rapidez", "Atencion", "Confianza", "Soporte"],
   },
   "/empresa/ia": {
@@ -71,7 +71,7 @@ const sidebarContextByRoute: Record<string, SidebarContextCard> = {
     eyebrow: "INDICADORES CLAVE",
     title: "Lectura del negocio",
     description:
-      "Explora tendencias, rendimiento y puntos de mejora para tomar decisiones con mas contexto.",
+      "Explora tendencias, rendimiento y puntos de mejora para tomar decisiones con más contexto.",
     chips: ["Metricas", "Tendencias", "Rendimiento", "Decision"],
   },
 };

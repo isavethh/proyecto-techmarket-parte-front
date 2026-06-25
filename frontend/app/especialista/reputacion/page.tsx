@@ -34,10 +34,10 @@ export default function EspecialistaReputacionPage() {
   return (
     <SpecialistShell sectionLabel="Reputacion" statusMessage="Indicadores de confianza y resenas activas">
       <section className="rounded-3xl border border-cyan-100/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_34%),linear-gradient(180deg,_rgba(8,18,31,0.96),_rgba(5,12,22,0.98))] p-6 shadow-2xl shadow-slate-950/30 md:p-8">
-        <p className="tech-mono text-xs text-cyan-200/75">REPUTACION DEL ESPECIALISTA</p>
+        <p className="tech-mono text-xs text-cyan-200/75">REPUTACIÓN DEL ESPECIALISTA</p>
         <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Confianza y experiencia</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">
-          Indicadores visibles de confianza, experiencia y actividad del tecnico.
+          Indicadores visibles de confianza, experiencia y actividad del técnico.
         </p>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/75">
           Las reseñas ayudan a construir confianza dentro del ecosistema TechMarket.
@@ -46,12 +46,12 @@ export default function EspecialistaReputacionPage() {
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
-          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Calificacion promedio</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Calificación promedio</p>
           <p className="mt-2 text-2xl font-bold text-white">{kpis.averageRating === "No disponible" ? kpis.averageRating : `${kpis.averageRating} / 5`}</p>
-          <p className="mt-1 text-xs text-cyan-100/70">Basado en resenas recibidas</p>
+          <p className="mt-1 text-xs text-cyan-100/70">Basado en reseñas recibidas</p>
         </article>
         <article className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
-          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Resenas totales</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Reseñas totales</p>
           <p className="mt-2 text-2xl font-bold text-white">{kpis.totalReviews}</p>
           <p className="mt-1 text-xs text-cyan-100/70">Clientes atendidos en la plataforma</p>
         </article>
@@ -63,17 +63,17 @@ export default function EspecialistaReputacionPage() {
         <article className="rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-4">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/70">Actividad reciente</p>
           <p className="mt-2 text-sm font-semibold text-cyan-50">{reviews[0]?.date ?? "No disponible desde backend"}</p>
-          <p className="mt-1 text-xs text-cyan-100/70">{reviews[0] ? "Derivada de la ultima resena" : "No disponible desde backend"}</p>
+          <p className="mt-1 text-xs text-cyan-100/70">{reviews[0] ? "Derivada de la última reseña" : "No disponible desde backend"}</p>
         </article>
       </section>
 
       <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-        <h2 className="text-2xl font-bold text-white">Ultimas resenas</h2>
+        <h2 className="text-2xl font-bold text-white">Últimas reseñas</h2>
         {loading ? (
-          <p className="mt-4 text-sm text-cyan-100/75">Cargando resenas...</p>
+          <p className="mt-4 text-sm text-cyan-100/75">Cargando reseñas...</p>
         ) : null}
         {error && !loading ? (
-          <p className="mt-4 text-sm text-rose-200">No se pudieron cargar las resenas.</p>
+          <p className="mt-4 text-sm text-rose-200">No se pudieron cargar las reseñas.</p>
         ) : null}
         <div className="mt-5 grid gap-3 lg:grid-cols-2">
           {!loading && !error && reviews.length === 0 ? (
@@ -115,7 +115,7 @@ export default function EspecialistaReputacionPage() {
                   }}
                   className="mt-4 rounded-full border border-cyan-300/35 bg-cyan-300/10 px-4 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Responder resena
+                  Responder reseña
                 </button>
               )}
             </article>
@@ -134,7 +134,7 @@ export default function EspecialistaReputacionPage() {
           <section className="w-full max-w-2xl rounded-3xl border border-cyan-100/20 bg-slate-950 p-6 shadow-2xl shadow-slate-950/70">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="tech-mono text-xs text-cyan-200/75">RESPONDER RESENA</p>
+                <p className="tech-mono text-xs text-cyan-200/75">RESPONDER RESEÑA</p>
                 <h2 className="mt-2 text-2xl font-bold text-white">Responder reseña</h2>
               </div>
               <button

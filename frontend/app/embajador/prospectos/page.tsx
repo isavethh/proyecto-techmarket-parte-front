@@ -151,7 +151,7 @@ const mapLeadToProspect = (lead: ApiLead, localDetails?: Partial<Prospect>): Pro
   return {
     id: lead.id,
     businessName: lead.nombre,
-    category: lead.tipo || "Sin categoria",
+    category: lead.tipo || "Sin categoría",
     city: localDetails?.city ?? lead.ciudad ?? lead.pais ?? "Sin ciudad registrada",
     contactName: localDetails?.contactName ?? lead.contacto ?? "Sin dato en API",
     phone: localDetails?.phone ?? lead.telefono ?? "Sin dato en API",
@@ -359,9 +359,9 @@ export default function EmbajadorProspectosPage() {
             <p className="tech-mono text-xs text-cyan-200/75">PIPELINE DE PROSPECTOS</p>
             <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-3xl">
-                <h1 className="text-3xl font-bold text-cyan-50 md:text-4xl">Prospectos captados por tu gestion</h1>
+                <h1 className="text-3xl font-bold text-cyan-50 md:text-4xl">Prospectos captados por tu gestión</h1>
                 <p className="mt-3 text-sm leading-7 text-cyan-100/80">
-                  Administra negocios potenciales, registra cada contacto y manten visible la siguiente accion para
+                  Administra negocios potenciales, registra cada contacto y manten visible la siguiente acción para
                   convertirlos en cuentas activas dentro de TechMarket.
                 </p>
               </div>
@@ -389,7 +389,7 @@ export default function EmbajadorProspectosPage() {
                 <h2 className="mt-2 text-2xl font-semibold text-cyan-50">Embudo visible de punta a punta</h2>
               </div>
               <p className="max-w-xl text-sm text-cyan-100/78">
-                Selecciona una fila para abrir su detalle completo, revisar historial y ver la proxima accion sugerida.
+                Selecciona una fila para abrir su detalle completo, revisar historial y ver la próxima acción sugerida.
               </p>
             </div>
 
@@ -408,14 +408,14 @@ export default function EmbajadorProspectosPage() {
                 <thead>
                   <tr className="text-[11px] uppercase tracking-[0.18em] text-cyan-200/60">
                     <th className="px-3 py-2 font-medium">Negocio</th>
-                    <th className="px-3 py-2 font-medium">Categoria</th>
+                    <th className="px-3 py-2 font-medium">Categoría</th>
                     <th className="px-3 py-2 font-medium">Ciudad</th>
                     <th className="px-3 py-2 font-medium">Contacto</th>
-                    <th className="px-3 py-2 font-medium">Telefono</th>
+                    <th className="px-3 py-2 font-medium">Teléfono</th>
                     <th className="px-3 py-2 font-medium">Fuente</th>
                     <th className="px-3 py-2 font-medium">Etapa actual</th>
-                    <th className="px-3 py-2 font-medium">Fecha de creacion</th>
-                    <th className="px-3 py-2 font-medium">Proxima accion</th>
+                    <th className="px-3 py-2 font-medium">Fecha de creación</th>
+                    <th className="px-3 py-2 font-medium">Próxima acción</th>
                     <th className="px-3 py-2 font-medium">Estado</th>
                   </tr>
                 </thead>
@@ -499,7 +499,7 @@ export default function EmbajadorProspectosPage() {
               <p className="tech-mono text-xs text-cyan-200/75">CREAR PROSPECTO</p>
               <h2 className="mt-2 text-2xl font-semibold text-cyan-50">Registrar nuevo lead</h2>
               <p className="mt-2 text-sm text-cyan-100/80">
-                Captura rapidamente la informacion clave para iniciar el seguimiento y no perder contexto comercial.
+                Captura rapidamente la información clave para iniciar el seguimiento y no perder contexto comercial.
               </p>
 
               <form onSubmit={handleCreateProspect} className="mt-5 grid gap-4">
@@ -521,7 +521,7 @@ export default function EmbajadorProspectosPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="auth-label" htmlFor="prospect-category">
-                      Categoria
+                      Categoría
                     </label>
                     <input
                       id="prospect-category"
@@ -530,7 +530,7 @@ export default function EmbajadorProspectosPage() {
                       onChange={(event) =>
                         setFormState((currentState) => ({ ...currentState, category: event.target.value }))
                       }
-                      placeholder="Servicio tecnico, tienda, software..."
+                      placeholder="Servicio técnico, tienda, software..."
                     />
                   </div>
 
@@ -565,7 +565,7 @@ export default function EmbajadorProspectosPage() {
 
                   <div>
                     <label className="auth-label" htmlFor="prospect-phone">
-                      Telefono / WhatsApp
+                      Teléfono / WhatsApp
                     </label>
                     <input
                       id="prospect-phone"
@@ -615,7 +615,7 @@ export default function EmbajadorProspectosPage() {
 
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-100/10 bg-white/5 p-3">
                   <p className="text-sm text-cyan-100/75">
-                    El lead se persiste en backend con ciudad, notas, contacto, telefono, fuente y proxima accion.
+                    El lead se persiste en backend con ciudad, notas, contacto, teléfono, fuente y próxima acción.
                   </p>
                   <button type="submit" disabled={creating} className="tech-button tech-button-primary px-4 py-2 text-sm disabled:opacity-60">
                     {creating ? "Guardando..." : "Guardar prospecto"}
@@ -639,7 +639,7 @@ export default function EmbajadorProspectosPage() {
                   <p className="mt-2 text-sm text-cyan-100/80">
                     {selectedProspect
                       ? `${selectedProspect.category} · ${selectedProspect.city}`
-                      : "Selecciona un prospecto de la lista para ver su informacion general."}
+                      : "Selecciona un prospecto de la lista para ver su información general."}
                   </p>
                 </div>
 
@@ -701,7 +701,7 @@ export default function EmbajadorProspectosPage() {
                           <strong className="text-right text-cyan-50">{selectedProspect.contactName}</strong>
                         </div>
                         <div className="flex items-start justify-between gap-3">
-                          <span>Telefono / WhatsApp</span>
+                          <span>Teléfono / WhatsApp</span>
                           <strong className="text-right text-cyan-50">{selectedProspect.phone}</strong>
                         </div>
                         <div className="flex items-start justify-between gap-3">
@@ -709,7 +709,7 @@ export default function EmbajadorProspectosPage() {
                           <strong className="text-right text-cyan-50">{selectedProspect.source}</strong>
                         </div>
                         <div className="flex items-start justify-between gap-3">
-                          <span>Fecha de creacion</span>
+                          <span>Fecha de creación</span>
                           <strong className="text-right text-cyan-50">{selectedProspect.createdAt}</strong>
                         </div>
                       </div>
@@ -719,7 +719,7 @@ export default function EmbajadorProspectosPage() {
                       <h3 className="text-lg font-semibold text-cyan-50">Siguiente movimiento</h3>
                       <p className="mt-3 text-sm text-cyan-100/82">{selectedProspect.nextAction}</p>
                       <div className="mt-4 rounded-2xl border border-cyan-100/10 bg-slate-950/35 p-3">
-                        <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/70">Fecha proxima accion</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/70">Fecha próxima acción</p>
                         <p className="mt-2 text-lg font-semibold text-cyan-50">{selectedProspect.nextActionDate}</p>
                       </div>
                     </section>

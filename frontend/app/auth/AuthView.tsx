@@ -134,8 +134,8 @@ export default function AuthView({
     if (!trimmedNombre || !trimmedApellido || !trimmedEmail || !trimmedPhone || !password) {
       setFeedback(
         isEmpresa
-          ? "Completa el nombre de la empresa, correo, telefono y contraseña."
-          : "Completa nombre, apellido, correo, telefono y contraseña.",
+          ? "Completa el nombre de la empresa, correo, teléfono y contraseña."
+          : "Completa nombre, apellido, correo, teléfono y contraseña.",
       );
       return;
     }

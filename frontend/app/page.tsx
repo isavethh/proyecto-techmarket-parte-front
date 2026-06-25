@@ -12,7 +12,7 @@ const userTypes = [
   {
     icon: "🏢",
     title: "Tengo una Empresa",
-    description: "Vendo productos, publico ofertas y conecto con miles de clientes en Bolivia.",
+    description: "Vendo productos, público ofertas y conecto con miles de clientes en Bolivia.",
     cta: "Acceder al panel empresa",
     href: "/auth?mode=login&type=empresa",
     accent: "from-emerald-300/20 to-teal-500/10",

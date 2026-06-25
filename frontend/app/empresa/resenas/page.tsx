@@ -49,7 +49,7 @@ function statusLabel(review: CustomerReview) {
     return "Requiere seguimiento";
   }
 
-  return "Resena estable";
+  return "Reseña estable";
 }
 
 export default function ResenasPage() {
@@ -153,7 +153,7 @@ export default function ResenasPage() {
         middleSlot={
           <div className="inline-flex rounded-full border border-cyan-100/15 bg-slate-950/45 px-3 py-1.5 text-xs text-cyan-100/80 md:items-center md:gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.85)]" />
-            <span className="ml-2 md:ml-0">Resenas de clientes con chat previo</span>
+            <span className="ml-2 md:ml-0">Reseñas de clientes con chat previo</span>
           </div>
         }
       />
@@ -161,10 +161,10 @@ export default function ResenasPage() {
       <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
-            <p className="tech-mono text-xs text-cyan-200/75">MODULO RESENAS</p>
+            <p className="tech-mono text-xs text-cyan-200/75">MODULO RESEÑAS</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Voz del cliente</h1>
             <p className="mt-3 text-sm text-cyan-100/80">
-              Aqui ves todas las resenas dejadas por clientes que ya conversaron contigo por chat.
+              Aquí ves todas las reseñas dejadas por clientes que ya conversaron contigo por chat.
             </p>
           </section>
 
@@ -176,8 +176,8 @@ export default function ResenasPage() {
             <div className="space-y-8 p-6 md:p-8">
               <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
                 <div>
-                  <p className="tech-mono text-xs text-cyan-200/75">RESENAS EMPRESA</p>
-                  <h2 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Todas las resenas de clientes con chat</h2>
+                  <p className="tech-mono text-xs text-cyan-200/75">RESEÑAS EMPRESA</p>
+                  <h2 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Todas las reseñas de clientes con chat</h2>
                   <p className="mt-4 max-w-2xl text-sm leading-7 text-cyan-100/80 md:text-base">
                     Cada registro corresponde a un cliente que hablo contigo por chat y luego dejo su opinion.
                   </p>
@@ -187,28 +187,28 @@ export default function ResenasPage() {
                   <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Cobertura</p>
                   <p className="mt-3 text-4xl font-bold text-emerald-200">100%</p>
                   <p className="mt-3 text-sm leading-7 text-cyan-100/80">
-                    Todas las resenas mostradas provienen de clientes con conversacion previa en tu chat comercial.
+                    Todas las reseñas mostradas provienen de clientes con conversacion previa en tu chat comercial.
                   </p>
                 </div>
               </div>
 
               <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Resenas totales</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Reseñas totales</p>
                   <p className="mt-3 text-3xl font-bold text-white">{totalReviews}</p>
                   <p className="mt-2 text-sm text-cyan-100/75">Clientes con chat confirmado</p>
                 </article>
 
                 <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificacion promedio</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificación promedio</p>
                   <p className="mt-3 text-3xl font-bold text-white">{averageStars} / 5</p>
-                  <p className="mt-2 text-sm text-cyan-100/75">Valoracion global actual</p>
+                  <p className="mt-2 text-sm text-cyan-100/75">Valoración global actual</p>
                 </article>
 
                 <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
                   <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Pendientes de respuesta</p>
                   <p className="mt-3 text-3xl font-bold text-white">{pendingReplies}</p>
-                  <p className="mt-2 text-sm text-cyan-100/75">Resenas sin respuesta</p>
+                  <p className="mt-2 text-sm text-cyan-100/75">Reseñas sin respuesta</p>
                 </article>
 
                 <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
@@ -220,7 +220,7 @@ export default function ResenasPage() {
 
               <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="text-2xl font-bold text-white">Listado de resenas</h3>
+                  <h3 className="text-2xl font-bold text-white">Listado de reseñas</h3>
                   <div className="flex flex-wrap gap-2">
                     {reviewFilters.map((filter) => (
                       <button

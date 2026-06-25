@@ -126,7 +126,7 @@ export default function ClienteEmpresaPerfilPage() {
                 {company?.nombre ?? (isLoading ? "Cargando empresa..." : "Empresa no disponible")}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-cyan-100/80 sm:text-base">
-                {company?.descripcion ?? error ?? "No hay informacion para mostrar desde la API."}
+                {company?.descripcion ?? error ?? "No hay información para mostrar desde la API."}
               </p>
 
               {!isLoading && company && (
@@ -159,7 +159,7 @@ export default function ClienteEmpresaPerfilPage() {
           </section>
 
           <section className="rounded-3xl border border-cyan-100/10 bg-white/5 p-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Catalogo</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Catálogo</p>
             <h2 className="mt-3 text-2xl font-bold text-white">Productos de la empresa</h2>
             <div className="mt-5 grid gap-3 md:grid-cols-3">
               {products.map((product) => (

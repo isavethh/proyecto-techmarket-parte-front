@@ -101,7 +101,7 @@ const getRecommendations = (business: {
   }
 
   if (business.userScore < 80) {
-    recommendations.push("Mejorar percepcion de usuarios con seguimiento y respuestas mas rapidas.");
+    recommendations.push("Mejorar percepcion de usuarios con seguimiento y respuestas más rapidas.");
   }
 
   if (business.conversionRate < 18) {
@@ -261,7 +261,7 @@ function EmbajadorNegociosReferidosContent() {
             <p className="tech-mono text-xs text-cyan-200/75">NEGOCIOS REFERIDOS</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Lista de negocios captados</h1>
             <p className="mt-2 text-sm text-cyan-100/80">
-              Haz clic en un negocio para ver su valor comercial y su impacto en tu reputacion como embajador.
+              Haz clic en un negocio para ver su valor comercial y su impacto en tu reputación como embajador.
             </p>
 
             <div className="mt-4 space-y-2">
@@ -330,7 +330,7 @@ function EmbajadorNegociosReferidosContent() {
                 <p className="mt-2 text-2xl font-bold text-cyan-50">{activeReferralDetail?.plan ?? "Sin plan"}</p>
               </article>
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Comision generada</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">Comisión generada</p>
                 <p className="mt-2 text-2xl font-bold text-cyan-50">
                   {activeReferralReport?.comision ?? `Bs ${businessWithMetrics.commissionGenerated.toLocaleString("es-BO")}`}
                 </p>
@@ -352,7 +352,7 @@ function EmbajadorNegociosReferidosContent() {
                 <p className="mt-2"><strong className="text-cyan-50">Ciudad:</strong> {activeReferralDetail?.ciudad ?? "Sin dato"}</p>
                 <p className="mt-2"><strong className="text-cyan-50">Contacto:</strong> {activeReferralDetail?.contacto?.nombre ?? "Sin contacto"}</p>
                 <p className="mt-2"><strong className="text-cyan-50">Email:</strong> {activeReferralDetail?.contacto?.email ?? "Sin email"}</p>
-                <p className="mt-2"><strong className="text-cyan-50">Telefono:</strong> {activeReferralDetail?.contacto?.telefono ?? "Sin telefono"}</p>
+                <p className="mt-2"><strong className="text-cyan-50">Teléfono:</strong> {activeReferralDetail?.contacto?.telefono ?? "Sin telefono"}</p>
               </article>
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
                 <p className="text-sm font-semibold text-cyan-50">Actividad</p>
@@ -394,7 +394,7 @@ function EmbajadorNegociosReferidosContent() {
             </article>
 
             <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-              <h3 className="text-xl font-semibold text-cyan-50">Impacto en tu reputacion</h3>
+              <h3 className="text-xl font-semibold text-cyan-50">Impacto en tu reputación</h3>
               <p className="mt-2 text-sm text-cyan-100/82">
                 Este negocio aporta un impacto de {businessWithMetrics.reputationContribution}/100 a tu reputacion.
               </p>
@@ -449,10 +449,10 @@ function EmbajadorNegociosReferidosContent() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="tech-mono text-xs text-cyan-200/75">INDICADORES ESTRATEGICOS</p>
-                <h3 className="mt-2 text-2xl font-bold text-cyan-50">Lectura rapida del negocio seleccionado</h3>
+                <h3 className="mt-2 text-2xl font-bold text-cyan-50">Lectura rápida del negocio seleccionado</h3>
                 <p className="mt-2 text-sm text-cyan-100/78">
                   Usa estos indicadores para decidir si conviene acelerar seguimiento, reforzar onboarding o escalar
-                  la comision proyectada.
+                  la comisión proyectada.
                 </p>
               </div>
               <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${scoreTone(businessWithMetrics.valueScore)}`}>
@@ -471,15 +471,15 @@ function EmbajadorNegociosReferidosContent() {
                 <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Nivel de prioridad</p>
                 <p className={`mt-2 text-lg font-semibold ${priorityLevel.tone}`}>{priorityLevel.label}</p>
                 <p className="mt-1 text-sm text-cyan-100/76">
-                  Define cuanta atencion operativa necesita este negocio hoy.
+                  Define cuanta atención operativa necesita este negocio hoy.
                 </p>
               </article>
 
               <article className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Proyeccion de comision</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Proyeccion de comisión</p>
                 <p className="mt-2 text-lg font-semibold text-emerald-100">Bs {projectedCommission.toLocaleString("es-BO")}</p>
                 <p className="mt-1 text-sm text-cyan-100/76">
-                  Estimacion basada en la comision actual y el ritmo de crecimiento.
+                  Estimacion basada en la comisión actual y el ritmo de crecimiento.
                 </p>
               </article>
 

@@ -37,8 +37,8 @@ export function mapBackendServiceToUiService(
 ): SpecialistService {
   return {
     id: service.id,
-    name: service.nombre?.trim() || "Servicio tecnico",
-    description: service.descripcion?.trim() || "Servicio tecnico disponible.",
+    name: service.nombre?.trim() || "Servicio técnico",
+    description: service.descripcion?.trim() || "Servicio técnico disponible.",
     price: service.precio?.trim() || "Consultar",
     type: service.tipo?.trim() || "Servicio",
     technicianName,
@@ -50,8 +50,8 @@ export function mapBackendPortfolioToUiPortfolio(item: BackendPortfolioItem): Po
   return {
     id: item.id,
     image: "/productos/laptop-pro-14.jpg",
-    workDescription: item.titulo?.trim() || "Trabajo tecnico realizado.",
-    serviceType: item.servicio?.trim() || "Servicio tecnico",
+    workDescription: item.titulo?.trim() || "Trabajo técnico realizado.",
+    serviceType: item.servicio?.trim() || "Servicio técnico",
     result: item.resultado?.trim() || undefined,
     date: item.fecha?.trim() || undefined,
   };

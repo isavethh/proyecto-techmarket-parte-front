@@ -424,7 +424,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   if (!response.ok) {
     const fallbackMessage =
       response.status === 401 || response.status === 403
-        ? "No autorizado. Inicia sesion nuevamente para usar esta seccion."
+        ? "No autorizado. Inicia sesión nuevamente para usar esta seccion."
         : `Error de solicitud (${response.status})`;
 
     throw new Error(resolveErrorMessage(responseBody, fallbackMessage));

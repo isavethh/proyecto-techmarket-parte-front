@@ -133,7 +133,7 @@ export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps
           onClick={openPostModal}
           className="hidden rounded-xl border border-cyan-100/15 bg-cyan-300/12 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:border-cyan-300/45 hover:bg-cyan-300/18 sm:inline-flex"
         >
-          Nueva publicacion
+          Nueva publicación
         </button>
       ) : null}
 
@@ -191,11 +191,11 @@ export function ClientTopbarControls({ sectionLabel }: ClientTopbarControlsProps
                 }}
                 className="auth-action block w-full text-left"
               >
-                Nueva publicacion
+                Nueva publicación
               </button>
             ) : null}
             <button type="button" onClick={handleLogout} className="auth-action block w-full text-left">
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </div>
         </div>
@@ -312,7 +312,7 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
             className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur"
             role="dialog"
             aria-modal="true"
-            aria-label="Crear publicacion"
+            aria-label="Crear publicación"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -338,7 +338,7 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
             >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="tech-mono text-xs text-cyan-200/70">NUEVA PUBLICACION</p>
+                <p className="tech-mono text-xs text-cyan-200/70">NUEVA PUBLICACIÓN</p>
                 <h2 className="mt-2 text-2xl font-semibold text-cyan-50">Publicar consulta en la comunidad</h2>
                 <p className="mt-2 text-sm text-cyan-100/75">
                   Los clientes solo pueden publicar consultas dentro de Comunidades.
@@ -354,7 +354,7 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
             </div>
 
             <div className="mt-5 rounded-2xl border border-cyan-100/15 bg-slate-950/30 px-3 py-2">
-              <p className="text-xs text-cyan-100/65">Tipo de publicacion</p>
+              <p className="text-xs text-cyan-100/65">Tipo de publicación</p>
               <p className="mt-1 text-sm font-semibold text-cyan-50">Consulta</p>
             </div>
 
@@ -366,11 +366,11 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
               ref={modalTextareaRef}
               value={postText}
               onChange={(event) => setPostText(event.target.value)}
-              placeholder="Ejemplo: Alguien recomienda una laptop ligera para programar y editar?"
+              placeholder="¿Ejemplo: Alguien recomienda una laptop ligera para programar y editar?"
               rows={5}
               className="auth-input mt-2 min-h-[120px] resize-y"
             />
-            <p className="mt-2 text-xs text-cyan-100/65">Minimo 8 caracteres para publicar.</p>
+            <p className="mt-2 text-xs text-cyan-100/65">Mínimo 8 caracteres para publicar.</p>
 
             <label className="mt-5 block text-sm font-semibold text-cyan-50" htmlFor="client-post-image">
               Imagen
@@ -388,7 +388,7 @@ export default function ClientExperienceShell({ children }: ClientExperienceShel
 
             {imagePreview ? (
               <div className="mt-4 overflow-hidden rounded-2xl border border-cyan-100/15">
-                <img src={imagePreview} alt="Vista previa de publicacion" className="h-52 w-full object-cover" />
+                <img src={imagePreview} alt="Vista previa de publicación" className="h-52 w-full object-cover" />
               </div>
             ) : null}
 

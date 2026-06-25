@@ -386,7 +386,7 @@ function useApiFetch<T>(path: string | null) {
       setData(nextData);
       return nextData;
     } catch (e) {
-      const message = e instanceof Error ? e.message : "No se pudo cargar la informacion.";
+      const message = e instanceof Error ? e.message : "No se pudo cargar la información.";
       setError(message);
       return null;
     } finally {

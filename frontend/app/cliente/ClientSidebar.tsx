@@ -39,7 +39,7 @@ const clientSidebarContextByRoute: Record<string, ClientSidebarContext> = {
     eyebrow: "MENSAJES ACTIVOS",
     title: "Conversaciones abiertas",
     description:
-      "Gestiona tus chats con empresas y tecnicos, revisa respuestas y continua consultas sin perder contexto.",
+      "Gestiona tus chats con empresas y técnicos, revisa respuestas y continua consultas sin perder contexto.",
     chips: ["Chats", "Empresas", "Seguimiento", "Respuesta"],
   },
   "/cliente/citas": {
@@ -51,23 +51,23 @@ const clientSidebarContextByRoute: Record<string, ClientSidebarContext> = {
   },
   "/cliente/servicios": {
     eyebrow: "SERVICIOS",
-    title: "Busqueda guiada",
+    title: "Búsqueda guiada",
     description:
-      "Encuentra soporte tecnico, mantenimiento y atencion especializada segun necesidad y confianza.",
+      "Encuentra soporte técnico, mantenimiento y atención especializada según necesidad y confianza.",
     chips: ["Busqueda", "Tecnicos", "Match", "Cobertura"],
   },
   "/cliente/versus": {
     eyebrow: "COMPARACION",
     title: "Decision informada",
     description:
-      "Compara productos o servicios para elegir mejor segun rendimiento, precio y reputacion.",
+      "Compara productos o servicios para elegir mejor según rendimiento, precio y reputación.",
     chips: ["Versus", "Precio", "Rendimiento", "Decision"],
   },
   "/cliente/empresas": {
     eyebrow: "EMPRESAS",
     title: "Perfiles y confianza",
     description:
-      "Explora empresas activas, revisa reputacion y elige a quien contactar dentro del ecosistema.",
+      "Explora empresas activas, revisa reputación y elige a quien contactar dentro del ecosistema.",
     chips: ["Perfiles", "Confianza", "Empresas", "Visibilidad"],
   },
   "/cliente/comunidades": {
@@ -81,7 +81,7 @@ const clientSidebarContextByRoute: Record<string, ClientSidebarContext> = {
     eyebrow: "MARKETPLACE",
     title: "Exploracion comercial",
     description:
-      "Descubre productos, ofertas y servicios publicados por empresas y tecnicos en TechMarket.",
+      "Descubre productos, ofertas y servicios publicados por empresas y técnicos en TechMarket.",
     chips: ["Marketplace", "Ofertas", "Productos", "Servicios"],
   },
 };

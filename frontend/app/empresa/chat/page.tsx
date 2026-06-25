@@ -127,7 +127,7 @@ export default function ChatPage() {
             <p className="tech-mono text-xs text-cyan-200/75">CHAT COMERCIAL</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Conversaciones de clientes</h1>
             <p className="mt-3 text-sm text-cyan-100/80">
-              Responde rapido para convertir mas consultas en ventas.
+              Responde rápido para convertir más consultas en ventas.
             </p>
           </section>
 
@@ -159,7 +159,7 @@ export default function ChatPage() {
                   <div className="chat-scrollbar mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
                     {filteredThreads.length === 0 ? (
                       <p className="rounded-2xl border border-cyan-100/10 bg-slate-950/30 p-3 text-xs text-cyan-100/60">
-                        No hay conversaciones para esa busqueda.
+                        No hay conversaciones para esa búsqueda.
                       </p>
                     ) : null}
                     {filteredThreads.map((chat) => {
@@ -277,7 +277,7 @@ export default function ChatPage() {
                   </div>
                   <p className="mt-4 text-base font-semibold text-cyan-50">Sin conversaciones activas</p>
                   <p className="mt-2 text-sm text-cyan-100/65">
-                    Cuando un cliente inicie un chat contigo aparecera aqui.
+                    Cuando un cliente inicie un chat contigo aparecera aquí.
                   </p>
                 </section>
                 )}

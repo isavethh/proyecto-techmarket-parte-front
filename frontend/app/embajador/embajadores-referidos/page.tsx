@@ -82,7 +82,7 @@ export default function EmbajadorEmbajadoresReferidosPage() {
             </div>
 
             <p className="mt-3 text-sm text-cyan-100/80">
-              Tu posicion es Raíz. Tus sub-embajadores se organizan en niveles relativos a ti.
+              Tu posición es Raíz. Tus sub-embajadores se organizan en niveles relativos a ti.
             </p>
 
             <div className="mt-4 grid gap-3 md:grid-cols-3">

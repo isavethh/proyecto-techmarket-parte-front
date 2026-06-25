@@ -247,7 +247,7 @@ function buildPublicationMetrics(publicationId: string): PublicationMetric[] {
     {
       label: "Chats iniciados",
       value: chats.toString(),
-      trend: "Contactos desde esta publicacion",
+      trend: "Contactos desde esta publicación",
     },
     {
       label: "CTR estimado",
@@ -460,7 +460,7 @@ export default function PublicacionesPage() {
     activeFilter === "Publicaciones"
       ? showCreateForm
         ? "Cerrar formulario"
-        : "Agregar publicacion"
+        : "Agregar publicación"
       : activeFilter === "Publicaciones de interacción"
         ? activeInteractionFilter === "Encuestas"
           ? "Agregar encuesta"
@@ -483,22 +483,22 @@ export default function PublicacionesPage() {
                   : "Agregar oferta"
                 : showCreateForm
                   ? "Cerrar formulario"
-                  : "Agregar publicacion";
+                  : "Agregar publicación";
 
   const createFormTitle = isServicesView
     ? "Nuevo servicio"
     : isTextView
-      ? "Nueva publicacion de texto"
+      ? "Nueva publicación de texto"
     : isOfferView
-      ? "Nueva oferta o promocion"
-    : "Nueva publicacion";
+      ? "Nueva oferta o promoción"
+    : "Nueva publicación";
 
   const submitButtonLabel = isServicesView
     ? "Publicar servicio"
     : isTextView
       ? "Publicar texto"
     : isOfferView
-      ? "Publicar oferta o promocion"
+      ? "Publicar oferta o promoción"
     : "Publicar";
 
   const totalPublicationItems =
@@ -922,7 +922,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
     const trimmedDescription = productEditForm.description.trim();
 
     if (!trimmedName || !trimmedDescription) {
-      setProductEditMessage("Completa nombre y descripcion del producto.");
+      setProductEditMessage("Completa nombre y descripción del producto.");
       return;
     }
 
@@ -979,7 +979,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
     const trimmedDescription = serviceEditForm.description.trim();
 
     if (!trimmedName || !trimmedDescription) {
-      setServiceEditMessage("Completa nombre y descripcion del servicio.");
+      setServiceEditMessage("Completa nombre y descripción del servicio.");
       return;
     }
 
@@ -1072,7 +1072,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
     const trimmedDescription = offerEditForm.description.trim();
 
     if (!trimmedTitle || !trimmedDescription) {
-      setOfferEditMessage("Completa titulo y descripcion de la oferta.");
+      setOfferEditMessage("Completa título y descripción de la oferta.");
       return;
     }
 
@@ -1184,7 +1184,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
     const image = uploadedImagePreview || formData.image.trim() || "/productos/laptop-pro-14.jpg";
 
     if (!title || !description) {
-      setPublishMessage("Completa titulo y descripcion para publicar.");
+      setPublishMessage("Completa título y descripción para publicar.");
       return;
     }
 
@@ -1288,7 +1288,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
     setUploadedImagePreview("");
     setUploadedImageName("");
     setFileInputKey((current) => current + 1);
-    setPublishMessage("Publicacion agregada correctamente.");
+    setPublishMessage("Publicación agregada correctamente.");
     setShowCreateForm(false);
   };
 
@@ -1309,7 +1309,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
             <p className="tech-mono text-xs text-cyan-200/75">CENTRO DE PUBLICACIONES</p>
-            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Gestion comercial</h1>
+            <h1 className="mt-2 text-xl font-semibold text-cyan-50">Gestión comercial</h1>
             <p className="mt-3 text-sm text-cyan-100/80">
               Administra contenido, mejoras y seguimiento de rendimiento desde un solo lugar.
             </p>
@@ -1474,12 +1474,12 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                             : isServicesView
                               ? "Agregar servicio"
                               : isTextView
-                                ? "Agregar publicacion de texto"
+                                ? "Agregar publicación de texto"
                                 : isOfferView
-                                  ? "Agregar oferta o promocion"
+                                  ? "Agregar oferta o promoción"
                                   : activeFilter === "Publicaciones de interacción"
-                                    ? "Agregar publicacion"
-                                    : "Agregar publicacion"}
+                                    ? "Agregar publicación"
+                                    : "Agregar publicación"}
                           </h2>
                         </div>
                         <button
@@ -1493,7 +1493,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
 
                       <div className="mt-6 grid gap-4 md:grid-cols-2">
                         <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                          <span>Titulo</span>
+                          <span>Título</span>
                           <input
                             value={formData.title}
                             onChange={(event) => setFormData((current) => ({ ...current, title: event.target.value }))}
@@ -1503,11 +1503,11 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                         </label>
 
                         <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                          <span>Descripcion</span>
+                          <span>Descripción</span>
                           <textarea
                             value={formData.description}
                             onChange={(event) => setFormData((current) => ({ ...current, description: event.target.value }))}
-                            placeholder="Describe la publicacion para tus clientes"
+                            placeholder="Describe la publicación para tus clientes"
                             rows={4}
                             className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                           />
@@ -1540,7 +1540,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                                 className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-sm text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                               >
                                 <option value="Oferta">Oferta</option>
-                                <option value="Promocion">Promocion</option>
+                                <option value="Promocion">Promoción</option>
                               </select>
                             </label>
 
@@ -1700,7 +1700,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                               onClick={() => handleOpenPublicationPreview(item.preview)}
                               className="inline-flex min-h-11 items-center justify-center rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10"
                             >
-                              Ver publicacion
+                              Ver publicación
                             </button>
 
                             <button
@@ -1802,7 +1802,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                               }
                               className="rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10"
                             >
-                              Ver publicacion
+                              Ver publicación
                             </button>
                             <button
                               type="button"
@@ -1875,7 +1875,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                               }
                               className="rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10"
                             >
-                              Ver publicacion
+                              Ver publicación
                             </button>
                             <button
                               type="button"
@@ -1961,7 +1961,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                             }
                             className="rounded-full border border-cyan-100/10 bg-white/5 px-4 py-2 text-sm font-semibold text-cyan-100/85 transition hover:bg-cyan-100/10"
                           >
-                            Ver publicacion
+                            Ver publicación
                           </button>
                           <button
                             type="button"
@@ -2191,7 +2191,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="tech-mono text-xs text-cyan-200/70">VISTA DE PUBLICACION</p>
+                  <p className="tech-mono text-xs text-cyan-200/70">VISTA DE PUBLICACIÓN</p>
                   <h2 className="mt-2 text-2xl font-semibold text-cyan-50">{selectedPublication.title}</h2>
                   <p className="mt-2 text-sm text-cyan-100/78">
                     {selectedPublication.kind} • {selectedPublication.date ?? "Reciente"}
@@ -2236,7 +2236,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                 </section>
 
                 <section className="rounded-3xl border border-cyan-100/12 bg-slate-950/40 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Metricas de esta publicacion</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/65">Métricas de esta publicación</p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     {buildPublicationMetrics(selectedPublication.id).map((metric) => (
                       <div key={metric.label} className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-3">
@@ -2248,9 +2248,9 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                   </div>
 
                   <div className="mt-4 rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-3">
-                    <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/70">Recomendacion rapida</p>
+                    <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/70">Recomendacion rápida</p>
                     <p className="mt-2 text-sm leading-6 text-cyan-100/84">
-                      Esta publicacion tiene buen potencial. Ajusta imagen principal y CTA para convertir mas clics en chats.
+                      Esta publicación tiene buen potencial. Ajusta imagen principal y CTA para convertir más clics en chats.
                     </p>
                   </div>
                 </section>
@@ -2390,7 +2390,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                 </label>
 
                 <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                  <span>Descripcion</span>
+                  <span>Descripción</span>
                   <textarea
                     value={productEditForm.description}
                     onChange={(event) => setProductEditForm((current) => ({ ...current, description: event.target.value }))}
@@ -2502,7 +2502,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                 </label>
 
                 <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                  <span>Descripcion</span>
+                  <span>Descripción</span>
                   <textarea
                     value={serviceEditForm.description}
                     onChange={(event) => setServiceEditForm((current) => ({ ...current, description: event.target.value }))}
@@ -2602,14 +2602,14 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                     onChange={(event) =>
                       setSurveyForm((current) => ({ ...current, question: event.target.value }))
                     }
-                    placeholder="Ej: Que servicio necesitas con mas frecuencia?"
+                    placeholder="Ej: ¿Qué servicio necesitas con más frecuencia?"
                     className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                   />
                 </label>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="space-y-2 text-sm text-cyan-100/85">
-                    <span>Opcion 1</span>
+                    <span>Opción 1</span>
                     <input
                       value={surveyForm.option1}
                       onChange={(event) =>
@@ -2621,7 +2621,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                   </label>
 
                   <label className="space-y-2 text-sm text-cyan-100/85">
-                    <span>Opcion 2</span>
+                    <span>Opción 2</span>
                     <input
                       value={surveyForm.option2}
                       onChange={(event) =>
@@ -2633,7 +2633,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                   </label>
 
                   <label className="space-y-2 text-sm text-cyan-100/85">
-                    <span>Opcion 3 (opcional)</span>
+                    <span>Opción 3 (opcional)</span>
                     <input
                       value={surveyForm.option3}
                       onChange={(event) =>
@@ -2645,7 +2645,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                   </label>
 
                   <label className="space-y-2 text-sm text-cyan-100/85">
-                    <span>Opcion 4 (opcional)</span>
+                    <span>Opción 4 (opcional)</span>
                     <input
                       value={surveyForm.option4}
                       onChange={(event) =>
@@ -2707,7 +2707,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Oferta</p>
-                  <h2 className="mt-2 text-2xl font-bold text-white">Editar oferta o promocion</h2>
+                  <h2 className="mt-2 text-2xl font-bold text-white">Editar oferta o promoción</h2>
                 </div>
                 <button
                   type="button"
@@ -2720,7 +2720,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                  <span>Titulo</span>
+                  <span>Título</span>
                   <input
                     value={offerEditForm.title}
                     onChange={(event) => setOfferEditForm((current) => ({ ...current, title: event.target.value }))}
@@ -2729,7 +2729,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                 </label>
 
                 <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                  <span>Descripcion</span>
+                  <span>Descripción</span>
                   <textarea
                     value={offerEditForm.description}
                     onChange={(event) => setOfferEditForm((current) => ({ ...current, description: event.target.value }))}
@@ -2771,7 +2771,7 @@ const handleSurveyCreateSubmit = (event: FormEvent<HTMLFormElement>) => {
                     className="w-full rounded-2xl border border-cyan-100/10 bg-slate-950/40 px-4 py-3 text-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                   >
                     <option value="Oferta">Oferta</option>
-                    <option value="Promocion">Promocion</option>
+                    <option value="Promocion">Promoción</option>
                   </select>
                 </label>
 

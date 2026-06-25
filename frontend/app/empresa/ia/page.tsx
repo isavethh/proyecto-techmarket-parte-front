@@ -20,17 +20,17 @@ type AiBusinessInsight = {
 };
 
 const recommendedAiQuestions = [
-  "Que accion me conviene priorizar hoy para subir conversion?",
-  "Que publicacion debo optimizar primero esta semana?",
-  "Como responder chats para cerrar mas ventas?",
-  "Que servicio tiene mayor demanda real este mes?",
-  "Como armo una oferta de alto impacto para empresas?",
+  "¿Qué acción me conviene priorizar hoy para subir conversión?",
+  "¿Qué publicación debo optimizar primero esta semana?",
+  "¿Cómo responder chats para cerrar más ventas?",
+  "¿Qué servicio tiene mayor demanda real este mes?",
+  "¿Cómo armo una oferta de alto impacto para empresas?",
 ];
 
 const aiThinkingStates = [
   "Interpretando objetivo comercial y urgencia de negocio...",
   "Cruce de conversion, interacciones y ritmo de respuesta...",
-  "Detectando oportunidades por demanda y tipo de publicacion...",
+  "Detectando oportunidades por demanda y tipo de publicación...",
   "Preparando recomendacion concreta para ejecutar hoy...",
 ];
 
@@ -44,12 +44,12 @@ const scenarioPrompts = [
   },
   {
     title: "Reactivacion de alcance",
-    prompt: "Que cambios concretos hago en mi anuncio top para recuperar alcance en 24h?",
+    prompt: "¿Qué cambios concretos hago en mi anuncio top para recuperar alcance en 24h?",
     impact: "Enfocado en visibilidad de publicaciones.",
   },
   {
     title: "Oferta para empresas",
-    prompt: "Que oferta me recomiendas para clientes empresa sin bajar demasiado margen?",
+    prompt: "¿Qué oferta me recomiendas para clientes empresa sin bajar demasiado margen?",
     impact: "Enfocado en ticket promedio y rentabilidad.",
   },
 ];
@@ -73,12 +73,12 @@ function buildAiInsight(question: string): AiBusinessInsight {
         "El cuello de botella esta en tiempo de respuesta, no en alcance.",
       ],
       advice:
-        "Aplica una regla de atencion: responder primero consultas con solicitud de precio, stock o entrega. Luego propone alternativa y cierra con siguiente paso concreto.",
+        "Aplica una regla de atención: responder primero consultas con solicitud de precio, stock o entrega. Luego propone alternativa y cierra con siguiente paso concreto.",
       nextStep: "Abre chat y atiende los 3 contactos con mayor intencion durante los proximos 30 minutos.",
       actionPlan: [
         "Filtra chats por urgencia comercial y atiende primero consultas de compra directa.",
         "Usa plantilla corta: disponibilidad, beneficio principal, propuesta de cierre.",
-        "Registra objecion mas repetida y prepara una respuesta estandar para acelerar tiempos.",
+        "Registra objecion más repetida y prepara una respuesta estandar para acelerar tiempos.",
       ],
       watchItems: [
         "Tiempo promedio de primera respuesta.",
@@ -94,22 +94,22 @@ function buildAiInsight(question: string): AiBusinessInsight {
 
   if (text.includes("publicac") || text.includes("anuncio") || text.includes("alcance") || text.includes("optimizar")) {
     return {
-      summary: "Para subir resultados rapido, optimiza primero la publicacion con mayor historico de interaccion y aplica un relanzamiento controlado.",
+      summary: "Para subir resultados rápido, optimiza primero la publicación con mayor histórico de interaccion y aplica un relanzamiento controlado.",
       dataPoints: [
         "Tus publicaciones visuales superan en interes a las de solo texto.",
         "El mayor impacto viene de titular, portada y CTA de chat.",
-        "La variacion de oferta influye mas cuando el precio es visible.",
+        "La variacion de oferta influye más cuando el precio es visible.",
       ],
       advice:
-        "Haz un refresh de alto impacto: nuevo titulo orientado a beneficio, portada mas clara y CTA con urgencia real. Evita cambios masivos en todos los anuncios al mismo tiempo.",
-      nextStep: "Edita la publicacion principal y mide su rendimiento durante 24-48h antes del siguiente ajuste.",
+        "Haz un refresh de alto impacto: nuevo título orientado a beneficio, portada más clara y CTA con urgencia real. Evita cambios masivos en todos los anuncios al mismo tiempo.",
+      nextStep: "Edita la publicación principal y mide su rendimiento durante 24-48h antes del siguiente ajuste.",
       actionPlan: [
-        "Reescribe titulo con beneficio directo para el cliente objetivo.",
+        "Reescribe título con beneficio directo para el cliente objetivo.",
         "Actualiza imagen destacando valor y estado del producto o servicio.",
-        "Incluye llamado a chat con accion puntual: cotizar, agendar o reservar.",
+        "Incluye llamado a chat con acción puntual: cotizar, agendar o reservar.",
       ],
       watchItems: [
-        "Vistas por publicacion antes y despues del ajuste.",
+        "Vistas por publicación antes y despues del ajuste.",
         "CTR hacia chat desde la card principal.",
         "Interacciones en primeras 12 horas del relanzamiento.",
       ],
@@ -122,7 +122,7 @@ function buildAiInsight(question: string): AiBusinessInsight {
 
   if (text.includes("demanda") || text.includes("servicio") || text.includes("tendencia")) {
     return {
-      summary: "La demanda sostenida esta en servicios de solucion rapida y continuidad operativa para clientes empresa.",
+      summary: "La demanda sostenida esta en servicios de solucion rápida y continuidad operativa para clientes empresa.",
       dataPoints: [
         "Las consultas de mantenimiento y soporte tienden a repetirse semanalmente.",
         "Los clientes empresariales valoran tiempos de respuesta y continuidad.",
@@ -130,10 +130,10 @@ function buildAiInsight(question: string): AiBusinessInsight {
       ],
       advice:
         "Empaqueta servicios en formatos claros (basico, estandar, premium) y comunica tiempo de atencion. Eso mejora comparabilidad y acelera cierre.",
-      nextStep: "Revisa analiticas y define que servicio promocionar por segmento de cliente.",
+      nextStep: "Revisa analíticas y define que servicio promocionar por segmento de cliente.",
       actionPlan: [
         "Agrupa servicios con propuesta de valor por problema recurrente.",
-        "Define SLA o tiempo objetivo de atencion en cada oferta.",
+        "Define SLA o tiempo objetivo de atención en cada oferta.",
         "Publica una comparativa simple para reducir friccion en compra.",
       ],
       watchItems: [
@@ -143,7 +143,7 @@ function buildAiInsight(question: string): AiBusinessInsight {
       ],
       priority: "Media",
       confidence: "Media",
-      focusLabel: "Ver analiticas",
+      focusLabel: "Ver analíticas",
       focusHref: "/empresa/analiticas",
     };
   }
@@ -152,20 +152,20 @@ function buildAiInsight(question: string): AiBusinessInsight {
     return {
       summary: "Puedes mejorar conversion sin sacrificar margen si disenas la oferta por valor percibido y no solo por descuento.",
       dataPoints: [
-        "Las ofertas con comparacion visible de precio suelen captar mas atencion.",
+        "Las ofertas con comparacion visible de precio suelen captar más atención.",
         "El beneficio claro (tiempo, soporte, garantia) reduce sensibilidad al precio.",
         "La urgencia real funciona mejor que la urgencia generica.",
       ],
       advice:
-        "Muestra ahorro, pero destaca tambien resultado concreto. Una oferta ganadora combina valor, claridad de alcance y un CTA de cierre inmediato.",
-      nextStep: "Crea una promocion de 48h con beneficio medible y seguimiento de conversion por chat.",
+        "Muestra ahorro, pero destaca también resultado concreto. Una oferta ganadora combina valor, claridad de alcance y un CTA de cierre inmediato.",
+      nextStep: "Crea una promoción de 48h con beneficio medible y seguimiento de conversion por chat.",
       actionPlan: [
         "Define precio de referencia y ahorro visible en la card.",
         "Agrega beneficio operativo (soporte, garantia, instalacion).",
-        "Cierra con CTA de accion unica: cotizar ahora o reservar hoy.",
+        "Cierra con CTA de acción unica: cotizar ahora o reservar hoy.",
       ],
       watchItems: [
-        "Consultas generadas por promocion.",
+        "Consultas generadas por promoción.",
         "Conversion por rango de descuento.",
         "Impacto en margen promedio por cierre.",
       ],
@@ -179,22 +179,22 @@ function buildAiInsight(question: string): AiBusinessInsight {
   return {
     summary: "Tu estrategia va bien, pero el siguiente salto depende de ejecutar ciclos cortos de mejora en chat, publicaciones y ofertas.",
     dataPoints: [
-      "Tienes base suficiente para optimizar conversion sin cambiar toda la operacion.",
-      "La claridad de propuesta impacta mas que la cantidad de contenido.",
+      "Tienes base suficiente para optimizar conversion sin cambiar toda la operación.",
+      "La claridad de propuesta impacta más que la cantidad de contenido.",
       "Los mejores resultados vienen de iterar semanalmente sobre una prioridad.",
     ],
     advice:
       "Trabaja por sprint: elige una prioridad comercial, ejecuta mejoras concretas y mide el resultado antes de escalar cambios.",
-    nextStep: "Define hoy una sola meta comercial y consulta a la IA por un plan de ejecucion de 7 dias.",
+    nextStep: "Define hoy una sola meta comercial y consulta a la IA por un plan de ejecucion de 7 días.",
     actionPlan: [
-      "Selecciona una metrica objetivo principal para la semana.",
-      "Alinea una publicacion y un flujo de chat a ese objetivo.",
+      "Selecciona una métrica objetivo principal para la semana.",
+      "Alinea una publicación y un flujo de chat a ese objetivo.",
       "Evalua resultados y ajusta al cierre del ciclo.",
     ],
     watchItems: [
       "Conversion semanal por fuente (publicacion o chat).",
       "Ratio de respuesta en menos de 15 minutos.",
-      "Rendimiento de la publicacion principal.",
+      "Rendimiento de la publicación principal.",
     ],
     priority: "Media",
     confidence: "Alta",
@@ -360,14 +360,14 @@ export default function ConsultorIAPage() {
                     <p className="tech-mono text-xs text-cyan-200/80">IA TECHMARKET</p>
                     <h3 className="mt-2 text-2xl font-semibold text-cyan-50">Preguntale por tu negocio</h3>
                     <p className="mt-3 text-sm leading-7 text-cyan-100/82">
-                      Consulta ventas, publicaciones, ofertas o demanda. Recibes diagnostico, plan de accion y foco recomendado.
+                      Consulta ventas, publicaciones, ofertas o demanda. Recibes diagnostico, plan de acción y foco recomendado.
                     </p>
 
                     <form onSubmit={handleSubmit} className="mt-5 space-y-3">
                       <textarea
                         value={aiQuestion}
                         onChange={(event) => setAiQuestion(event.target.value)}
-                        placeholder="Ej: que accion me conviene priorizar hoy para vender mas?"
+                        placeholder="Ej: ¿qué acción me conviene priorizar hoy para vender más?"
                         rows={4}
                         className="w-full resize-none rounded-2xl border border-cyan-100/15 bg-slate-950/45 px-4 py-3 text-sm leading-6 text-cyan-50 placeholder:text-cyan-100/40 focus:outline-none focus:ring-2 focus:ring-cyan-300/35"
                       />
@@ -471,7 +471,7 @@ export default function ConsultorIAPage() {
 
                         <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-4">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-cyan-50">Diagnostico rapido</p>
+                            <p className="text-sm font-semibold text-cyan-50">Diagnostico rápido</p>
                             <span
                               className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
                                 aiInsight.priority === "Alta"
@@ -500,7 +500,7 @@ export default function ConsultorIAPage() {
                         </div>
 
                         <div className="rounded-2xl border border-cyan-100/12 bg-slate-950/45 p-4">
-                          <p className="text-sm font-semibold text-cyan-50">Plan de accion</p>
+                          <p className="text-sm font-semibold text-cyan-50">Plan de acción</p>
                           <div className="mt-2 space-y-2">
                             {aiInsight.actionPlan.map((step, index) => (
                               <div key={step} className="flex gap-3 rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-xs text-cyan-100/82">
@@ -538,7 +538,7 @@ export default function ConsultorIAPage() {
                       </div>
                     ) : !aiError ? (
                       <div className="mt-4 rounded-2xl border border-dashed border-cyan-100/18 bg-slate-950/40 p-5 text-sm text-cyan-100/72">
-                        Selecciona una pregunta recomendada o escribe tu consulta para recibir un analisis mas completo.
+                        Selecciona una pregunta recomendada o escribe tu consulta para recibir un analisis más completo.
                       </div>
                     ) : null}
                       </>

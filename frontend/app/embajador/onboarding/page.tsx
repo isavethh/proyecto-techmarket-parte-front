@@ -340,7 +340,7 @@ const applyOnboardingAction = (onboarding: BusinessOnboarding, actionKey: string
         profileDescription:
           next.snapshot.profileDescription.trim().length >= MIN_DESCRIPTION_LENGTH
             ? next.snapshot.profileDescription
-            : "Negocio con enfoque tecnologico, atencion personalizada y propuesta clara para clientes. Servicio confiable y rapido.",
+            : "Negocio con enfoque tecnologico, atención personalizada y propuesta clara para clientes. Servicio confiable y rápido.",
         category: next.snapshot.category.trim().length ? next.snapshot.category : "Tienda y accesorios",
         location: next.snapshot.location.trim().length ? next.snapshot.location : "Santa Cruz",
       };

@@ -149,7 +149,7 @@ export default function ClienteVersusPage() {
                       <h3 className="text-lg font-semibold text-white">{product.nombre}</h3>
                       <p className="mt-3 text-base font-bold text-cyan-100">{formatPrice(product.precio)}</p>
                       <p className="mt-2 text-sm text-cyan-100/80">
-                        Calificacion: {product.calificacion ?? "Sin calificacion"}
+                        Calificacion: {product.calificacion ?? "Sin calificación"}
                       </p>
                     </div>
                   </article>
@@ -186,7 +186,7 @@ export default function ClienteVersusPage() {
                     </tr>
                     <tr>
                       <td className="rounded-l-xl border border-cyan-100/10 bg-slate-950/35 px-3 py-2 font-semibold text-cyan-100/90">
-                        Calificacion
+                        Calificación
                       </td>
                       {selectedProducts.map((product, index) => (
                         <td
@@ -195,7 +195,7 @@ export default function ClienteVersusPage() {
                             index === selectedProducts.length - 1 ? "rounded-r-xl" : ""
                           }`}
                         >
-                          {product.calificacion ?? "Sin calificacion"}
+                          {product.calificacion ?? "Sin calificación"}
                         </td>
                       ))}
                     </tr>

@@ -24,7 +24,7 @@ const SERVICE_TYPE_OPTIONS = [
   "Mantenimiento",
   "Instalacion",
   "Diagnostico",
-  "Soporte tecnico",
+  "Soporte técnico",
   "Asesoria",
   "Actualizacion",
   "Configuracion",
@@ -214,7 +214,7 @@ export default function EspecialistaServiciosPage() {
             <p className="tech-mono text-xs text-cyan-200/75">SERVICIOS DEL ESPECIALISTA</p>
             <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Servicios profesionales</h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-cyan-100/80">
-              Servicios definidos para facilitar contacto rapido y decision informada del usuario.
+              Servicios definidos para facilitar contacto rápido y decision informada del usuario.
             </p>
           </div>
 
@@ -285,7 +285,7 @@ export default function EspecialistaServiciosPage() {
                 <h2 className="text-xl font-bold text-white">{service.name}</h2>
                 <p className="text-sm leading-7 text-cyan-100/85">{service.description}</p>
                 <p className="text-sm text-cyan-100/80">
-                  <span className="font-semibold text-white">Tecnico:</span> {service.technicianName}
+                  <span className="font-semibold text-white">Técnico:</span> {service.technicianName}
                 </p>
                 <p className="text-sm text-cyan-100/80">
                   <span className="font-semibold text-white">Precio:</span> {service.price}
@@ -460,7 +460,7 @@ export default function EspecialistaServiciosPage() {
                 </label>
 
                 <label className="space-y-2 text-sm text-cyan-100/85 md:col-span-2">
-                  <span>Descripcion</span>
+                  <span>Descripción</span>
                   <textarea
                     value={formData.description}
                     onChange={(event) => setFormData((current) => ({ ...current, description: event.target.value }))}
@@ -471,7 +471,7 @@ export default function EspecialistaServiciosPage() {
                 </label>
 
                 <label className="space-y-2 text-sm text-cyan-100/85">
-                  <span>Tecnico</span>
+                  <span>Técnico</span>
                   <input
                     value={formData.technicianName}
                     readOnly

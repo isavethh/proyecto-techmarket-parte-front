@@ -331,9 +331,9 @@ function ClienteUsuarioPerfilContent() {
         : addresses;
       setAddresses([createdAddress, ...nextAddresses]);
       setAddressDraft(emptyAddressDraft);
-      setProfileMessage("Direccion creada correctamente");
+      setProfileMessage("Dirección creada correctamente");
     } catch (error) {
-      setProfileError(error instanceof Error ? error.message : "No se pudo crear direccion");
+      setProfileError(error instanceof Error ? error.message : "No se pudo crear dirección");
     }
   };
 
@@ -344,9 +344,9 @@ function ClienteUsuarioPerfilContent() {
     try {
       await deleteClientAddress(addressId);
       setAddresses((current) => current.filter((address) => address.id !== addressId));
-      setProfileMessage("Direccion eliminada correctamente");
+      setProfileMessage("Dirección eliminada correctamente");
     } catch (error) {
-      setProfileError(error instanceof Error ? error.message : "No se pudo eliminar direccion");
+      setProfileError(error instanceof Error ? error.message : "No se pudo eliminar dirección");
     }
   };
 
@@ -362,9 +362,9 @@ function ClienteUsuarioPerfilContent() {
           esPredeterminada: address.id === addressId,
         })),
       );
-      setProfileMessage("Direccion establecida como predeterminada");
+      setProfileMessage("Dirección establecida como predeterminada");
     } catch (error) {
-      setProfileError(error instanceof Error ? error.message : "No se pudo actualizar direccion");
+      setProfileError(error instanceof Error ? error.message : "No se pudo actualizar dirección");
     }
   };
 
@@ -377,7 +377,7 @@ function ClienteUsuarioPerfilContent() {
           <ClientInfoCard
             eyebrow="PERFIL CLIENTE"
             title={profileView.name}
-            description="Perfil publico del usuario dentro de la comunidad cliente de TechMarket."
+            description="Perfil público del usuario dentro de la comunidad cliente de TechMarket."
           >
             <div className="mt-4 rounded-2xl border border-cyan-100/12 bg-slate-950/35 p-3 text-xs text-cyan-100/80">
               <div className="flex items-center justify-between gap-3">
@@ -439,7 +439,7 @@ function ClienteUsuarioPerfilContent() {
               </div>
 
               <div className="rounded-3xl border border-cyan-100/10 bg-slate-950/40 p-5">
-                <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Informacion general</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/65">Información general</p>
                 <div className="mt-4 space-y-2">
                   {profileView.generalInfo.map((item) => (
                     <div key={item} className="rounded-xl border border-cyan-100/10 bg-white/5 px-3 py-2 text-sm text-cyan-100/85">
@@ -525,7 +525,7 @@ function ClienteUsuarioPerfilContent() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-cyan-100/75" htmlFor="profile-phone">Telefono</label>
+                    <label className="text-xs text-cyan-100/75" htmlFor="profile-phone">Teléfono</label>
                     <input
                       id="profile-phone"
                       value={editableProfile.phone}
@@ -632,7 +632,7 @@ function ClienteUsuarioPerfilContent() {
                   onChange={(event) =>
                     setAddressDraft((current) => ({ ...current, titulo: event.target.value }))
                   }
-                  placeholder="Titulo, ej. Casa"
+                  placeholder="Título, ej. Casa"
                   className="auth-input"
                   required
                 />
@@ -667,7 +667,7 @@ function ClienteUsuarioPerfilContent() {
                   onChange={(event) =>
                     setAddressDraft((current) => ({ ...current, direccion: event.target.value }))
                   }
-                  placeholder="Direccion completa"
+                  placeholder="Dirección completa"
                   className="auth-input min-h-[90px] md:col-span-2"
                   required
                 />
@@ -686,7 +686,7 @@ function ClienteUsuarioPerfilContent() {
                 </label>
                 <div className="flex justify-end md:col-span-2">
                   <button type="submit" className="tech-button tech-button-primary">
-                    Crear direccion
+                    Crear dirección
                   </button>
                 </div>
               </form>

@@ -73,7 +73,7 @@ export default function AnaliticasPage() {
       <main className="mt-8 grid gap-6 px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:pr-2">
           <section className="tech-card">
-            <p className="tech-mono text-xs text-cyan-200/75">ANALITICAS EMPRESA</p>
+            <p className="tech-mono text-xs text-cyan-200/75">ANALÍTICAS EMPRESA</p>
             <h1 className="mt-2 text-xl font-semibold text-cyan-50">Estado del rendimiento</h1>
             <p className="mt-3 text-sm text-cyan-100/80">
               Revisa indicadores de visitas, conversion y crecimiento para tomar mejores decisiones.
@@ -87,10 +87,10 @@ export default function AnaliticasPage() {
             <div className="space-y-8 p-6 md:p-8">
               <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
                 <div>
-                  <p className="tech-mono text-xs text-cyan-200/75">ANALITICAS</p>
+                  <p className="tech-mono text-xs text-cyan-200/75">ANALÍTICAS</p>
                   <h1 className="mt-3 text-4xl font-bold text-cyan-50 md:text-5xl">Dashboard de rendimiento</h1>
                   <p className="mt-4 max-w-2xl text-sm leading-7 text-cyan-100/80 md:text-base">
-                    Seguimiento de visitas generadas por publicaciones, estrellas segun usuarios, resenas,
+                    Seguimiento de visitas generadas por publicaciones, estrellas según usuarios, reseñas,
                     comentarios y el indice de crecimiento del negocio.
                   </p>
                 </div>
@@ -113,13 +113,13 @@ export default function AnaliticasPage() {
                 </article>
 
                 <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificacion promedio</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Calificación promedio</p>
                   <p className="mt-3 text-3xl font-bold text-white">{ratingAverage.toFixed(1)} / 5</p>
-                  <p className="mt-2 text-sm text-cyan-100/75">Segun valoraciones de clientes</p>
+                  <p className="mt-2 text-sm text-cyan-100/75">Según valoraciones de clientes</p>
                 </article>
 
                 <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Resenas totales</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/65">Reseñas totales</p>
                   <p className="mt-3 text-3xl font-bold text-white">{userReviews.length}</p>
                   <p className="mt-2 text-sm text-cyan-100/75">Opiniones verificadas</p>
                 </article>
@@ -133,7 +133,7 @@ export default function AnaliticasPage() {
 
               <section className="grid gap-4 xl:grid-cols-2">
                 <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-                  <h2 className="text-2xl font-bold text-white">Visitas por publicacion</h2>
+                  <h2 className="text-2xl font-bold text-white">Visitas por publicación</h2>
                   <div className="mt-5 space-y-4">
                     {publicationMetrics.map((item) => {
                       const width = Math.max(12, Math.round((item.visits / highestVisits) * 100));
@@ -155,7 +155,7 @@ export default function AnaliticasPage() {
                 </article>
 
                 <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-                  <h2 className="text-2xl font-bold text-white">Estrellas segun usuarios</h2>
+                  <h2 className="text-2xl font-bold text-white">Estrellas según usuarios</h2>
                   <div className="mt-5 space-y-4">
                     {ratingLevels.map((level) => (
                       <div key={level.stars}>
@@ -175,7 +175,7 @@ export default function AnaliticasPage() {
 
               <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
                 <article className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
-                  <h2 className="text-2xl font-bold text-white">Resenas de usuarios</h2>
+                  <h2 className="text-2xl font-bold text-white">Reseñas de usuarios</h2>
                   <div className="mt-5 space-y-4">
                     {userReviews.map((review) => (
                       <div key={review.id} className="rounded-2xl border border-cyan-100/10 bg-white/5 p-4">
@@ -210,7 +210,7 @@ export default function AnaliticasPage() {
               <section className="rounded-3xl border border-cyan-100/10 bg-slate-950/35 p-5">
                 <h2 className="text-2xl font-bold text-white">Indice de crecimiento mensual</h2>
                 <p className="mt-2 text-sm text-cyan-100/75">
-                  Tendencia de visitas en los ultimos meses para medir el impacto de publicaciones y promociones.
+                  Tendencia de visitas en los últimos meses para medir el impacto de publicaciones y promociones.
                 </p>
 
                 <div className="mt-5 grid grid-cols-6 gap-3">

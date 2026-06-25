@@ -86,7 +86,7 @@ export function mapBackendReviewToUiReview(review: BackendReview, index: number)
   return {
     id: text(review.id ?? review.reviewId, `review-${index}`),
     user: text(review.usuario ?? review.user ?? review.cliente ?? review.customer, "Cliente no especificado"),
-    comment: text(review.comentario ?? review.comment, "Resena sin comentario."),
+    comment: text(review.comentario ?? review.comment, "Reseña sin comentario."),
     stars: rating(review.rating ?? review.stars ?? review.estrellas),
     date: text(review.fecha ?? review.date ?? review.createdAt, "Fecha no disponible"),
     service: text(review.servicio ?? review.service, "Servicio no especificado"),
@@ -104,7 +104,7 @@ export function mapBackendCertificationToUiCertification(
 
   return {
     id: text(certification.id ?? certification.certificationId, `certification-${index}`),
-    title: text(certification.titulo ?? certification.title ?? certification.nombre ?? certification.name, "Certificacion tecnica"),
+    title: text(certification.titulo ?? certification.title ?? certification.nombre ?? certification.name, "Certificacion técnica"),
     issuer: text(certification.institucion ?? certification.entidad ?? certification.issuer ?? certification.emisor, "Entidad no especificada"),
     status: credentialUrl ? "Con respaldo" : "Sin respaldo",
     date: text(certification.fechaObtencion ?? certification.fecha ?? certification.date ?? certification.issuedAt, "Fecha no disponible"),
@@ -181,7 +181,7 @@ export function useSpecialistReviewsCertificationsData() {
         setCertificationsSource("empty");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido al cargar resenas y certificaciones");
+      setError(err instanceof Error ? err.message : "Error desconocido al cargar reseñas y certificaciones");
       setReviews([]);
       setKpis(emptyKpis);
       setCertifications([]);
@@ -213,7 +213,7 @@ export function useSpecialistReviewsCertificationsData() {
       const currentAuth = authRef.current;
 
       if (!currentAuth?.token || !currentAuth.userId) {
-        setActionError("No hay sesion activa para responder la resena.");
+        setActionError("No hay sesión activa para responder la reseña.");
         return;
       }
 
@@ -230,10 +230,10 @@ export function useSpecialistReviewsCertificationsData() {
               : review,
           ),
         );
-        setActionSuccess("Resena respondida correctamente.");
+        setActionSuccess("Reseña respondida correctamente.");
         return true;
       } catch (err) {
-        setActionError(err instanceof Error ? err.message : "No se pudo responder la resena.");
+        setActionError(err instanceof Error ? err.message : "No se pudo responder la reseña.");
         return false;
       } finally {
         setActionLoading(false);
@@ -247,7 +247,7 @@ export function useSpecialistReviewsCertificationsData() {
       const currentAuth = authRef.current;
 
       if (!currentAuth?.token || !currentAuth.userId) {
-        setActionError("No hay sesion activa para registrar la certificacion.");
+        setActionError("No hay sesión activa para registrar la certificacion.");
         return;
       }
 
@@ -274,7 +274,7 @@ export function useSpecialistReviewsCertificationsData() {
       const currentAuth = authRef.current;
 
       if (!currentAuth?.token || !currentAuth.userId) {
-        setActionError("No hay sesion activa para eliminar la certificacion.");
+        setActionError("No hay sesión activa para eliminar la certificacion.");
         return;
       }
 
@@ -299,7 +299,7 @@ export function useSpecialistReviewsCertificationsData() {
       const currentAuth = authRef.current;
 
       if (!currentAuth?.token || !currentAuth.userId) {
-        setActionError("No hay sesion activa para solicitar la verificacion.");
+        setActionError("No hay sesión activa para solicitar la verificación.");
         return false;
       }
 
@@ -313,10 +313,10 @@ export function useSpecialistReviewsCertificationsData() {
           userId: currentAuth.userId,
         });
         await refreshReviewsCertificationsData();
-        setActionSuccess("Solicitud de verificacion enviada correctamente.");
+        setActionSuccess("Solicitud de verificación enviada correctamente.");
         return true;
       } catch (err) {
-        setActionError(err instanceof Error ? err.message : "No se pudo solicitar la verificacion.");
+        setActionError(err instanceof Error ? err.message : "No se pudo solicitar la verificación.");
         return false;
       } finally {
         setActionLoading(false);

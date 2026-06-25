@@ -33,18 +33,18 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
     eyebrow: "PERFIL DESTACADO",
     title: "Especialista recomendado",
     description:
-      "Perfil tecnico orientado a confianza, soporte claro y respuesta rapida para que el cliente decida con mas seguridad.",
+      "Perfil técnico orientado a confianza, soporte claro y respuesta rápida para que el cliente decida con más seguridad.",
     points: [
-      "Atencion clara y profesional",
+      "Atención clara y profesional",
       "Servicios listos para contratar",
-      "Respuesta rapida por chat",
+      "Respuesta rápida por chat",
     ],
   },
   Servicios: {
-    eyebrow: "CATALOGO ACTIVO",
+    eyebrow: "CATÁLOGO ACTIVO",
     title: "Servicios listos para contratar",
     description:
-      "Aqui se muestran servicios tecnicos claros, con descripcion, precio y acceso directo al chat para facilitar la decision.",
+      "Aquí se muestran servicios técnicos claros, con descripción, precio y acceso directo al chat para facilitar la decision.",
     points: [
       "Servicios destacados",
       "Precio visible o consultable",
@@ -64,20 +64,20 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
   },
   Proyectos: {
     eyebrow: "PROYECTOS ACTIVOS",
-    title: "Seguimiento tecnico",
+    title: "Seguimiento técnico",
     description:
-      "Aqui se revisan trabajos activos, fechas, progreso e historial operativo del especialista dentro de TechMarket.",
+      "Aquí se revisan trabajos activos, fechas, progreso e historial operativo del especialista dentro de TechMarket.",
     points: [
       "Estado del trabajo",
       "Progreso visible",
-      "Historial tecnico",
+      "Historial técnico",
     ],
   },
   Chat: {
-    eyebrow: "ATENCION DIRECTA",
+    eyebrow: "ATENCIÓN DIRECTA",
     title: "Conversaciones activas",
     description:
-      "Este canal concentra consultas, seguimiento y respuesta rapida para mejorar confianza, atencion y conversion comercial.",
+      "Este canal concentra consultas, seguimiento y respuesta rápida para mejorar confianza, atención y conversion comercial.",
     points: [
       "Consultas activas",
       "Seguimiento en tiempo real",
@@ -88,9 +88,9 @@ const specialistSidebarSummaries: Record<string, SpecialistSidebarSummary> = {
     eyebrow: "CONFIANZA VISIBLE",
     title: "Opiniones y calificaciones",
     description:
-      "La reputacion permite al cliente validar calidad de servicio, atencion y experiencia antes de tomar una decision.",
+      "La reputación permite al cliente validar calidad de servicio, atención y experiencia antes de tomar una decision.",
     points: [
-      "Calificacion general",
+      "Calificación general",
       "Comentarios recientes",
       "Senales de confianza",
     ],
@@ -184,7 +184,7 @@ function SpecialistTopbarControls({ sectionLabel, profile }: SpecialistTopbarCon
               onClick={handleLogout}
               className="auth-action block w-full text-left"
             >
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </div>
         </div>

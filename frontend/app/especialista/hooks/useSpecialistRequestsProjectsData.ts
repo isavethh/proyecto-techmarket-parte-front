@@ -70,7 +70,7 @@ export function mapBackendProjectToUiProject(project: SpecialistProject, index: 
   return {
     id: text(project.id ?? project.projectId, `project-${index}`),
     customer: text(project.cliente ?? project.customer ?? project.clientName, "Cliente no especificado"),
-    title: text(title, "Proyecto tecnico"),
+    title: text(title, "Proyecto técnico"),
     service: text(project.servicio ?? project.service, "Servicio no especificado"),
     status: text(project.estado ?? project.status, "Activo"),
     startDate: assignmentDate,
@@ -92,7 +92,7 @@ export function mapBackendHistoryToUiHistory(
     service?: unknown;
     total?: unknown;
   };
-  const service = text(historyWithBackendData.servicio ?? historyWithBackendData.service ?? history.proyecto ?? history.project ?? history.titulo ?? history.title, "Proyecto tecnico");
+  const service = text(historyWithBackendData.servicio ?? historyWithBackendData.service ?? history.proyecto ?? history.project ?? history.titulo ?? history.title, "Proyecto técnico");
 
   return {
     id: text(history.id ?? history.historyId, `history-${index}`),
@@ -193,7 +193,7 @@ export function useSpecialistRequestsProjectsData() {
       const currentAuth = authRef.current;
 
       if (!currentAuth?.token || !currentAuth.userId) {
-        setError("No hay sesion activa para responder la solicitud");
+        setError("No hay sesión activa para responder la solicitud");
         return;
       }
 
@@ -217,7 +217,7 @@ export function useSpecialistRequestsProjectsData() {
       const currentAuth = authRef.current;
 
       if (!currentAuth?.token || !currentAuth.userId) {
-        setError("No hay sesion activa para actualizar el proyecto");
+        setError("No hay sesión activa para actualizar el proyecto");
         return;
       }
 

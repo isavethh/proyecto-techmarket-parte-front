@@ -45,12 +45,12 @@ export const businessData = {
   logo: "TC",
   slogan:
     "Soluciones confiables en tecnologia para hogar y empresa en Santa Cruz de la Sierra.",
-  specialization: "Laptops, redes y reparacion tecnica",
+  specialization: "Laptops, redes y reparacion técnica",
   rating: 4.8,
   reviewCount: 128,
   category: "Servicios y venta especializada en tecnologia en Bolivia",
   experienceYears: 12,
-  businessType: "Tienda y centro tecnico en Santa Cruz",
+  businessType: "Tienda y centro técnico en Santa Cruz",
 };
 
 export const specialties = [
@@ -64,7 +64,7 @@ export const coverageAreas = [
   "Centro de Santa Cruz",
   "Zona norte",
   "Equipetrol",
-  "Atencion a domicilio en sectores cercanos",
+  "Atención a domicilio en sectores cercanos",
 ];
 
 export const contactChannels = [
@@ -88,7 +88,7 @@ export const schedules = [
 export const branches = [
   {
     name: "Sede Principal",
-    address: "Av. MonseÃ±or Rivero # 120, Santa Cruz de la Sierra",
+    address: "Av. Monseñor Rivero # 120, Santa Cruz de la Sierra",
     phone: "+591 7500 0001",
     hours:
       "Lunes a viernes 8:00 a. m. - 6:30 p. m.; Sabado 9:00 a. m. - 2:00 p. m.",
@@ -102,8 +102,8 @@ export const branches = [
 ];
 
 export const locationOverview = {
-  mainAddressShort: "Av. MonseÃ±or Rivero # 120",
-  mainAddressLong: "Av. MonseÃ±or Rivero # 120, Santa Cruz de la Sierra",
+  mainAddressShort: "Av. Monseñor Rivero # 120",
+  mainAddressLong: "Av. Monseñor Rivero # 120, Santa Cruz de la Sierra",
   city: "Santa Cruz de la Sierra",
   zone: "Centro",
   reference: "Cerca del Cristo Redentor",
@@ -115,7 +115,7 @@ export const executiveMetrics: ExecutiveMetric[] = [
     id: "new-leads",
     label: "Leads nuevos",
     value: "24",
-    trend: "+8 desde tu ultima visita",
+    trend: "+8 desde tu última visita",
     tone: "positive",
     href: "/empresa/chat",
   },
@@ -137,7 +137,7 @@ export const executiveMetrics: ExecutiveMetric[] = [
   },
   {
     id: "top-post",
-    label: "Publicacion top",
+    label: "Publicación top",
     value: "Laptop Pro 14",
     trend: "2.3k visitas en 48h",
     tone: "neutral",
@@ -156,14 +156,14 @@ export const alertItems: AlertItem[] = [
   {
     id: "alert-2",
     title: "Tu mejor anuncio perdio ritmo",
-    detail: "El alcance bajo 14% en las ultimas 24 horas.",
+    detail: "El alcance bajo 14% en las últimas 24 horas.",
     priority: "media",
     href: "/empresa/publicaciones",
   },
   {
     id: "alert-3",
     title: "Hay oportunidad en soporte empresarial",
-    detail: "Consultas tecnicas crecieron 22% esta semana.",
+    detail: "Consultas técnicas crecieron 22% esta semana.",
     priority: "media",
     href: "/empresa/analiticas",
   },
@@ -183,7 +183,7 @@ export const strategicActions: StrategicAction[] = [
     id: "action-2",
     title: "Reactivar anuncio con mejor historial",
     description:
-      "Actualiza imagen y CTA de tu publicacion top para recuperar alcance.",
+      "Actualiza imagen y CTA de tu publicación top para recuperar alcance.",
     impact: "Impacto estimado: +18% visitas",
     href: "/empresa/publicaciones",
     cta: "Editar publicaciones",
@@ -192,10 +192,10 @@ export const strategicActions: StrategicAction[] = [
     id: "action-3",
     title: "Ajustar oferta para clientes empresa",
     description:
-      "Tus datos muestran mas demanda en mantenimiento y redes corporativas.",
+      "Tus datos muestran más demanda en mantenimiento y redes corporativas.",
     impact: "Impacto estimado: mejor ticket promedio",
     href: "/empresa/analiticas",
-    cta: "Ver analiticas",
+    cta: "Ver analíticas",
   },
 ];
 
@@ -208,13 +208,13 @@ export const recentActivity: ActivityItem[] = [
   },
   {
     id: "activity-2",
-    title: "Nueva reseÃ±a positiva (5/5)",
-    detail: "Destaca rapidez de atencion y claridad del soporte.",
+    title: "Nueva reseña positiva (5/5)",
+    detail: "Destaca rapidez de atención y claridad del soporte.",
     time: "Hace 1 h",
   },
   {
     id: "activity-3",
-    title: "Pico de visitas en publicacion de monitor",
+    title: "Pico de visitas en publicación de monitor",
     detail: "+320 visitas desde mediodia.",
     time: "Hoy",
   },
@@ -222,15 +222,15 @@ export const recentActivity: ActivityItem[] = [
 
 export const radarBars = [
   { label: "Interes en productos", value: 82 },
-  { label: "Consultas tecnicas", value: 74 },
+  { label: "Consultas técnicas", value: 74 },
   { label: "Conversion a chat", value: 61 },
   { label: "Retorno de clientes", value: 68 },
 ];
 
 export const recommendedAiQuestions = [
-  "Que accion me conviene priorizar hoy para subir conversion?",
-  "Que publicacion debo optimizar primero esta semana?",
-  "Como responder los chats para cerrar mas ventas?",
+  "¿Qué acción me conviene priorizar hoy para subir conversión?",
+  "¿Qué publicación debo optimizar primero esta semana?",
+  "¿Cómo responder los chats para cerrar más ventas?",
 ];
 
 export const aiThinkingStates = [
@@ -249,7 +249,7 @@ export function buildAiInsight(question: string): AiBusinessInsight {
       dataPoints: [
         "Tienes 11 mensajes por responder, 4 son de alta intencion.",
         "La conversion semanal subio a 18% (+3.2 puntos).",
-        "Entraron 24 leads nuevos desde tu ultima visita.",
+        "Entraron 24 leads nuevos desde tu última visita.",
       ],
       advice:
         "Define una regla simple: responder en menos de 15 minutos los chats que preguntan por precio, stock o entrega. Esa velocidad mejora la probabilidad de cierre.",
@@ -264,16 +264,16 @@ export function buildAiInsight(question: string): AiBusinessInsight {
     normalizedQuestion.includes("anuncio")
   ) {
     return {
-      summary: "Optimiza primero tu publicacion de mayor historico para recuperar alcance rapido.",
+      summary: "Optimiza primero tu publicación de mayor histórico para recuperar alcance rápido.",
       dataPoints: [
-        "Laptop Pro 14 sigue como publicacion top con 2.3k visitas en 48h.",
-        "El alcance de tu mejor anuncio cayo 14% en las ultimas 24 horas.",
+        "Laptop Pro 14 sigue como publicación top con 2.3k visitas en 48h.",
+        "El alcance de tu mejor anuncio cayo 14% en las últimas 24 horas.",
         "Hoy hubo consultas directas de stock para ese producto.",
       ],
       advice:
         "Actualiza portada, agrega urgencia clara (stock limitado) y refuerza CTA a chat. Mantener activo el anuncio lider suele levantar el resto de publicaciones.",
       nextStep:
-        "Edita la publicacion top y relanzala con un titulo orientado a beneficio y disponibilidad inmediata.",
+        "Edita la publicación top y relanzala con un título orientado a beneficio y disponibilidad inmediata.",
     };
   }
 
@@ -287,7 +287,7 @@ export function buildAiInsight(question: string): AiBusinessInsight {
         "La forma en que respondes los primeros mensajes ya puede aumentar cierres esta misma semana.",
       dataPoints: [
         "4 conversaciones activas muestran intencion alta de compra.",
-        "Las preguntas mas frecuentes fueron stock, entrega y metodos de pago.",
+        "Las preguntas más frecuentes fueron stock, entrega y métodos de pago.",
         "El interes por productos y servicios se mantiene sobre 70% en tu radar.",
       ],
       advice:
@@ -301,9 +301,9 @@ export function buildAiInsight(question: string): AiBusinessInsight {
     summary:
       "Vas en buen ritmo, pero el mayor crecimiento vendra de ejecutar prioridades comerciales en secuencia.",
     dataPoints: [
-      "24 leads nuevos en la ultima sesion comparada.",
+      "24 leads nuevos en la última sesión comparada.",
       "Conversion semanal en 18% con tendencia positiva.",
-      "Existe interes alto en productos y consultas tecnicas.",
+      "Existe interes alto en productos y consultas técnicas.",
     ],
     advice:
       "Combina acciones rapidas de chat con mejoras puntuales en publicaciones clave. Esa mezcla acelera conversion sin perder visibilidad.",
@@ -669,30 +669,30 @@ export const userReviewsData: UserReview[] = [
     id: "rev-1",
     user: "Alejandro",
     stars: 5,
-    text: "Buena atencion por chat y explicacion clara del equipo.",
+    text: "Buena atención por chat y explicacion clara del equipo.",
     date: "17 abr 2026",
   },
   {
     id: "rev-2",
     user: "Laura P.",
     stars: 4,
-    text: "Servicio rapido, me ayudaron con mantenimiento y seguimiento.",
+    text: "Servicio rápido, me ayudaron con mantenimiento y seguimiento.",
     date: "16 abr 2026",
   },
   {
     id: "rev-3",
     user: "Carlos M.",
     stars: 5,
-    text: "La publicacion tenia toda la info y por chat resolvieron todo.",
+    text: "La publicación tenia toda la info y por chat resolvieron todo.",
     date: "15 abr 2026",
   },
 ];
 
 export const userCommentsData: UserComment[] = [
-  { id: "com-1", user: "Sofia R.", publication: "Combo empresarial", text: "Tienen plan para oficina de 8 equipos?", date: "Hace 1 h" },
-  { id: "com-2", user: "Andres T.", publication: "Monitor UltraWide 34", text: "El precio incluye garantia extendida?", date: "Hace 3 h" },
-  { id: "com-3", user: "Valentina G.", publication: "Pack limpieza premium", text: "En cuanto tiempo hacen el servicio?", date: "Ayer" },
-  { id: "com-4", user: "Alejandro", publication: "Laptop Pro 14", text: "Busque este modelo, hay unidades para entrega inmediata?", date: "Hace 2 min" },
+  { id: "com-1", user: "Sofia R.", publication: "Combo empresarial", text: "¿Tienen plan para oficina de 8 equipos?", date: "Hace 1 h" },
+  { id: "com-2", user: "Andres T.", publication: "Monitor UltraWide 34", text: "¿El precio incluye garantia extendida?", date: "Hace 3 h" },
+  { id: "com-3", user: "Valentina G.", publication: "Pack limpieza premium", text: "¿En cuanto tiempo hacen el servicio?", date: "Ayer" },
+  { id: "com-4", user: "Alejandro", publication: "Laptop Pro 14", text: "¿Busque este modelo, hay unidades para entrega inmediata?", date: "Hace 2 min" },
 ];
 
 export const growthSeriesData: GrowthPoint[] = [
@@ -739,7 +739,7 @@ export const customerReviewsData: CustomerReview[] = [
     chatDate: "17 abr 2026",
     reviewDate: "18 abr 2026",
     stars: 5,
-    message: "Excelente atencion en chat. Me ayudaron rapido con disponibilidad, entrega y forma de pago.",
+    message: "Excelente atención en chat. Me ayudaron rápido con disponibilidad, entrega y forma de pago.",
     tags: ["Rapidez", "Atencion", "Cierre de venta"],
     needsFollowUp: false,
     wasResponded: true,
@@ -752,7 +752,7 @@ export const customerReviewsData: CustomerReview[] = [
     chatDate: "16 abr 2026",
     reviewDate: "17 abr 2026",
     stars: 4,
-    message: "Buena explicacion por chat. Solo faltaria mejorar el detalle del tiempo de envio en la publicacion.",
+    message: "Buena explicacion por chat. Solo faltaria mejorar el detalle del tiempo de envío en la publicación.",
     tags: ["Claridad", "Envio", "Publicacion"],
     needsFollowUp: true,
     wasResponded: false,
@@ -778,7 +778,7 @@ export const customerReviewsData: CustomerReview[] = [
     chatDate: "14 abr 2026",
     reviewDate: "15 abr 2026",
     stars: 3,
-    message: "Respondieron bien, pero me hubiera gustado una comparativa mas clara de paquetes para oficina.",
+    message: "Respondieron bien, pero me hubiera gustado una comparativa más clara de paquetes para oficina.",
     tags: ["Comparativa", "Paquetes", "Oportunidad"],
     needsFollowUp: true,
     wasResponded: false,
@@ -791,7 +791,7 @@ export const customerReviewsData: CustomerReview[] = [
     chatDate: "13 abr 2026",
     reviewDate: "14 abr 2026",
     stars: 4,
-    message: "La experiencia por chat fue buena y resolvieron dudas de garantia. Recomendado.",
+    message: "La experiencia por chat fue buena y resolvieron dudas de garantía. Recomendado.",
     tags: ["Garantia", "Resolucion", "Recomendacion"],
     needsFollowUp: false,
     wasResponded: true,
@@ -804,7 +804,7 @@ export const customerReviewsData: CustomerReview[] = [
     chatDate: "12 abr 2026",
     reviewDate: "13 abr 2026",
     stars: 4,
-    message: "El chat fue util y amable. Seria ideal incluir tiempos estimados de atencion en el anuncio.",
+    message: "El chat fue util y amable. Seria ideal incluir tiempos estimados de atención en el anuncio.",
     tags: ["Amabilidad", "Tiempos", "Anuncio"],
     needsFollowUp: true,
     wasResponded: true,
@@ -900,7 +900,7 @@ export const productItemsData: ProductCard[] = [
   {
     id: "prod-2",
     name: "Monitor UltraWide 34",
-    description: "Pantalla amplia 3440 x 1440 para productividad y diseÃ±o.",
+    description: "Pantalla amplia 3440 x 1440 para productividad y diseño.",
     price: "Bs 1.480.000",
     status: "Disponible",
     image: "/productos/monitor-ultrawide-34.jpg",
@@ -943,14 +943,14 @@ export const serviceItemsData: ServiceCard[] = [
   {
     id: "serv-1",
     name: "Reparacion de laptops",
-    description: "Diagnostico, mantenimiento y correccion de fallas tecnicas.",
+    description: "Diagnostico, mantenimiento y correccion de fallas técnicas.",
     price: "Consultar",
     image: "/productos/laptop-pro-14.jpg",
   },
   {
     id: "serv-2",
     name: "Instalacion de redes",
-    description: "Cableado, configuracion y pruebas para conectividad estable.",
+    description: "Cableado, configuración y pruebas para conectividad estable.",
     price: "Bs 120.000",
     image: "/productos/monitor-ultrawide-34.jpg",
   },
@@ -963,8 +963,8 @@ export const serviceItemsData: ServiceCard[] = [
   },
   {
     id: "serv-4",
-    name: "Soporte tecnico remoto",
-    description: "Asistencia rapida para configuraciones y solucion de errores.",
+    name: "Soporte técnico remoto",
+    description: "Asistencia rápida para configuraciones y solucion de errores.",
     price: "Bs 65.000",
     image: "/productos/teclado-tkl.jpg",
   },
@@ -1000,8 +1000,8 @@ export const offersData: OfferCard[] = [
   },
   {
     id: "offer-4",
-    title: "Servicio rapido de soporte",
-    description: "Atencion prioritaria para problemas frecuentes de software.",
+    title: "Servicio rápido de soporte",
+    description: "Atención prioritaria para problemas frecuentes de software.",
     currentPrice: "Bs 55.000",
     previousPrice: "Bs 75.000",
     label: "Promocion",
@@ -1012,19 +1012,19 @@ export const offersData: OfferCard[] = [
 export const surveyItemsData: SurveyCard[] = [
   {
     id: "survey-1",
-    question: "Que servicio necesitas con mas frecuencia?",
+    question: "¿Qué servicio necesitas con más frecuencia?",
     options: ["Diagnostico", "Mantenimiento", "Redes", "Soporte remoto"],
     votes: 184,
   },
   {
     id: "survey-2",
-    question: "Que producto te interesa mas para tu trabajo?",
+    question: "¿Qué producto te interesa más para tu trabajo?",
     options: ["Laptop", "Monitor", "Teclado", "Mouse"],
     votes: 132,
   },
   {
     id: "survey-3",
-    question: "Que canal prefieres para contacto rapido?",
+    question: "¿Qué canal prefieres para contacto rápido?",
     options: ["Chat", "WhatsApp", "Telefono", "Correo"],
     votes: 211,
   },
@@ -1034,13 +1034,13 @@ export const postsData: PostCard[] = [
   {
     id: "post-1",
     title: "Nueva llegada de equipos para trabajo y estudio",
-    message: "Ya estan disponibles nuevos modelos de alto rendimiento para usuarios exigentes.",
+    message: "Ya están disponibles nuevos modelos de alto rendimiento para usuarios exigentes.",
     date: "17 abr 2026",
     image: "/productos/laptop-pro-14.jpg",
   },
   {
     id: "post-2",
-    title: "Consejo rapido: mejora la vida util de tu laptop",
+    title: "Consejo rápido: mejora la vida util de tu laptop",
     message: "Mantener limpieza interna y ventilacion correcta ayuda a evitar fallas por temperatura.",
     date: "16 abr 2026",
     image: "/productos/kit-limpieza-pc.jpg",
@@ -1048,7 +1048,7 @@ export const postsData: PostCard[] = [
   {
     id: "post-3",
     title: "Anuncio para empresas pequenas",
-    message: "Activamos acompanamiento tecnico mensual para oficinas con soporte prioritario.",
+    message: "Activamos acompanamiento técnico mensual para oficinas con soporte prioritario.",
     date: "15 abr 2026",
     image: "/productos/monitor-ultrawide-34.jpg",
   },
@@ -1057,7 +1057,7 @@ export const postsData: PostCard[] = [
 export const textPostsData: TextPublicationCard[] = [
   {
     id: "text-1",
-    title: "Atencion tecnica sin costo de evaluacion",
+    title: "Atención técnica sin costo de evaluacion",
     message:
       "Si tu equipo esta lento, escribenos por chat y te orientamos con una primera revision sin compromiso.",
     date: "17 abr 2026",
@@ -1067,13 +1067,13 @@ export const textPostsData: TextPublicationCard[] = [
     id: "text-2",
     title: "Consejo para empresas pequenas",
     message:
-      "Mantener un respaldo semanal evita perdida de informacion y reduce tiempos muertos en oficina.",
+      "Mantener un respaldo semanal evita perdida de información y reduce tiempos muertos en oficina.",
     date: "16 abr 2026",
     image: "/productos/charla.png",
   },
   {
     id: "text-3",
-    title: "Soporte rapido por mensaje",
+    title: "Soporte rápido por mensaje",
     message:
       "Escribenos si necesitas diagnostico, instalacion o mantenimiento. Respondemos desde Santa Cruz.",
     date: "15 abr 2026",

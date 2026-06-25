@@ -139,8 +139,8 @@ const baseFeedItems: CommunityFeedPost[] = [];
 const aiSuggestions: Array<{ title: string; match: string; rating: string; slug: string; imageClass: string }> = [];
 
 const aiThinkingMessages = [
-  "Interpretando tu necesidad tecnica...",
-  "Rastreando proveedores con mejor reputacion...",
+  "Interpretando tu necesidad técnica...",
+  "Rastreando proveedores con mejor reputación...",
   "Calculando ranking por relevancia y cercania...",
   "Filtrando opciones con disponibilidad real...",
 ];
@@ -646,7 +646,7 @@ export default function ClientePage() {
 
   const aiSummary = useMemo(() => {
     if (!hasAiSearchRun || !aiResults.length) return "";
-    return `Entendi tu necesidad: ${aiQuery.trim() || "consulta tecnica"}.`;
+    return `Entendi tu necesidad: ${aiQuery.trim() || "consulta técnica"}.`;
   }, [aiQuery, aiResults.length, hasAiSearchRun]);
 
   useEffect(() => {
@@ -771,7 +771,7 @@ export default function ClientePage() {
       setSearchResults([]);
       setSearchTotal(null);
       setSearchStatus("error");
-      setSearchError(error instanceof Error ? error.message : "Error de busqueda");
+      setSearchError(error instanceof Error ? error.message : "Error de búsqueda");
     }
   };
 
@@ -1085,7 +1085,7 @@ export default function ClientePage() {
                   onClick={openPostModal}
                   className="rounded-xl border border-cyan-200/25 bg-cyan-400/20 px-4 py-2 text-xs font-semibold text-cyan-50 transition hover:bg-cyan-300/25"
                 >
-                  Nueva publicacion
+                  Nueva publicación
                 </button>
                 <div className="auth-switch">
                   <button
@@ -1142,7 +1142,7 @@ export default function ClientePage() {
                   setSearchMode("normal");
                 }}
               >
-                Busqueda normal
+                Búsqueda normal
               </button>
               <button
                 type="button"
@@ -1154,7 +1154,7 @@ export default function ClientePage() {
                   resetAiSearchSession();
                 }}
               >
-                Busqueda con IA
+                Búsqueda con IA
               </button>
             </div>
 
@@ -1220,7 +1220,7 @@ export default function ClientePage() {
                               </div>
                               <p className="mt-2 text-sm font-semibold text-cyan-50">{result.titulo}</p>
                               <p className="mt-1 text-xs text-cyan-100/75">
-                                {result.descripcion || "Sin descripcion"}
+                                {result.descripcion || "Sin descripción"}
                               </p>
                             </Link>
                           ))}
@@ -1267,7 +1267,7 @@ export default function ClientePage() {
                         <div
                           className={`h-24 w-full rounded-xl border border-cyan-100/10 bg-gradient-to-br ${result.imageClass}`}
                         />
-                        <p className="mt-3 text-xs text-cyan-200/75">Servicio tecnico</p>
+                        <p className="mt-3 text-xs text-cyan-200/75">Servicio técnico</p>
                         <h3 className="mt-2 text-base font-semibold text-cyan-50">{result.title}</h3>
                         <p className="mt-2 text-sm text-cyan-100/80">{result.match}</p>
                         <div className="mt-3 flex items-center justify-between gap-2">
@@ -1276,7 +1276,7 @@ export default function ClientePage() {
                             className="tech-button tech-button-secondary"
                             href={`/cliente/servicios/${result.slug}`}
                           >
-                            Ver resenas
+                            Ver reseñas
                           </Link>
                         </div>
                       </article>
@@ -1290,7 +1290,7 @@ export default function ClientePage() {
           <section className="space-y-4">
             {filteredFeed.length === 0 && (
               <div className="tech-card">
-                <p className="text-sm text-cyan-100/80">No encontramos publicaciones para esa busqueda.</p>
+                <p className="text-sm text-cyan-100/80">No encontramos publicaciones para esa búsqueda.</p>
               </div>
             )}
 
@@ -1396,7 +1396,7 @@ export default function ClientePage() {
                         onClick={() => handleOpenFeedPublication(item)}
                         accent="neutral"
                       >
-                        Ver publicacion
+                        Ver publicación
                       </PublicationActionButton>
                     </div>
                   }
@@ -1421,7 +1421,7 @@ export default function ClientePage() {
                                 [item.id]: event.target.value,
                               }))
                             }
-                            placeholder="Comparte tu opinion sobre esta publicacion..."
+                            placeholder="Comparte tu opinion sobre esta publicación..."
                             className="h-24 w-full resize-none rounded-2xl border border-cyan-100/10 bg-slate-950/45 px-3 py-2 text-sm text-cyan-50 placeholder:text-cyan-100/45 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
                           />
                           <div className="flex items-center justify-end gap-2">
@@ -1568,7 +1568,7 @@ export default function ClientePage() {
         <aside className="chat-scrollbar space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1">
           <section className="tech-card">
             <p className="text-sm font-semibold text-cyan-50">Cuentas recomendadas</p>
-            <p className="mt-2 text-xs text-cyan-100/75">Empresas y especialistas con buena reputacion en la comunidad.</p>
+            <p className="mt-2 text-xs text-cyan-100/75">Empresas y especialistas con buena reputación en la comunidad.</p>
             <div className="mt-4 space-y-3">
               {recommendedCompanies.length > 0 ? (
                 recommendedCompanies.map((company) => {
@@ -1729,7 +1729,7 @@ export default function ClientePage() {
                 </div>
 
                 <p className="mt-3 text-xs text-cyan-200/75">
-                  Cruzando semantica, reputacion y disponibilidad en tiempo real.
+                  Cruzando semantica, reputación y disponibilidad en tiempo real.
                 </p>
               </div>
             </motion.div>
