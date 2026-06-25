@@ -61,148 +61,6 @@ const aiRadarBars = [
   { label: "Potencial de conversión", value: 69 },
 ];
 
-function buildAiInsight(question: string): AiBusinessInsight {
-  const text = question.toLowerCase();
-
-  if (text.includes("conversion") || text.includes("priorizar") || text.includes("cerrar")) {
-    return {
-      summary: "Tu palanca principal hoy es priorizar chats con intencion de compra y responderlos con una secuencia de cierre clara.",
-      dataPoints: [
-        "Tienes conversaciones activas con senales de urgencia en precio y disponibilidad.",
-        "Tus publicaciones de producto concentran mayor interes inicial.",
-        "El cuello de botella esta en tiempo de respuesta, no en alcance.",
-      ],
-      advice:
-        "Aplica una regla de atención: responder primero consultas con solicitud de precio, stock o entrega. Luego propone alternativa y cierra con siguiente paso concreto.",
-      nextStep: "Abre chat y atiende los 3 contactos con mayor intencion durante los proximos 30 minutos.",
-      actionPlan: [
-        "Filtra chats por urgencia comercial y atiende primero consultas de compra directa.",
-        "Usa plantilla corta: disponibilidad, beneficio principal, propuesta de cierre.",
-        "Registra objecion más repetida y prepara una respuesta estandar para acelerar tiempos.",
-      ],
-      watchItems: [
-        "Tiempo promedio de primera respuesta.",
-        "Chats con seguimiento pendiente despues de 12h.",
-        "Conversión de chat a venta por tipo de producto.",
-      ],
-      priority: "Alta",
-      confidence: "Alta",
-      focusLabel: "Ir a chat comercial",
-      focusHref: "/empresa/chat",
-    };
-  }
-
-  if (text.includes("publicac") || text.includes("anuncio") || text.includes("alcance") || text.includes("optimizar")) {
-    return {
-      summary: "Para subir resultados rápido, optimiza primero la publicación con mayor histórico de interacción y aplica un relanzamiento controlado.",
-      dataPoints: [
-        "Tus publicaciones visuales superan en interes a las de solo texto.",
-        "El mayor impacto viene de titular, portada y CTA de chat.",
-        "La variacion de oferta influye más cuando el precio es visible.",
-      ],
-      advice:
-        "Haz un refresh de alto impacto: nuevo título orientado a beneficio, portada más clara y CTA con urgencia real. Evita cambios masivos en todos los anuncios al mismo tiempo.",
-      nextStep: "Edita la publicación principal y mide su rendimiento durante 24-48h antes del siguiente ajuste.",
-      actionPlan: [
-        "Reescribe título con beneficio directo para el cliente objetivo.",
-        "Actualiza imagen destacando valor y estado del producto o servicio.",
-        "Incluye llamado a chat con acción puntual: cotizar, agendar o reservar.",
-      ],
-      watchItems: [
-        "Vistas por publicación antes y despues del ajuste.",
-        "CTR hacia chat desde la card principal.",
-        "Interacciones en primeras 12 horas del relanzamiento.",
-      ],
-      priority: "Alta",
-      confidence: "Alta",
-      focusLabel: "Ir a publicaciones",
-      focusHref: "/empresa/publicaciones",
-    };
-  }
-
-  if (text.includes("demanda") || text.includes("servicio") || text.includes("tendencia")) {
-    return {
-      summary: "La demanda sostenida esta en servicios de solucion rápida y continuidad operativa para clientes empresa.",
-      dataPoints: [
-        "Las consultas de mantenimiento y soporte tienden a repetirse semanalmente.",
-        "Los clientes empresariales valoran tiempos de respuesta y continuidad.",
-        "Las ofertas combinadas elevan interes cuando simplifican decisión.",
-      ],
-      advice:
-        "Empaqueta servicios en formatos claros (basico, estandar, premium) y comunica tiempo de atencion. Eso mejora comparabilidad y acelera cierre.",
-      nextStep: "Revisa analíticas y define que servicio promocionar por segmento de cliente.",
-      actionPlan: [
-        "Agrupa servicios con propuesta de valor por problema recurrente.",
-        "Define SLA o tiempo objetivo de atención en cada oferta.",
-        "Publica una comparativa simple para reducir friccion en compra.",
-      ],
-      watchItems: [
-        "Volumen de consultas por tipo de servicio.",
-        "Ticket promedio por paquete ofrecido.",
-        "Tasa de recompra o seguimiento mensual.",
-      ],
-      priority: "Media",
-      confidence: "Media",
-      focusLabel: "Ver analíticas",
-      focusHref: "/empresa/analiticas",
-    };
-  }
-
-  if (text.includes("oferta") || text.includes("precio") || text.includes("margen")) {
-    return {
-      summary: "Puedes mejorar conversión sin sacrificar margen si disenas la oferta por valor percibido y no solo por descuento.",
-      dataPoints: [
-        "Las ofertas con comparacion visible de precio suelen captar más atención.",
-        "El beneficio claro (tiempo, soporte, garantia) reduce sensibilidad al precio.",
-        "La urgencia real funciona mejor que la urgencia generica.",
-      ],
-      advice:
-        "Muestra ahorro, pero destaca también resultado concreto. Una oferta ganadora combina valor, claridad de alcance y un CTA de cierre inmediato.",
-      nextStep: "Crea una promoción de 48h con beneficio medible y seguimiento de conversión por chat.",
-      actionPlan: [
-        "Define precio de referencia y ahorro visible en la card.",
-        "Agrega beneficio operativo (soporte, garantia, instalacion).",
-        "Cierra con CTA de acción unica: cotizar ahora o reservar hoy.",
-      ],
-      watchItems: [
-        "Consultas generadas por promoción.",
-        "Conversión por rango de descuento.",
-        "Impacto en margen promedio por cierre.",
-      ],
-      priority: "Media",
-      confidence: "Media",
-      focusLabel: "Crear oferta en publicaciones",
-      focusHref: "/empresa/publicaciones",
-    };
-  }
-
-  return {
-    summary: "Tu estrategia va bien, pero el siguiente salto depende de ejecutar ciclos cortos de mejora en chat, publicaciones y ofertas.",
-    dataPoints: [
-      "Tienes base suficiente para optimizar conversión sin cambiar toda la operación.",
-      "La claridad de propuesta impacta más que la cantidad de contenido.",
-      "Los mejores resultados vienen de iterar semanalmente sobre una prioridad.",
-    ],
-    advice:
-      "Trabaja por sprint: elige una prioridad comercial, ejecuta mejoras concretas y mide el resultado antes de escalar cambios.",
-    nextStep: "Define hoy una sola meta comercial y consulta a la IA por un plan de ejecucion de 7 días.",
-    actionPlan: [
-      "Selecciona una métrica objetivo principal para la semana.",
-      "Alinea una publicación y un flujo de chat a ese objetivo.",
-      "Evalua resultados y ajusta al cierre del ciclo.",
-    ],
-    watchItems: [
-      "Conversion semanal por fuente (publicacion o chat).",
-      "Ratio de respuesta en menos de 15 minutos.",
-      "Rendimiento de la publicación principal.",
-    ],
-    priority: "Media",
-    confidence: "Alta",
-    focusLabel: "Volver al resumen ejecutivo",
-    focusHref: "/empresa",
-  };
-}
-
 const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 
@@ -285,7 +143,6 @@ export default function ConsultorIAPage() {
         setAiError(
           error instanceof Error ? error.message : "No se pudo consultar la IA de empresa.",
         );
-        setAiInsight(buildAiInsight(trimmedQuestion));
       })
       .finally(() => {
         setIsAiThinking(false);
@@ -459,7 +316,6 @@ export default function ConsultorIAPage() {
                       {aiError ? (
                         <div className="mt-4 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-5 text-sm leading-6 text-amber-50">
                           {aiError}
-                          {aiInsight ? " Mientras tanto, te mostramos una sugerencia generada localmente." : ""}
                         </div>
                       ) : null}
                       {aiInsight ? (
